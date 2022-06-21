@@ -1,0 +1,3 @@
+[deps]
+BulkLMM = "654ff64a-de8a-4d95-ac2a-94859e9c1c25"
+Documenter = "e30172f5-a6a5-5a46-863b-614d45cd2de4"
