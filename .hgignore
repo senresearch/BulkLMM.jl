@@ -1,9 +1,0 @@
-syntax: glob
-data/*
-test/output/*
-software/output/*
-*~
-*.html
-*.pdf
-
-figures*
