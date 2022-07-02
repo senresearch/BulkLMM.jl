@@ -10,4 +10,5 @@ Missings = "e1d29d7a-bbdc-5cf2-9ac0-f12de2c33e28"
 Optim = "429524aa-4258-5aef-a3af-852621145aeb"
 
 [compat]
+Missings = "1"
 julia = "1.7"
