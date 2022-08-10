@@ -87,34 +87,17 @@ rss: residual sum of squares
 y = outcome, matrix
 X = predictors, matrix
 
-Calculates the residual sum of squares using a QR decomposition.  The
-outcome matrix can be multivariate in which case the function returns
-the residual sum of squares of each column. The return values is a
-vector of length equal to the number of columns of y.
+Calculates the residual sum of squares using a Cholesky or
+QRdecomposition.  The outcome matrix can be multivariate in which case
+the function returns the residual sum of squares of each column. The
+return values is a vector of length equal to the number of columns of
+y.
 
 """
 function rss(y::Array{Float64,2},X::Array{Float64,2},method="cholesky")
 
-    # number of individuals
-    n = size(y,1)
-    # number of covariates
-    p = size(X,2)
-
-    # least squares solution
-    # faster but numerically less stable
-    if(method=="cholesky")
-        b = (X'X)\(X'y)
-    end
-
-    # slower but numerically more stable
-    if(method=="qr")
-    fct = qr(X)
-    b = fct\y
-    end
-
-    # estimate yy and calculate rss
-    yhat = X*b
-    rss = reduce(+,(y-yhat).^2,dims=1)
+    r = resid(y,X,method)
+    rss = reduce(+,r.^2,dims=1)
 
     return rss
 
@@ -128,8 +111,7 @@ X = predictors, matrix
 
 Calculates the residual sum of squares using a QR decomposition.  The
 outcome matrix can be multivariate in which case the function returns
-the residual sum of squares of each column. The return value is a matrix
-with the same size as the outcome matrix.
+the residual matrix of the same size as the outcome matrix.
 
 """
 function resid(y::Array{Float64,2},X::Array{Float64,2},method="cholesky")
