@@ -17,10 +17,9 @@ y = outcome, matrix
 X = predictors, matrix
 w = weights (positive, inversely proportional to variance), one-dim vector
 
-The variance estimate is maximum likelihood
 """
 function wls(y::Array{Float64,2},X::Array{Float64,2},w::Array{Float64,1},
-             reml::Bool=false,loglik::Bool=false)
+             reml::Bool=false,loglik::Bool=false,method="cholesky")
 
     # check if weights are positive
     if(any(w.<=.0))
@@ -31,30 +30,45 @@ function wls(y::Array{Float64,2},X::Array{Float64,2},w::Array{Float64,1},
     sqrtw = sqrt.(w)
     # scale by weights
     # yy = y.*sqrtw
-    yy = Diagonal(sqrtw)*y
+    yy = rowMultiply(y,sqrtw)
     # XX = diagm(sqrtw)*X
-    XX = Diagonal(sqrtw)*X
+    XX = rowMultiply(X,sqrtw)
 
-    out = ls(yy,XX,reml,loglik) # TODO time consuming.
+    b = XX\yy # uses QR decomposition
+    yyhat = XX*b
+    rss0 = sum((yy-yyhat).^2)
 
-    if(loglik)
-        out.ell = out.ell + sum(log.(w))/2
+    if( reml )
+        sigma2 = rss0/(n-p)
+    else
+        sigma2 = rss0/n
     end
 
-    return out
+    # see formulas (2) and (3) of Kang (2008)
+    if(loglik)
+        ell = -0.5 * ( n*log(sigma2) + sum(log.(w)) + rss0/sigma2 )
+        if(reml)
+            # could avoid logdet calc if qr stored
+            ell = ell + 0.5 * ( p*log(sigma2) - logdet(XX'XX) ) 
+        end
+    end
+
+    return Wls(b,sigma2,ell)
 
 end
 
 function ls(y::Array{Float64,2},X::Array{Float64,2},
-             reml::Bool=false,loglik=false,method="cholesky")
+             reml::Bool=false,loglik=false)
 
     # number of individuals
     n = size(y,1)
     # number of covariates
     p = size(X,2)
 
-    rss0 = rss(y,X,method=method)
-
+    b = X\y # uses QR decomposition
+    yhat = X*b
+    rss0 = sum((y-yhat).^2)
+    
     if( reml )
         sigma2 = rss0/(n-p)
     else
