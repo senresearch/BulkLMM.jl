@@ -46,35 +46,27 @@ function wls(y::Array{Float64,2},X::Array{Float64,2},w::Array{Float64,1},
 end
 
 function ls(y::Array{Float64,2},X::Array{Float64,2},
-             reml::Bool=false,loglik=false)
+             reml::Bool=false,loglik=false,method="cholesky")
 
     # number of individuals
     n = size(y,1)
     # number of covariates
     p = size(X,2)
 
-    # least squares solution
-    fct = qr(X)
-    b = fct\y
-
-    # estimate yy and calculate rss
-    yhat = X*b
-    # yhat = q*At_mul_B(q,yy)
-    rss = norm((y-yhat))^2
+    rss0 = rss(y,X,method=method)
 
     if( reml )
-        sigma2 = rss/(n-p)
+        sigma2 = rss0/(n-p)
     else
-        sigma2 = rss/n
+        sigma2 = rss0/n
     end
 
-    # return coefficient and variance estimate
-    # logdetSigma = n*log(sigma2) - sum(log.(w))
-    logdetSigma = n*log(sigma2)
-    ell = -0.5 * ( logdetSigma + rss/sigma2 )
     if ( reml )
-        ell -=  log(abs(det(fct.R))) - (p/2)*(log(sigma2))
+        logdetSigma = (n-p)*log(sigma2)
+    else
+        logdetSigma = n*log(sigma2)
     end
+        ell = -0.5 * ( logdetSigma + rss0/sigma2 )
 
     return Wls(b,sigma2,ell)
 
