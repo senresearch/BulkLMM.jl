@@ -85,6 +85,9 @@ function rowMultiply(A::Matrix{Float64},x::Vector{Float64})
             B[j,i] = A[j,i] * x[j]
         end
     end
+
+    return B
+    
 end
 
 """
