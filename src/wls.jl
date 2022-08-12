@@ -34,7 +34,21 @@ function wls(y::Array{Float64,2},X::Array{Float64,2},w::Array{Float64,1},
     # XX = diagm(sqrtw)*X
     XX = rowMultiply(X,sqrtw)
 
-    b = XX\yy # uses QR decomposition
+    # least squares solution
+    # faster but numerically less stable
+    if(method=="cholesky")
+        fct = cholesky(XX'XX)
+        b = fct\(XX'yy)
+        logdetXXtXX = logdet(fct)
+    end
+
+    # slower but numerically more stable
+    if(method=="qr")
+        fct = qr(XX)
+        b = fct\yy
+        logdetXXtXX = 2*logdet(fct) # need 2 for logdet(X'X)
+    end
+
     yyhat = XX*b
     rss0 = sum((yy-yyhat).^2)
 
@@ -48,8 +62,7 @@ function wls(y::Array{Float64,2},X::Array{Float64,2},w::Array{Float64,1},
     if(loglik)
         ell = -0.5 * ( n*log(sigma2) + sum(log.(w)) + rss0/sigma2 )
         if(reml)
-            # could avoid logdet calc if qr stored
-            ell = ell + 0.5 * ( p*log(sigma2) - logdet(XX'XX) ) 
+            ell = ell + 0.5 * ( p*log(sigma2) - logdetXXtXX ) 
         end
     end
 
