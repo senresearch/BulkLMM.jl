@@ -71,6 +71,25 @@ function rowDivide!(A::Matrix{Float64},x::Vector{Float64})
     end
 end
 
+function rowMultiply(A::Matrix{Float64},x::Vector{Float64})
+
+    (n,m) = size(A)
+    if(length(x)!=n)
+        error("Matrix and vector size do not match.")
+    end
+
+    B = similar(A)
+    
+    for i=1:m
+        for j=1:n
+            B[j,i] = A[j,i] * x[j]
+        end
+    end
+
+    return B
+    
+end
+
 """
 perform random shuffles of vector
 the first column is the original vector if original=true
