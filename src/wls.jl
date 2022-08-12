@@ -17,10 +17,9 @@ y = outcome, matrix
 X = predictors, matrix
 w = weights (positive, inversely proportional to variance), one-dim vector
 
-The variance estimate is maximum likelihood
 """
 function wls(y::Array{Float64,2},X::Array{Float64,2},w::Array{Float64,1},
-             reml::Bool=false,loglik::Bool=false)
+             reml::Bool=false,loglik::Bool=false,method="cholesky")
 
     # check if weights are positive
     if(any(w.<=.0))
@@ -31,17 +30,43 @@ function wls(y::Array{Float64,2},X::Array{Float64,2},w::Array{Float64,1},
     sqrtw = sqrt.(w)
     # scale by weights
     # yy = y.*sqrtw
-    yy = Diagonal(sqrtw)*y
+    yy = rowMultiply(y,sqrtw)
     # XX = diagm(sqrtw)*X
-    XX = Diagonal(sqrtw)*X
+    XX = rowMultiply(X,sqrtw)
 
-    out = ls(yy,XX,reml,loglik) # TODO time consuming.
-
-    if(loglik)
-        out.ell = out.ell + sum(log.(w))/2
+    # least squares solution
+    # faster but numerically less stable
+    if(method=="cholesky")
+        fct = cholesky(XX'XX)
+        b = fct\(XX'yy)
+        logdetXXtXX = logdet(fct)
     end
 
-    return out
+    # slower but numerically more stable
+    if(method=="qr")
+        fct = qr(XX)
+        b = fct\yy
+        logdetXXtXX = 2*logdet(fct) # need 2 for logdet(X'X)
+    end
+
+    yyhat = XX*b
+    rss0 = sum((yy-yyhat).^2)
+
+    if( reml )
+        sigma2 = rss0/(n-p)
+    else
+        sigma2 = rss0/n
+    end
+
+    # see formulas (2) and (3) of Kang (2008)
+    if(loglik)
+        ell = -0.5 * ( n*log(sigma2) + sum(log.(w)) + rss0/sigma2 )
+        if(reml)
+            ell = ell + 0.5 * ( p*log(sigma2) - logdetXXtXX ) 
+        end
+    end
+
+    return Wls(b,sigma2,ell)
 
 end
 
@@ -53,28 +78,22 @@ function ls(y::Array{Float64,2},X::Array{Float64,2},
     # number of covariates
     p = size(X,2)
 
-    # least squares solution
-    fct = qr(X)
-    b = fct\y
-
-    # estimate yy and calculate rss
+    b = X\y # uses QR decomposition
     yhat = X*b
-    # yhat = q*At_mul_B(q,yy)
-    rss = norm((y-yhat))^2
-
+    rss0 = sum((y-yhat).^2)
+    
     if( reml )
-        sigma2 = rss/(n-p)
+        sigma2 = rss0/(n-p)
     else
-        sigma2 = rss/n
+        sigma2 = rss0/n
     end
 
-    # return coefficient and variance estimate
-    # logdetSigma = n*log(sigma2) - sum(log.(w))
-    logdetSigma = n*log(sigma2)
-    ell = -0.5 * ( logdetSigma + rss/sigma2 )
     if ( reml )
-        ell -=  log(abs(det(fct.R))) - (p/2)*(log(sigma2))
+        logdetSigma = (n-p)*log(sigma2)
+    else
+        logdetSigma = n*log(sigma2)
     end
+        ell = -0.5 * ( logdetSigma + rss0/sigma2 )
 
     return Wls(b,sigma2,ell)
 
@@ -87,34 +106,17 @@ rss: residual sum of squares
 y = outcome, matrix
 X = predictors, matrix
 
-Calculates the residual sum of squares using a QR decomposition.  The
-outcome matrix can be multivariate in which case the function returns
-the residual sum of squares of each column. The return values is a
-vector of length equal to the number of columns of y.
+Calculates the residual sum of squares using a Cholesky or
+QRdecomposition.  The outcome matrix can be multivariate in which case
+the function returns the residual sum of squares of each column. The
+return values is a vector of length equal to the number of columns of
+y.
 
 """
 function rss(y::Array{Float64,2},X::Array{Float64,2},method="cholesky")
 
-    # number of individuals
-    n = size(y,1)
-    # number of covariates
-    p = size(X,2)
-
-    # least squares solution
-    # faster but numerically less stable
-    if(method=="cholesky")
-        b = (X'X)\(X'y)
-    end
-
-    # slower but numerically more stable
-    if(method=="qr")
-    fct = qr(X)
-    b = fct\y
-    end
-
-    # estimate yy and calculate rss
-    yhat = X*b
-    rss = reduce(+,(y-yhat).^2,dims=1)
+    r = resid(y,X,method)
+    rss = reduce(+,r.^2,dims=1)
 
     return rss
 
@@ -128,8 +130,7 @@ X = predictors, matrix
 
 Calculates the residual sum of squares using a QR decomposition.  The
 outcome matrix can be multivariate in which case the function returns
-the residual sum of squares of each column. The return value is a matrix
-with the same size as the outcome matrix.
+the residual matrix of the same size as the outcome matrix.
 
 """
 function resid(y::Array{Float64,2},X::Array{Float64,2},method="cholesky")
