@@ -1,0 +1,228 @@
+---
+title: "run-lmmlite"
+author: "Fred Yu"
+date: "2022-07-18"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+rm(list = ls())
+setwd("/Users/zifanyu/Documents/GitHub/BulkLMM_test/test")
+```
+
+
+## Load libraries:
+
+```{r libraries, echo = T}
+# install.packages("devtools")
+library(devtools)
+
+# install.packages("remotes")
+# library(remotes)
+# install_github("kbroman/lmmlite")
+
+library(lmmlite)
+
+library(knitr)
+
+```
+
+```{r checking-cwd, echo = F, include = F}
+## Check working directory
+getwd()
+
+```
+
+## Read in the data:
+
+```{r read-in-data, echo = T}
+
+pheno = read.csv("../../data/BXDpheno.csv")
+geno = read.csv("../../data/BXDgeno.csv")
+K = read.csv("../../data/BXDkinship.csv")
+
+```
+
+```{r type-conversion, echo = T}
+
+pheno_1 = pheno[, 1]
+pheno_2 = pheno[, 2]
+K_mat = data.matrix(K)
+geno_mat = data.matrix(geno)
+
+```
+
+## Run lmmlite:
+
+Here we will only consider scanning the second quantitative trait for comparing results:
+
+```{r run-model-rotate-null, echo = T}
+
+# e_null = eigen_rotation(K_mat, pheno_1, NULL)
+e_null = eigen_rotation(K_mat, pheno_2, NULL)
+
+```
+
+
+By default, lmmlite will estimate the variance components parameters using restricted maximum likelihood estimators (REML).
+
+In this notebook, we can run the following code twice - for the first time use line 77 and comment out line 78, save output as a CSV file to get REML result, and for the second time we do the other way around to get ML result and save it.
+
+```{r run-model-getVCEsts, echo = T}
+
+n = nrow(geno_mat)
+p = ncol(geno_mat)
+
+
+params_null = fitLMM(e_null$Kva, e_null$y, e_null$X, reml = T)
+## params_null = fitLMM(e_null$Kva, e_null$y, e_null$X, reml = F)
+est_hsq = params_null$hsq
+est_sigmasq = params_null$sigmasq
+
+```
+
+```{r run-model-helpers, echo = T}
+
+## Helper functions:
+
+
+## Function to construct the design matrix for each marker G_j, j = 1,..., p.
+construct_Gj = function(geno, intercept = TRUE){
+  
+  list_G = list()
+  n = nrow(geno) ## number of individuals
+  p = ncol(geno) ## number of markers
+  
+  intercept = rep(1, n)
+  
+  for(j in 1:p){
+    Gj = cbind(intercept, geno[, j])
+    list_G[[j]] = Gj
+  }
+  
+  return(list_G)
+  
+}
+
+K_eVects = e_null$Kve_t # left eigen-vectors of kinship matrix
+K_eVals = e_null$Kva # eigen-values of kinship matrix 
+
+run_model = function(K_eVals, K_eVects, Gj, y, hsq){
+  
+  # Rotate data:
+  y_star1 = K_eVects %*% y # may not need to do everytime; needs refinement
+  Gj_star1 = K_eVects %*% Gj
+  
+  # Get RSS:
+  ml_soln = getMLsoln(hsq, K_eVals, y_star1, Gj_star1, reml = T)
+  # ml_soln = getMLsoln(hsq, K_eVals, y_star1, Gj_star1, reml = F)
+  
+  
+  
+  return(ml_soln)
+  
+}
+
+rss2Lod = function(rss_null, rss_mod, n){
+  
+  lod = (n/2)*(log10(rss_null) - log10(rss_mod))
+  
+  return(lod)
+}
+
+```
+
+
+Essentially, what the lmmlite program does is for a given $h^2$, it estimates the $\sigma_e^2$ and the fixed effects of based on optimizing the likelihood function given $y$ and each marker $G_j$, $j = 1,..., p$. So, one of the variance component $\sigma_e^2$ will be re-estimated for every marker.
+
+We use lmmlite by first estimate the heritability $\hat h^2_0$ for the null model that includes only the intercept, and use it for the estimations of other parameters (fixed effects, variance due to noises) for every marker:
+
+```{r run-model-formal-run, echo = T}
+# Run model for each marker:
+
+list_Gj = construct_Gj(geno)
+
+
+### Manually give the hsq estimated from BulkLMM flmm to getMLsoln
+## est_hsq = 
+###
+
+results_null = getMLsoln(est_hsq, e_null$Kva, e_null$y, e_null$X, reml = T)
+# results_null = getMLsoln(est_hsq, e_null$Kva, e_null$y, e_null$X, reml = F)
+
+
+list_RSS = rep(NA, p+1)
+rss_null = attributes(results_null)$rss
+list_RSS[1] = rss_null
+
+list_ml_solns = list(results_null)
+
+for(j in 1:p){
+  
+# ml_soln = run_model(K_eVals, K_eVects, list_Gj[[j]], pheno_1, est_hsq)
+  ml_soln = run_model(K_eVals, K_eVects, list_Gj[[j]], pheno_2, est_hsq)
+  rss = attributes(ml_soln)$rss
+  
+  list_ml_solns[[j+1]] = ml_soln
+  list_RSS[j+1] = rss
+
+}
+
+```
+
+After we got the estimated fixed effects for each marker, we can then compute the RSSs and finally compute the LOD scores:
+
+```{r view_results, echo = T}
+
+list_LOD = sapply(list_RSS[2:length(list_RSS)], 
+       function(x) rss2Lod(list_RSS[1], x, n))
+list_LOD = c(NA, list_LOD)
+
+list_Sigma_e = rep(NA, length(list_ml_solns))
+list_Beta_0 = rep(NA, length(list_ml_solns))
+list_Beta_1 = rep(NA, length(list_ml_solns))
+
+for(j in 1:length(list_ml_solns)){
+  
+  list_Beta_0[j] = list_ml_solns[[j]][[1]][1]
+  list_Beta_1[j] = list_ml_solns[[j]][[1]][2] 
+  list_Sigma_e[j] = list_ml_solns[[j]][2]
+  
+}
+
+list_Beta_0 = unlist(list_Beta_0)
+list_Beta_1 = unlist(list_Beta_1)
+list_Sigma_e = unlist(list_Sigma_e)
+
+head(list_LOD)
+tail(list_LOD)
+
+head(list_Sigma_e)
+tail(list_Sigma_e)
+
+
+```
+
+Saved results is a CSV table that has fields of the estimated fixed effects (intercept + marker effect), estimated $\sigma^2_e$ and the LOD score for each marker.
+
+```{r save-results, echo = T}
+
+results_lmmlite = data.frame(cbind(list_Beta_0, list_Beta_1, 
+                                   list_Sigma_e, list_LOD))
+colnames(results_lmmlite) = c("Est_Beta_0", "Est_Beta_1", 
+                              "Est_Sigma_e", "LOD")
+rownames = c("Null")
+
+for(j in 1:p){
+  rownames = c(rownames, paste("G_", j))
+}
+
+rownames(results_lmmlite) = rownames
+kable(head(results_lmmlite))
+
+# write.csv(results_lmmlite, "../output/result.lmmlite_REML.csv")
+# write.csv(results_lmmlite, "../output/result.lmmlite_ML.csv")
+
+```
+
