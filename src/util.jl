@@ -35,12 +35,34 @@ function rowCenter!(A::Matrix{Float64})
     end
 end
 
+# a helper function that checks if any element in an 1-dimensional array is 0 (for use in colDivide! and rowDivide!)
+function checkZeros(x::Vector{Float64})
+
+    for i in 1:length(x)
+        if x[i] == 0.0
+            return true
+        end
+    end
+
+    return false
+end
+
 function colDivide!(A::Matrix{Float64},x::Vector{Float64})
 
     (n,m) = size(A)
+
+    # Checking validity of inputs:
+    ## Checking dimensions of inputs
     if(length(x)!=m)
-        error("Matrix and vector size do not match.")
+        throw(error("Matrix and vector size do not match."))
     end
+
+    # Checking if dividing by zeros
+    if(checkZeros(x))
+        throw(error("Dividing by zeros: the input vector can not contain any zeros!"))
+    end
+
+
 
     for i=1:n
         for j=1:m
@@ -60,8 +82,16 @@ end
 function rowDivide!(A::Matrix{Float64},x::Vector{Float64})
 
     (n,m) = size(A)
+
+    # Checking validity of inputs:
+    ## Checking dimensions of inputs
     if(length(x)!=n)
-        error("Matrix and vector size do not match.")
+        throw(error("Matrix and vector size do not match."))
+    end
+
+    # Checking if dividing by zeros
+    if(checkZeros(x))
+        throw(error("Dividing by zeros: the input vector can not contain any zeros!"))
     end
 
     for i=1:m
