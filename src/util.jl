@@ -10,6 +10,10 @@ function colCenter!(A::Matrix{Float64})
 
     (n,m) = size(A)
 
+    if(n == 1)
+        throw(error("Each row should contain at least two elements to average from!"))
+    end
+
     # get mean of each column; convert to vector
     colMeans = mean(A,dims=1) |> vec
 
@@ -24,6 +28,10 @@ end
 function rowCenter!(A::Matrix{Float64})
 
     (n,m) = size(A)
+
+    if(m == 1)
+        throw(error("Each row should contain at least two elements to average from!"))
+    end
 
     # get mean of each column; convert to vector
     rowMeans = mean(A,dims=2) |> vec
