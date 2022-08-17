@@ -96,7 +96,7 @@ function rowDivide!(A::Matrix{Float64},x::Vector{Float64})
 
     for i=1:m
         for j=1:n
-            A[j,i] = A[j,i]/x[j]
+            @inbounds A[j,i] = A[j,i]/x[j]
         end
     end
 end
@@ -112,7 +112,7 @@ function rowMultiply(A::Matrix{Float64},x::Vector{Float64})
     
     for i=1:m
         for j=1:n
-            B[j,i] = A[j,i] * x[j]
+            @inbounds B[j,i] = A[j,i] * x[j]
         end
     end
 
