@@ -131,7 +131,7 @@ function shuffleVector(rng::AbstractRNG,x::Vector{Float64},
         xx[:,1] = x
         istart = 1
     else
-        xx = zeros(length(x),nshuffle+1)
+        xx = zeros(length(x),nshuffle)
         istart = 0
     end
 
