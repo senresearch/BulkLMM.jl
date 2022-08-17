@@ -142,9 +142,10 @@ function shuffleVector(rng::AbstractRNG,x::Vector{Float64},
     return xx
 end
 
+## Compare two arrays and return the number of elements with the same indices of each array and are match
 function compareValues(x_true::Array{Float64,1}, x::Array{Float64,1}, tolerance::Float64, threshold::Float64)
     if size(x_true) != size(x)
-        error("Dimention Mismatch! Must compare two arrays of same length!")
+        throw(error("Dimention Mismatch! Must compare two arrays of same length!"))
     end
 
     passes = falses(size(x_true))
