@@ -120,8 +120,7 @@ X = predictors, matrix
 Calculates the residual sum of squares using a Cholesky or
 QRdecomposition.  The outcome matrix can be multivariate in which case
 the function returns the residual sum of squares of each column. The
-return values is a vector of length equal to the number of columns of
-y.
+return values is a (row) vector of length equal to the number of columns of y.
 
 """
 function rss(y::Array{Float64,2},X::Array{Float64,2},method="cholesky")
