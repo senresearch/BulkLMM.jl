@@ -11,7 +11,7 @@ function colCenter!(A::Matrix{Float64})
     (n,m) = size(A)
 
     if(n == 1)
-        throw(error("Each row should contain at least two elements to average from!"))
+        throw(error("Each column should contain at least two elements to average from!"))
     end
 
     # get mean of each column; convert to vector
