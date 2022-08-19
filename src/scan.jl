@@ -193,7 +193,7 @@ function scan(y::Array{Float64,2},g::Array{Float64,3},
     # rotate data
     (y0,X0,lambda0) = rotateData(y,[intcpt flatg],K)
     # fit null lmm
-    vc = flmm(y0,reshape(X0[:,1], :, 1),lambda0,reml)
+    vc = flmm(y0,reshape(X0[:,1], :, 1),lambda0, reml)
     # weights proportional to the variances
     wts = makeweights( vc.h2,lambda0 )
     # rescale by weights; now these have same mean/variance and are independent
@@ -205,9 +205,9 @@ function scan(y::Array{Float64,2},g::Array{Float64,3},
     y0perm = shuffleVector(rng,y0[:,1],nperm,original=true)
 
     ## null rss vector
-    rss00 = rss(y0perm,reshape(X0[:,1],n,1))
+    rss0 = rss(y0perm,reshape(X0[:,1],n,1))
     rss1 = similar(out0)
-    ## make array to hold LOD scores
+    ## make array to hold LOD scoresu 
     lod = zeros(nperm+1,m)
     ## initialize covariate matrix
     X = zeros(n,p)

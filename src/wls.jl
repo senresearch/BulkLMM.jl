@@ -21,6 +21,8 @@ w = weights (positive, inversely proportional to variance), one-dim vector
 function wls(y::Array{Float64,2},X::Array{Float64,2},w::Array{Float64,1},
              reml::Bool=false,loglik::Bool=false,method="cholesky")
 
+    n = size(y, 1); # get number of observations       
+
     # check if weights are positive
     if(any(w.<=.0))
         error("Some weights are not positive.")
@@ -61,9 +63,13 @@ function wls(y::Array{Float64,2},X::Array{Float64,2},w::Array{Float64,1},
     # see formulas (2) and (3) of Kang (2008)
     if(loglik)
         ell = -0.5 * ( n*log(sigma2) + sum(log.(w)) + rss0/sigma2 )
+
         if(reml)
             ell = ell + 0.5 * ( p*log(sigma2) - logdetXXtXX ) 
         end
+        
+    else
+        ell = missing;
     end
 
     return Wls(b,sigma2,ell)
@@ -88,12 +94,17 @@ function ls(y::Array{Float64,2},X::Array{Float64,2},
         sigma2 = rss0/n
     end
 
-    if ( reml )
-        logdetSigma = (n-p)*log(sigma2)
-    else
-        logdetSigma = n*log(sigma2)
-    end
+    if(loglik) 
+        if ( reml )
+            logdetSigma = (n-p)*log(sigma2)
+        else
+            logdetSigma = n*log(sigma2)
+        end
+        
         ell = -0.5 * ( logdetSigma + rss0/sigma2 )
+    else
+        ell = missing
+    end
 
     return Wls(b,sigma2,ell)
 
@@ -109,8 +120,7 @@ X = predictors, matrix
 Calculates the residual sum of squares using a Cholesky or
 QRdecomposition.  The outcome matrix can be multivariate in which case
 the function returns the residual sum of squares of each column. The
-return values is a vector of length equal to the number of columns of
-y.
+return values is a (row) vector of length equal to the number of columns of y.
 
 """
 function rss(y::Array{Float64,2},X::Array{Float64,2},method="cholesky")
