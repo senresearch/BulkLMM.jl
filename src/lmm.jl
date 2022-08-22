@@ -54,12 +54,12 @@ rotateData: Rotates data with respect to the kinship matrix
 y = phenotype matrix
 X = predictor matrix
 K = kinship matrix, expected to be symmetric and positive definite
-n = vector of sample sizes (or weights inversely proportional to
+weights = vector of sample sizes (or weights inversely proportional to
     error variance)
 """
 
 function rotateData(y::AbstractArray{Float64,2},X::AbstractArray{Float64,2},
-                    K::Array{Float64,2},n::Array{Float64,1})
+                    K::Array{Float64,2}, weights::Array{Float64,1})
 
     # check dimensions
     n = size(y,1)
@@ -70,12 +70,12 @@ function rotateData(y::AbstractArray{Float64,2},X::AbstractArray{Float64,2},
     # make vector of square root of the sample sizes
     w = sqrt.(n)
     # transform kinship
-    scale!(K,w)
-    scale!(w,K)
+    scale!(K, w)
+    scale!(w, K)
     # transform phenotype
-    scale!(w,y)
+    scale!(w, y)
     # transform predictor
-    scale!(w,X)
+    scale!(w, X)
 
     # pass to old function
     return rotateData(y,X,K)
