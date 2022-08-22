@@ -94,12 +94,16 @@ function scan(y::Array{Float64,2},g::Array{Float64,2},
         error("Can only handle one trait.")
     end
 
-    # number of markers
-    (n,m) = size(g)
+    # n - the sample size
+    # m - the number of markers
+    (n, m) = size(g)
+
     # make intercept
-    intcpt = ones(n,1)
+    intcpt = ones(n, 1)
+
     # rotate data
-    (y0,X0,lambda0) = rotateData(y,[intcpt g],K)
+    (y0, X0, lambda0) = rotateData(y, [intcpt g], K)
+     
     # fit null lmm
     vc = flmm(y0,reshape(X0[:,1], :, 1),lambda0,reml)
     r0 = y0 - X0[:,1]*vc.b
