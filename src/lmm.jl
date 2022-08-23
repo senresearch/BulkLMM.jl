@@ -99,14 +99,14 @@ end
 
 
 """
-flmm: fit linear mixed model using grid of values
+fitlmm: fit linear mixed model using grid of values
 
 y: 2-d array of (rotated) phenotypes
 X: 2-d array of (rotated) covariates
 lambda: 1-d array of eigenvalues
 ngrid: number of grid values to consider
 """
-function flmm(y::Array{Float64,2}, X::Array{Float64,2}, lambda::Array{Float64,1}, ngrid::Int64)
+function fitlmm(y::Array{Float64,2}, X::Array{Float64,2}, lambda::Array{Float64,1}, ngrid::Int64)
     h2vec = convert(Vector,(0:ngrid)/ngrid)
 
     function logLik0(h2::Float64)
@@ -118,13 +118,13 @@ function flmm(y::Array{Float64,2}, X::Array{Float64,2}, lambda::Array{Float64,1}
     h2 = h2vec[argmin(ell)]
     est = wls(y,X,1.0./(h2*lambda.+(1.0-h2)),false,true)
 
-    return Flmm(est.b,est.sigma2,h2,est.ell)
+    return lmm_estimates(est.b,est.sigma2,h2,est.ell)
 end
 
 
 
 """
-flmm: fit linear mixed model
+fitlmm: fit linear mixed model
 
 y: 2-d array of (rotated) phenotypes
 X: 2-d array of (rotated) covariates
@@ -132,7 +132,7 @@ lambda: 1-d array of eigenvalues
 reml: boolean indicating ML or REML estimation
 
 """
-function flmm(y::Array{Float64,2},X::Array{Float64,2},lambda::Array{Float64,1},reml::Bool=false; h20::Float64=0.5,d::Float64=1.0)
+function fitlmm(y::Array{Float64,2},X::Array{Float64,2},lambda::Array{Float64,1},reml::Bool=false; h20::Float64=0.5,d::Float64=1.0)
     function logLik0(h2::Float64)
         out = wls(y,X,1.0./(h2*lambda.+(1.0-h2)),reml,true)
         return -out.ell
@@ -141,5 +141,5 @@ function flmm(y::Array{Float64,2},X::Array{Float64,2},lambda::Array{Float64,1},r
     opt = optimize(logLik0,max(h20-d,0.0),min(h20+d,1.0))
     h2 = opt.minimizer
     est = wls(y,X,1.0./(h2*lambda.+(1.0-h2)),reml,true)
-    return Flmm(est.b,est.sigma2,h2,est.ell)
+    return lmm_estimates(est.b,est.sigma2,h2,est.ell)
 end
