@@ -90,7 +90,7 @@ end
 ##################################################################
 # function to fit linear mixed model by optimizing heritability
 ##################################################################
-mutable struct Flmm
+mutable struct lmm_estimates
     b::Array{Float64,2}
     sigma2::Float64
     h2::Float64
