@@ -84,10 +84,13 @@ end
 ## no covariates
 ## one-df tests
 ## with parallelization
+
+
+
 function scan(y::Array{Float64,2},g::Array{Float64,2},
               K::Array{Float64,2},nperm::Int64=1024,
               nprocs::Int64=1,
-              rndseed::Int64=0,reml::Bool=true)
+              rndseed::Int64=0,reml::Bool=true, original::Bool = true)
 
     # check number of traits
     if(size(y,2)!=1)
@@ -103,8 +106,8 @@ function scan(y::Array{Float64,2},g::Array{Float64,2},
 
     # rotate data
     (y0, X0, lambda0) = rotateData(y, [intcpt g], K)
-     
-    # fit null lmm
+
+    # fit null lmm to get variance co
     vc = flmm(y0,reshape(X0[:,1], :, 1),lambda0,reml)
     r0 = y0 - X0[:,1]*vc.b
     # weights proportional to the variances
