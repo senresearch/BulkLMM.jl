@@ -19,7 +19,7 @@ w = weights (positive, inversely proportional to variance), one-dim vector
 
 """
 function wls(y::Array{Float64,2},X::Array{Float64,2},w::Array{Float64,1};
-             reml::Bool=false,loglik::Bool=false,method="cholesky")
+             reml::Bool=false, loglik::Bool = true, method="cholesky")
 
     n = size(y, 1); # get number of observations       
 
@@ -77,7 +77,7 @@ function wls(y::Array{Float64,2},X::Array{Float64,2},w::Array{Float64,1};
 end
 
 function ls(y::Array{Float64,2}, X::Array{Float64,2};
-             reml::Bool=false, loglik=false)
+             reml::Bool = false, loglik = true)
 
     # number of individuals
     n = size(y,1)
