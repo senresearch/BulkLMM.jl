@@ -18,7 +18,7 @@ X = predictors, matrix
 w = weights (positive, inversely proportional to variance), one-dim vector
 
 """
-function wls(y::Array{Float64,2},X::Array{Float64,2},w::Array{Float64,1},
+function wls(y::Array{Float64,2},X::Array{Float64,2},w::Array{Float64,1};
              reml::Bool=false,loglik::Bool=false,method="cholesky")
 
     n = size(y, 1); # get number of observations       
@@ -76,8 +76,8 @@ function wls(y::Array{Float64,2},X::Array{Float64,2},w::Array{Float64,1},
 
 end
 
-function ls(y::Array{Float64,2},X::Array{Float64,2},
-             reml::Bool=false,loglik=false)
+function ls(y::Array{Float64,2}, X::Array{Float64,2};
+             reml::Bool=false, loglik=false)
 
     # number of individuals
     n = size(y,1)
@@ -123,9 +123,9 @@ the function returns the residual sum of squares of each column. The
 return values is a (row) vector of length equal to the number of columns of y.
 
 """
-function rss(y::Array{Float64,2},X::Array{Float64,2},method="cholesky")
+function rss(y::Array{Float64,2}, X::Array{Float64,2}; method="cholesky")
 
-    r = resid(y,X,method)
+    r = resid(y, X; method)
     rss = reduce(+,r.^2,dims=1)
 
     return rss
@@ -143,7 +143,7 @@ outcome matrix can be multivariate in which case the function returns
 the residual matrix of the same size as the outcome matrix.
 
 """
-function resid(y::Array{Float64,2},X::Array{Float64,2},method="cholesky")
+function resid(y::Array{Float64,2}, X::Array{Float64,2}; method="cholesky")
 
     # number of individuals
     n = size(y,1)
