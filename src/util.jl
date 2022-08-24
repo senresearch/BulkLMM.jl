@@ -55,7 +55,7 @@ function checkZeros(x::Vector{Float64})
     return false
 end
 
-function colDivide!(A::Matrix{Float64},x::Vector{Float64})
+function colDivide!(A::Matrix{Float64}, x::Vector{Float64})
 
     (n,m) = size(A)
 
@@ -87,7 +87,7 @@ function colStandardize!(A::Matrix{Float64})
 
 end
 
-function rowDivide!(A::Matrix{Float64},x::Vector{Float64})
+function rowDivide!(A::Matrix{Float64}, x::Vector{Float64})
 
     (n,m) = size(A)
 
@@ -109,7 +109,7 @@ function rowDivide!(A::Matrix{Float64},x::Vector{Float64})
     end
 end
 
-function rowMultiply(A::Matrix{Float64},x::Vector{Float64})
+function rowMultiply(A::Matrix{Float64}, x::Vector{Float64})
 
     (n,m) = size(A)
     if(length(x)!=n)
@@ -132,19 +132,19 @@ end
 perform random shuffles of vector
 the first column is the original vector if original=true
 """
-function shuffleVector(rng::AbstractRNG,x::Vector{Float64},
-                 nshuffle::Int64,original::Bool=true)
+function shuffleVector(rng::AbstractRNG, x::Vector{Float64};
+                       nshuffle::Int64, original::Bool = true)
     if(original)
-        xx = zeros(length(x),nshuffle+1)
+        xx = zeros(length(x), nshuffle+1)
         xx[:,1] = x
         istart = 1
     else
-        xx = zeros(length(x),nshuffle)
+        xx = zeros(length(x), nshuffle)
         istart = 0
     end
 
-    for i=1:nshuffle
-        xx[:,i+istart] = shuffle(rng,x)
+    for i = 1:nshuffle
+        xx[:, i+istart] = shuffle(rng,x)
     end
 
     return xx
