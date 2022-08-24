@@ -2,6 +2,35 @@
 # genome scan function; no covariates, two genotype groups
 ###########################################################
 
+"""
+    scan(y, g, K, reml, method)
+
+Performs genome scan for univariate trait and each of the gene markers, one marker at a time (one-df test) 
+
+# Arguments
+
+- y = 1d array of floats consisting of the N observations for a certain quantitative trait (dimension: N*1)
+- g = 2d array of floats consisting of all p gene markers (dimension: N*p)
+- K = 2d array of floats consisting of the genetic relatedness of the N observations (dimension:N*N)
+
+# Keyword arguments
+
+- reml = Boolean flag indicating how variance component parameters are to be estimated
+- method = String indicating whether the variance component parameters are the same across all markers (null) or not (alt); Default is `null`.
+
+# Value
+
+A list of output values are returned:
+- out00.sigma2 = Float; estimated marginal variance due to random errors (by null lmm)
+- out00.h2 = Float; estimated heritability (by null lmm)
+- lod = 1d array of floats consisting of the lod scores of this trait and all markers (dimension: p*1)
+
+# Some notes
+
+    This function calls either `scan_null` or `scan_alt` depending on the input passed as `method`.
+    Output data structure might need some revisions.
+
+"""
 
 function scan(y::Array{Float64,2},g::Array{Float64,2},
                    K::Array{Float64,2},reml::Bool,method::String="null")
@@ -15,6 +44,39 @@ end
 ###
 # scan markers under the null
 ###
+
+
+"""
+    scan_null(y, g, K, reml, method)
+
+Performs genome scan for univariate trait and each of the gene markers, one marker at a time, 
+assuming the variance components are the same for all markers.
+
+# Arguments
+
+- y = 1d array of floats consisting of the N observations for a certain quantitative trait (dimension: N*1)
+- g = 2d array of floats consisting of all p gene markers (dimension: N*p)
+- K = 2d array of floats consisting of the genetic relatedness of the N observations (dimension:N*N)
+
+# Keyword arguments
+
+- reml = Boolean flag indicating how variance component parameters are to be estimated
+
+# Value
+
+A list of output values are returned:
+- out00.sigma2 = Float; estimated marginal variance due to random errors (by null lmm)
+- out00.h2 = Float; estimated heritability (by null lmm)
+- lod = 1d array of floats consisting of the lod scores of this trait and all markers (dimension: p*1)
+
+# Some notes
+
+    This is a subsequent function that does univariate scan. The variance components are estimated once 
+    and used for all markers. To be called by the `scan` function when the `method = ` field is passed 
+    as `null` (default).
+
+"""
+
 
 function scan_null(y::Array{Float64,2},g::Array{Float64,2},
                    K::Array{Float64,2},reml::Bool)
@@ -49,6 +111,38 @@ function scan_null(y::Array{Float64,2},g::Array{Float64,2},
 end
 
 ## re-estimate variance components under alternative
+
+
+"""
+    scan_alt(y, g, K, reml)
+
+Performs genome scan for univariate trait and each of the gene markers, one marker at a time (one-df test),
+assuming the variance components may not be the same for all markers. 
+
+# Arguments
+
+- y = 1d array of floats consisting of the N observations for a certain quantitative trait (dimension: N*1)
+- g = 2d array of floats consisting of all p gene markers (dimension: N*p)
+- K = 2d array of floats consisting of the genetic relatedness of the N observations (dimension:N*N)
+
+# Keyword arguments
+
+- reml = Boolean flag indicating how variance component parameters are to be estimated
+
+# Value
+
+A list of output values are returned:
+- out00.sigma2 = Float; estimated marginal variance due to random errors (by null lmm)
+- out00.h2 = Float; estimated heritability (by null lmm)
+- lod = 1d array of floats consisting of the lod scores of this trait and all markers (dimension: p*1)
+
+# Some notes
+
+    This is a subsequent function that does univariate scan. For every scan for each genetic marker, the 
+    variance components will need to be re-estimated. To be called by the `scan` function when the `method = ` 
+    field is passed as `alt`.
+
+"""
 
 function scan_alt(y::Array{Float64,2},g::Array{Float64,2},
                    K::Array{Float64,2},reml::Bool)
@@ -85,14 +179,39 @@ end
 ## one-df tests
 ## with parallelization
 
+"""
+    scan(y, g, K, nperm, nprocs, rndseed, reml)
 
+Performs genome scan on a number of resamples from permuting an univariate trait with each genome marker (one-df test). Variance components 
+are estimated from the null model and assumed to be the same across markers.
 
-function scan(y::Array{Float64,2},g::Array{Float64,2},
-              K::Array{Float64,2},nperm::Int64=1024,
-              nprocs::Int64=1,
-              rndseed::Int64=0,reml::Bool=true, original::Bool = true)
+# Arguments
 
-    # check number of traits
+- y = 1d array of floats consisting of the N observations for a certain quantitative trait (dimension: N*1)
+- g = 2d array of floats consisting of all p gene markers (dimension: N*p)
+- K = 2d array of floats consisting of the genetic relatedness of the N observations (dimension:N*N)
+
+# Keyword arguments
+
+- nperms = Number of permutations requested
+- nprocs = Number of concurrent processes
+- rndseed = Random seed for perform permutations
+- reml = Boolean flag indicating if variance components will be estimated by REML (true) or ML (false)
+
+# Value
+
+- lod = 2d array of floats consisting of the LOD scores for each permuted trait (row) and the markers (columns).
+
+# Some notes
+
+"""
+
+function scan(y::Array{Float64,2}, g::Array{Float64,2},
+              K::Array{Float64,2}, nperm::Int64=1024;
+              nprocs::Int64 = 1,
+              rndseed::Int64 = 0,reml::Bool = true, original::Bool = true)
+
+    # check the number of traits as this function only works for permutation testing of univariate trait
     if(size(y,2)!=1)
         error("Can only handle one trait.")
     end
@@ -102,10 +221,11 @@ function scan(y::Array{Float64,2},g::Array{Float64,2},
     (n, m) = size(g)
 
     # make intercept
-    intcpt = ones(n, 1)
+    intercept = ones(n,1)
+    
+    # rotate data so errors are uncorrelated
+    (y0, X0, lambda0) = rotateData(y, [intercept g], K)
 
-    # rotate data
-    (y0, X0, lambda0) = rotateData(y, [intcpt g], K)
 
     # fit null lmm to get variance co
     vc = flmm(y0,reshape(X0[:,1], :, 1),lambda0,reml)
@@ -119,7 +239,7 @@ function scan(y::Array{Float64,2},g::Array{Float64,2},
 
     ## random permutations; the first column is the original data
     rng = MersenneTwister(rndseed);
-    r0perm = shuffleVector(rng,r0[:,1],nperm,true)
+    r0perm = shuffleVector(rng, r0[:, 1], nperm, true)
 
     ## if the number of processes is negative or 0, set to 1
     if(nprocs<=1)

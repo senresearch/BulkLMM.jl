@@ -110,7 +110,7 @@ function fitlmm(y::Array{Float64,2}, X::Array{Float64,2}, lambda::Array{Float64,
     h2vec = convert(Vector,(0:ngrid)/ngrid)
 
     function logLik0(h2::Float64)
-        out = wls(y,X,1.0./makeweights(h2,lambda),false,true)
+        out = wls(y, X, 1.0./makeweights(h2, lambda), false, true)
         return -out.ell
     end
 
@@ -132,9 +132,10 @@ lambda: 1-d array of eigenvalues
 reml: boolean indicating ML or REML estimation
 
 """
-function fitlmm(y::Array{Float64,2},X::Array{Float64,2},lambda::Array{Float64,1},reml::Bool=false; h20::Float64=0.5,d::Float64=1.0)
+function fitlmm(y::Array{Float64, 2}, X::Array{Float64, 2}, lambda::Array{Float64, 1};
+                reml::Bool = false, h20::Float64 = 0.5, d::Float64 = 1.0)
     function logLik0(h2::Float64)
-        out = wls(y,X,1.0./(h2*lambda.+(1.0-h2)),reml,true)
+        out = wls(y, X, 1.0./(h2*lambda.+(1.0-h2));reml = reml, loglike = true)
         return -out.ell
     end
 
