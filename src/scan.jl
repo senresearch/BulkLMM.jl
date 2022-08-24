@@ -35,9 +35,9 @@ A list of output values are returned:
 function scan(y::Array{Float64,2},g::Array{Float64,2}, K::Array{Float64,2};
               reml::Bool = false, method::String = "null")
     if(method == "null")
-        return scan_null(y,g,K,reml)
+        return scan_null(y, g, K; reml = reml)
     elseif(method == "alt")
-        return scan_alt(y,g,K,reml)
+        return scan_alt(y, g, K; reml = reml)
     end
 end
 
@@ -144,7 +144,8 @@ A list of output values are returned:
 
 """
 
-function scan_alt(y::Array{Float64,2},g::Array{Float64,2}, K::Array{Float64,2})
+function scan_alt(y::Array{Float64,2},g::Array{Float64,2}, K::Array{Float64,2}; 
+                  reml::Bool = false)
 
     # number of markers
     (n, m) = size(g)
@@ -155,7 +156,7 @@ function scan_alt(y::Array{Float64,2},g::Array{Float64,2}, K::Array{Float64,2})
 
     X00 = reshape(X0[:, 1], :, 1)
     # fit null lmm
-    out00 = fitlmm(y0, X00, lambda0, 10)
+    out00 = fitlmm(y0, X00, lambda0; reml = reml);
 
 
     lod = zeros(m)
@@ -163,7 +164,7 @@ function scan_alt(y::Array{Float64,2},g::Array{Float64,2}, K::Array{Float64,2})
     X[:,1] = X0[:, 1]
     for i = 1:m
         X[:, 2] = X0[:, i+1]
-        out11 = fitlmm(y0, X, lambda0, 10)
+        out11 = fitlmm(y0, X, lambda0; reml = reml)
         lod[i] = (out11.ell - out00.ell)/log(10)
     end
 
@@ -268,41 +269,41 @@ function scan(y::Array{Float64,2},g::Array{Float64,3},
     # number of markers
     (n,m,p) = size(g)
     # flatted genotypes
-    g = permutedims(g,(1,3,2))
-    flatg = reshape(g,(n,p*m))
+    g = permutedims(g, (1, 3, 2))
+    flatg = reshape(g, (n, p*m))
     # make intercept
     intcpt = ones(n,1)
     # rotate data
-    (y0,X0,lambda0) = rotateData(y,[intcpt flatg],K)
+    (y0, X0, lambda0) = rotateData(y,[intercept flatg],K)
     # fit null lmm
-    vc = flmm(y0,reshape(X0[:,1], :, 1),lambda0, reml)
+    vc = fitlmm(y0,reshape(X0[:,1], :, 1), lambda0; reml = reml)
     # weights proportional to the variances
-    wts = makeweights( vc.h2,lambda0 )
+    wts = makeweights(vc.h2, lambda0)
     # rescale by weights; now these have same mean/variance and are independent
-    rowDivide!(y0,sqrt.(wts))
-    rowDivide!(X0,sqrt.(wts))
+    rowDivide!(y0, sqrt.(wts))
+    rowDivide!(X0, sqrt.(wts))
 
     ## random permutations; the first column is the original data
     rng = MersenneTwister(rndseed);
-    y0perm = shuffleVector(rng,y0[:,1],nperm,original=true)
+    y0perm = shuffleVector(rng, y0[:,1], nperm; original=true)
 
     ## null rss vector
-    rss0 = rss(y0perm,reshape(X0[:,1],n,1))
+    rss0 = rss(y0perm,reshape(X0[:,1], n, 1))
     rss1 = similar(out0)
     ## make array to hold LOD scoresu 
-    lod = zeros(nperm+1,m)
+    lod = zeros(nperm+1, m)
     ## initialize covariate matrix
-    X = zeros(n,p)
-    X[:,1] = X0[:,1]
+    X = zeros(n, p)
+    X[:, 1] = X0[:, 1]
     ## loop over markers
     for i = 1:m
         ## change the rest of the elements of covariate matrix X
         idx = 1+((i-1)*p):(i*p-1)
-        X[:,2:(p-1)] = X0[:,idx]
+        X[:,2:(p-1)] = X0[:, idx]
         ## alternative rss
-        rss1[:] = rss(y0perm,X)
+        rss1[:] = rss(y0perm, X)
         ## calculate LOD score and assign
-        lod[:,i] = (n/2)*(log10.(rss0) .- log10.(rss1))
+        lod[:, i] = (n/2)*(log10.(rss0) .- log10.(rss1))
     end
 
     return lod
