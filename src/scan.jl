@@ -232,18 +232,25 @@ function scan(y::Array{Float64,2}, g::Array{Float64,2}, K::Array{Float64,2};
     # weights proportional to the variances
     wts = makeweights(vc.h2,lambda0)
 
-    # rescale by weights; now these have same mean/variance and are independent
+    # compared runtime of the following with "wls(X0[:, 2:end], X0[:, 1], wts)" ?
+    # rescale by weights; now these have the same mean/variance and are independent
     rowDivide!(r0, sqrt.(wts))
     rowDivide!(X0, sqrt.(wts))
-    X00 = resid(X0[:, 2:end],reshape(X0[:,1], :, 1))
+    # after re-weighting X, calling resid on re-weighted X is the same as doing wls on the X after rotation.
+    X00 = resid(X0[:, 2:end], reshape(X0[:,1], :, 1))
 
-    ## random permutations; the first column is the original data
+    ## random permutations; the first column is the original trait (after transformation)
     rng = MersenneTwister(rndseed);
-    r0perm = shuffleVector(rng, r0[:, 1]; nshuffle = nperm, original = original)
+    ## permute r0 (which is an iid, standard normal distributed N-vector under the null)
+    r0perm = shuffleVector(rng, r0[:, 1], nperm; original = original)
 
-
-    ## null rss vector
-    rss0 = rss(r0perm, reshape(X00[:, 1], n, 1))
+    ## Null RSS:
+    # rss0 = rss(r0perm, reshape(X0[:, 1], n, 1)) original implementation; questionable and can result in negative LOD scores
+    # Instead, as by null hypothesis, mean is 0. RSS just becomes the sum of squares of the residuals (r0perm's)
+    # (For theoretical derivation of the results, see notebook)
+    rss0 = mapslices(x -> sum(x .^2), r0perm; dims = 1)
+    
+    ## make array to hold Alternative RSS's for each permutated trait
     rss1 = similar(rss0)
     ## make array to hold LOD scores
     lod = zeros(nperm + 1, m)
