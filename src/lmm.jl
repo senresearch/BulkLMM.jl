@@ -106,19 +106,20 @@ X: 2-d array of (rotated) covariates
 lambda: 1-d array of eigenvalues
 ngrid: number of grid values to consider
 """
-function fitlmm(y::Array{Float64,2}, X::Array{Float64,2}, lambda::Array{Float64,1}, ngrid::Int64)
-    h2vec = convert(Vector,(0:ngrid)/ngrid)
+function fitlmm(y::Array{Float64,2}, X::Array{Float64,2}, lambda::Array{Float64,1}, ngrid::Int64; 
+                reml::Bool = false, loglik::Bool = true)
+    h2vec = convert(Vector, (0:ngrid)/ngrid)
 
     function logLik0(h2::Float64)
-        out = wls(y, X, 1.0./makeweights(h2, lambda), false, true)
+        out = wls(y, X, 1.0./makeweights(h2, lambda); reml = reml, loglik = loglik)
         return -out.ell
     end
 
     ell = map(logLik0,h2vec)
     h2 = h2vec[argmin(ell)]
-    est = wls(y,X,1.0./(h2*lambda.+(1.0-h2)),false,true)
+    est = wls(y, X, 1.0./makeweights(h2, lambda); reml = reml, loglik = loglik)
 
-    return lmm_estimates(est.b,est.sigma2,h2,est.ell)
+    return lmm_estimates(est.b, est.sigma2, h2, est.ell)
 end
 
 

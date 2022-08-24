@@ -4,7 +4,7 @@
 ##################################################################
 
 mutable struct ls_estimates
-    b::Array{Float64,2}
+    b::Array{Float64, 2}
     sigma2::Float64
     ell::Float64
 end
