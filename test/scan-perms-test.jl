@@ -26,7 +26,7 @@ include("../src/readData.jl");
 pheno_file = "../data/bxdData/traits.csv"
 pheno = readBXDpheno(pheno_file);
 geno_file = "../data/bxdData/geno_prob.csv"
-geno = readGenoProb2(geno_file);
+geno = readGenoProb_ExcludeComplements(geno_file);
 kinship = CSV.File("../../data/BXDkinship.csv") |> DataFrame |> Matrix;
 
 
