@@ -3,7 +3,7 @@
 # wls: weighted least squares
 ##################################################################
 
-mutable struct ls_estimates
+mutable struct LS_estimates
     b::Array{Float64, 2}
     sigma2::Float64
     ell::Float64
@@ -72,7 +72,7 @@ function wls(y::Array{Float64, 2}, X::Array{Float64, 2}, w::Array{Float64, 1};
         ell = missing;
     end
 
-    return ls_estimates(b, sigma2, ell)
+    return LS_estimates(b, sigma2, ell)
 
 end
 
@@ -106,7 +106,7 @@ function ls(y::Array{Float64, 2}, X::Array{Float64, 2};
         ell = missing
     end
 
-    return ls_estimates(b, sigma2, ell)
+    return LS_estimates(b, sigma2, ell)
 
 end
 
