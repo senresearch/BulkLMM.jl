@@ -36,9 +36,9 @@ function bulkscan(y::Array{Float64,2},g::Array{Float64,2},w::Vector{Float64})
 
     # convert problem to least squares
     sqrtw = sqrt.(w)
-    rowScale!(X0,1.0/.sqrtw)
-    rowScale!(y0,1.0/.sqrtw)
-    rowScale!(g0,1.0/.sqrtw)
+    rowScale!(X0, 1.0./sqrtw)
+    rowScale!(y0, 1.0./sqrtw)
+    rowScale!(g0, 1.0./sqrtw)
 
     y0 = bulkresid(y0,X0)
     g0 = bulkresid(g0,X0)
@@ -75,8 +75,8 @@ function bulkls(y::Matrix{Float64},X::Matrix{Float64},loglik::Bool=false)
     rss = sum(resid.^2,dims=1)
 
     sigma2 = rss./n
-    logdetSigma = n*.log.(sigma2)
-    ell = -0.5 *. (logdetSigma +. rss./sigma2)
+    logdetSigma = n .* log.(sigma2)
+    ell = -0.5 .* (logdetSigma .+ rss ./ sigma2)
 
     return b, sigma2, ell
 
@@ -84,7 +84,7 @@ end
 
 # residual from least squares
 
-function bulkresid(y::Matrix{Float64},X::Matrix{Float64})
+function bulkresid(y::Matrix{Float64}, X::Matrix{Float64})
 
     n = size(y,1)
 
@@ -106,8 +106,8 @@ function bulkWls(y::Matrix{Float64},X::Matrix{Float64},
     end
 
     sqrtw = sqrt.(w)
-    y0 = rowScale!(deepcopy(y),1.0/.sqrtw))
-    X0 = rowScale!(deepcopy(X),1.0/.sqrtw))
+    y0 = rowScale!(deepcopy(y),1.0 ./ sqrtw)
+    X0 = rowScale!(deepcopy(X),1.0 ./ sqrtw)
 
     (b,sigma2,ell) = bulkls(y0,X0,loglik)
      ell = ell + sum(log.(w))/2
