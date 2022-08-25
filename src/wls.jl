@@ -50,7 +50,7 @@ function wls(y::Array{Float64, 2}, X::Array{Float64, 2}, w::Array{Float64, 1};
     if(method == "qr")
         fct = qr(XX)
         b = fct\yy
-        logdetXXtXX = 2*logdet(fct) # need 2 for logdet(X'X)
+        logdetXXtXX = 2*logdet(fct.R) # need 2 for logdet(X'X)
     end
 
     yyhat = XX*b
