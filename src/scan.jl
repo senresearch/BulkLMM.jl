@@ -32,7 +32,7 @@ A list of output values are returned:
 
 """
 
-function scan(y::Array{Float64,2},g::Array{Float64,2}, K::Array{Float64,2};
+function scan(y::Array{Float64,2}, g::Array{Float64,2}, K::Array{Float64,2};
               reml::Bool = false, method::String = "null")
     if(method == "null")
         return scan_null(y, g, K; reml = reml)
@@ -204,8 +204,8 @@ are estimated from the null model and assumed to be the same across markers.
 
 """
 
-function scan(y::Array{Float64,2}, g::Array{Float64,2}, K::Array{Float64,2};
-              nperm::Int64 = 1024, rndseed::Int64 = 0, 
+function scan_perms(y::Array{Float64,2}, g::Array{Float64,2}, K::Array{Float64,2};
+              nperms::Int64 = 1024, rndseed::Int64 = 0, 
               reml::Bool = true, original::Bool = true)
 
     # check the number of traits as this function only works for permutation testing of univariate trait
@@ -218,7 +218,7 @@ function scan(y::Array{Float64,2}, g::Array{Float64,2}, K::Array{Float64,2};
     (n, m) = size(g)
 
     # make intercept
-    intercept = ones(n,1)
+    intercept = ones(n, 1)
 
     # rotate data so errors are uncorrelated
     (y0, X0, lambda0) = rotateData(y, [intercept g], K)
@@ -230,7 +230,7 @@ function scan(y::Array{Float64,2}, g::Array{Float64,2}, K::Array{Float64,2};
     r0 = y0 - X0[:, 1]*vc.b
 
     # weights proportional to the variances
-    wts = makeweights(vc.h2,lambda0)
+    wts = makeweights(vc.h2, lambda0)
 
     # compared runtime of the following with "wls(X0[:, 2:end], X0[:, 1], wts)" ?
     # rescale by weights; now these have the same mean/variance and are independent
@@ -242,7 +242,7 @@ function scan(y::Array{Float64,2}, g::Array{Float64,2}, K::Array{Float64,2};
     ## random permutations; the first column is the original trait (after transformation)
     rng = MersenneTwister(rndseed);
     ## permute r0 (which is an iid, standard normal distributed N-vector under the null)
-    r0perm = shuffleVector(rng, r0[:, 1], nperm; original = original)
+    r0perm = shuffleVector(rng, r0[:, 1], nperms; original = original)
 
     ## Null RSS:
     # rss0 = rss(r0perm, reshape(X0[:, 1], n, 1)) original implementation; questionable and can result in negative LOD scores
@@ -253,7 +253,7 @@ function scan(y::Array{Float64,2}, g::Array{Float64,2}, K::Array{Float64,2};
     ## make array to hold Alternative RSS's for each permutated trait
     rss1 = similar(rss0)
     ## make array to hold LOD scores
-    lod = zeros(nperm + 1, m)
+    lod = zeros(nperms + 1, m)
     
     ## loop over markers
     for i = 1:m
@@ -269,7 +269,7 @@ end
 
 ## genome scan with permutations
 ## more than 1df tests
-function scan(y::Array{Float64,2},g::Array{Float64,3},
+function scan_perms_more(y::Array{Float64,2},g::Array{Float64,3},
               K::Array{Float64,2},nperm::Int64=1024,
               rndseed::Int64=0,reml::Bool=true)
 
