@@ -70,6 +70,31 @@ function readGenoProb(file::AbstractString;
     return gp
 end
 
+#####################################################################
+
+# function assumes that the first line is marker names, and the first
+# column is ids; both are strings
+#
+# the rest of the file is assumed to be probablities, i.e. numeric
+# 
+# when in the data for each column the immediately preceding column contains 
+# the complementary probs, this function only extract the one corresponding
+# to reference genes
+#  
+
+function readGenoProb_ExcludeComplements(file::AbstractString;
+    dlm::AbstractChar=',',
+    getmarkernames::Bool=true,
+    getids::Bool=true)
+
+    gp = readGenoProb(file; dlm, getmarkernames, getids); # will return a matrix type
+    total_cols = size(gp)[2]
+    ind_set = filter(x->isodd(x), (1:total_cols))
+    gp_noComplement = gp[:, ind_set] ## choose only the odd columns, as each "odd and even column" pair is complement of each other;
+
+    return gp_noComplement
+end
+
 
 
 #####################################################################
@@ -100,6 +125,7 @@ function readGeno(file::AbstractString,nSkip::Int64,
 
     return mNames, geno
 end
+
 
 #####################################################################
 function word2array(word::SubString{String},wordLen::Int64)
