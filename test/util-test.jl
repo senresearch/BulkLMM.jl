@@ -285,7 +285,7 @@ test2_shuffleVector = quote
     A = rand([0.0, 1.0], N, p) |> vec; # fixed to be a vector
     rng = MersenneTwister();
     
-    result = shuffleVector(rng, A, 5, false);
+    result = shuffleVector(rng, A, 5; original = false);
     
     
     @test size(result, 2) == 5;

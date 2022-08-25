@@ -21,7 +21,7 @@ w = weights (positive, inversely proportional to variance), one-dim vector
 function wls(y::Array{Float64, 2}, X::Array{Float64, 2}, w::Array{Float64, 1};
              reml::Bool = false, loglik::Bool = true, method = "cholesky")
 
-    n = size(y, 1); # get number of observations       
+    (n, p) = size(X); # get number of observations and the number of markers from geno dimensions      
 
     # check if weights are positive
     if(any(w .<= .0))
@@ -32,9 +32,9 @@ function wls(y::Array{Float64, 2}, X::Array{Float64, 2}, w::Array{Float64, 1};
     sqrtw = sqrt.(w)
     # scale by weights
     # yy = y.*sqrtw
-    yy = rowMultiply(y,sqrtw)
+    yy = rowMultiply(y, sqrtw)
     # XX = diagm(sqrtw)*X
-    XX = rowMultiply(X,sqrtw)
+    XX = rowMultiply(X, sqrtw)
 
     # least squares solution
     # faster but numerically less stable

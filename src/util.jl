@@ -132,8 +132,8 @@ end
 perform random shuffles of vector
 the first column is the original vector if original=true
 """
-function shuffleVector(rng::AbstractRNG, x::Vector{Float64};
-                       nshuffle::Int64, original::Bool = true)
+function shuffleVector(rng::AbstractRNG, x::Vector{Float64}, nshuffle::Int64;
+                       original::Bool = true)
     if(original)
         xx = zeros(length(x), nshuffle+1)
         xx[:,1] = x
