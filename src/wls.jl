@@ -23,6 +23,8 @@ function wls(y::Array{Float64, 2}, X::Array{Float64, 2}, w::Array{Float64, 1};
 
     (n, p) = size(X); # get number of observations and the number of markers from geno dimensions      
 
+    n = size(y, 1); # get number of observations       
+
     # check if weights are positive
     if(any(w .<= .0))
         error("Some weights are not positive.")

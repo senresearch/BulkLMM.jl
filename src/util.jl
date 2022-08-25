@@ -69,9 +69,7 @@ function colDivide!(A::Matrix{Float64}, x::Vector{Float64})
     if(checkZeros(x))
         throw(error("Dividing by zeros: the input vector can not contain any zeros!"))
     end
-
-
-
+    
     for i=1:n
         for j=1:m
             A[i,j] = A[i,j]/x[j]
@@ -140,6 +138,7 @@ function shuffleVector(rng::AbstractRNG, x::Vector{Float64}, nshuffle::Int64;
         istart = 1
     else
         xx = zeros(length(x), nshuffle)
+
         istart = 0
     end
 
