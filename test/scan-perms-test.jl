@@ -1,5 +1,6 @@
 # Scan-perms Tests - Tests for genome scan of univariate trait and its permutated copies
 
+
 ## Loading required libraries
 using DelimitedFiles
 using LinearAlgebra
@@ -174,11 +175,19 @@ dc = deepcopy(X0);
 
 b1 = wls(X0[:, 2:end], reshape(X0[:, 1], :, 1), wts);
 
+resid_wls = X0[:, 2:end] .- X0[:, 1]*b1.b;
+resid_wls = mapslices(x -> x .* sqrt.(wts), resid_wls; dims = 1);
+
 X0 = dc;
 step_alt = quote
 
-    rowDivide!(X0, sqrt.(wts));
+    rowDivide!(X0, 1.0 ./ sqrt.(wts));
     b2 = ls(X0[:, 2:end], reshape(X0[:, 1], :, 1));
 
 end
 eval(step_alt)
+
+resid_ls = resid(X0[:, 2:end], reshape(X0[:, 1], :, 1));
+
+@test sumSqDiff(b1.b, b2.b) <= tol;
+@test sumSqDiff(resid_wls, resid_ls) <= tol
