@@ -132,11 +132,7 @@ end
 ## residuals by WLS
 function transformX_2(X::Array{Float64, 2}, weights::Vector{Float64})
 
-<<<<<<< HEAD
-    ests = wls(X[:, 2:end], reshape(X[:, 1], :, 1), weights) # Perform wls to estimate b;
-=======
     ests = wls(X[:, 2:end], reshape(X[:, 1], :, 1), weights)
->>>>>>> 1e3815bc1e0ac3143a9f27e0ec1840124e0c4156
     X_star = X[:, 2:end] - X[:, 1]*ests.b;
     rowDivide!(X_star, sqrt.(weights));
     
