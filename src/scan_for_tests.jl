@@ -25,12 +25,12 @@ function permuteHelper(y::Array{Float64, 2}, g::Array{Float64, 2}, K::Array{Floa
 
     # weights proportional to the variances
     wts = makeweights( vc.h2,lambda0 )
-    # wts = 1.0 ./ collect(1:79) # for testing
 
     #=     println("weights: ")
     println(wts[1:6]) =#
 
     # rescale by weights; now these have the same mean/variance and are independent
+    ## NOTE: although rowDivide! makes in-place changes to the inputs, it only modifies the rotated data which are returned outputs
     rowDivide!(r0, sqrt.(wts))
     rowDivide!(X0, sqrt.(wts))
     X00 = resid(X0[:, 2:end], reshape(X0[:, 1], :, 1)) # after re-weighting X, calling resid on re-weighted X is the same as doing wls too.
@@ -40,7 +40,7 @@ function permuteHelper(y::Array{Float64, 2}, g::Array{Float64, 2}, K::Array{Floa
 
     ## random permutations; the first column is the original data
     rng = MersenneTwister(rndseed);
-    r0perm = shuffleVector(rng, r0[:,1], nperms; original = true) # permutation on r0 which have iid standard normal distribution under null
+    r0perm = shuffleVector(rng, r0[:, 1], nperms; original = true) # permutation on r0 which have iid standard normal distribution under null
 
     return (r0perm, X00)
 end
