@@ -32,10 +32,11 @@ function wls(y::Array{Float64, 2}, X::Array{Float64, 2}, w::Array{Float64, 1};
 
     # square root of the weights
     sqrtw = sqrt.(w)
+
+    logdetXtX = logdet(X' * X);
+
     # scale by weights
-    # yy = y.*sqrtw
     yy = rowMultiply(y, sqrtw)
-    # XX = diagm(sqrtw)*X
     XX = rowMultiply(X, sqrtw)
 
     # least squares solution
@@ -66,10 +67,12 @@ function wls(y::Array{Float64, 2}, X::Array{Float64, 2}, w::Array{Float64, 1};
 
     # see formulas (2) and (3) of Kang (2008)
     if(loglik)
-        ell = -0.5 * ( n*log(sigma2) + sum(log.(w)) + rss0/sigma2 )
+        # ell = -0.5 * ( n*log(sigma2) + sum(log.(w)) + rss0/sigma2 )
+        ell = -0.5 * (n*log(sigma2) - sum(log.(w)) + rss0/sigma2)
 
         if(reml)
-            ell = ell + 0.5 * ( p*log(sigma2) - logdetXXtXX ) 
+            ell = ell + 0.5 * (p*log(sigma2) + logdetXtX - logdetXXtXX)
+            # ell = ell + 0.5 * (p*log(sigma2) - logdetXXtXX)
         end
         
     else
