@@ -19,7 +19,7 @@ w = weights (positive, inversely proportional to variance), one-dim vector
 
 """
 function wls(y::Array{Float64, 2}, X::Array{Float64, 2}, w::Array{Float64, 1};
-             reml::Bool = false, loglik::Bool = true, method = "cholesky")
+             reml::Bool = false, loglik::Bool = true, method = "qr")
 
     (n, p) = size(X); # get number of observations and the number of markers from geno dimensions      
 
@@ -50,7 +50,9 @@ function wls(y::Array{Float64, 2}, X::Array{Float64, 2}, w::Array{Float64, 1};
     if(method == "qr")
         fct = qr(XX)
         b = fct\yy
-        logdetXXtXX = 2*logdet(fct.R) # need 2 for logdet(X'X)
+        # logdetXXtXX = 2*logdet(fct.R) # need 2 for logdet(X'X)
+        logdetXXtXX = logdet(fct.R' * fct.R);
+        # println(logdetXXtXX) for testing
     end
 
     yyhat = XX*b

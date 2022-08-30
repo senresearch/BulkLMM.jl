@@ -86,7 +86,7 @@ end;
 ## BENCHMARKING:
 ##########################################################################################################
 
-@btime wls(y, X, weights; reml = false, loglik = true, method = "cholesky");
+@btime wls(y, X, weights; reml = false, loglik = true, method = "qr");
 
 alternative = quote
     W = weights .* (1.0*Matrix(I, N, N));
