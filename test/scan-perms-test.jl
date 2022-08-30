@@ -30,13 +30,10 @@ geno_file = "BulkLMM.jl/data/bxdData/BXDgeno_prob.csv"
 geno = readGenoProb_ExcludeComplements(geno_file);
 kinship = CSV.File("BulkLMM.jl/data/bxdData/BXDkinship.csv") |> DataFrame |> Matrix;
 
-##########################################################################################################
-## TEST: Compare results of scans for a (small) random number of permutations
-##########################################################################################################
+## load functions to help testing
+include("../src/scan_for_tests.jl");
 
-##########################################################################################################
-include("../src/scan_for_tests.jl") # load functions to help testing
-
+## Helper functions for comparing results:
 function maxSqDiff(a::Array{Float64, 2}, b::Array{Float64, 2})
 
     return maximum((a .- b) .^2)
@@ -49,18 +46,21 @@ function sumSqDiff(a::Array{Float64, 2}, b::Array{Float64, 2})
 
 end
 
-###########################################################################################################
+##########################################################################################################
+## TEST: Compare results of scans for a (small) random number of permutations
+##########################################################################################################
+
 
 ## For testing purposes, we consider the case when we need to perform scans for the second trait in the BXD traits data:
 pheno_2 = reshape(pheno[:, 2], :, 1);
 
 
-function toCompare(y::Array{Float64, 2}, g::Array{Float64, 2}, K::Array{Float64, 2})
+function toCompare(y::Array{Float64, 2}, g::Array{Float64, 2}, K::Array{Float64, 2}, nperms::Int64)
 
     (n, p) = size(g);
 
     ## Perform data transformations such that the resulting trait data is i.i.d standard normal distributed under the null:
-    (y_star_perms, X_star) = permuteHelper(y, g, K; nperms = nperms);
+    (y_star_perms, X_star) = permuteHelper(y, g, K; nperms = nperms, reml = true);
     m = size(y_star_perms, 2); # number of permuted copies (may include the original)
 
     function one_trait_at_a_time(y_star_i::Array{Float64, 2}, X_star::Array{Float64, 2})
@@ -105,13 +105,18 @@ nperms = rand(1:10);
 ## Get LOD results from running the scan_perms implementation:
 results_perms = scan_perms(pheno_2, geno, kinship; nperms = nperms);
 
-results_toCompare = toCompare(pheno_2, geno, kinship);
+results_toCompare = toCompare(pheno_2, geno, kinship, nperms);
 
 
 tol = 1e-6
 
-@test maximum((results_perms .- results_toCompare) .^2) <= tol;
-@test sum((results_perms .- results_toCompare) .^2) <= sqrt(tol);
+##########################################################################################################
+## TEST: Compare the LODs of scans on the original with the LODs from directly applying scan_null on the original
+##########################################################################################################
+
+null_results = scan(pheno_2, geno, kinship; reml = false, method = "null");
+null_LODs = reshape(null_results[3], :, 1);
+
 
 ##########################################################################################################
 ## TEST: Check if wls() on the unweighted data and ls() on the weighted data gives the same coefficients
@@ -189,5 +194,37 @@ eval(step_alt)
 
 resid_ls = resid(X0[:, 2:end], reshape(X0[:, 1], :, 1));
 
-@test sumSqDiff(b1.b, b2.b) <= tol;
-@test sumSqDiff(resid_wls, resid_ls) <= tol
+##########################################################################################################
+## TEST: Run Tests
+##########################################################################################################
+
+@testset "testScanPerms" begin
+
+    # pre-algorithm check if the function modifies the original inputs:
+
+    y_copy = deepcopy(pheno_2);
+    scan_perms(pheno_2, geno, kinship; nperms = 1);
+    @test maxSqDiff(y_copy, pheno_2) <= tol;    
+
+    # tests for comparing one scan for one permutation at a time v.s. perform scans for all permutations by operations on matrices
+    @test maxSqDiff(results_perms, results_toCompare) <= tol;
+    @test sumSqDiff(results_perms, results_toCompare) <= sqrt(tol);
+
+    # tests for comparing the first row of results from permutation testings (on original y) v.s. applying scan_null on the original data
+    @test maxSqDiff(reshape(results_perms[1, :], :, 1), null_LODs) <= tol;
+    @test sumSqDiff(reshape(results_perms[1, :], :, 1), null_LODs) <= sqrt(tol);
+
+    # tests to verify the estimates given by two mathematically equivalent transformations are the same
+    @test sumSqDiff(b1.b, b2.b) <= tol;
+    @test sumSqDiff(resid_wls, resid_ls) <= tol
+
+end
+
+
+
+##########################################################################################################
+## BENCHMARK:
+##########################################################################################################
+
+@btime scan_perms(pheno_2, geno, kinship; nperms = 50);
+@btime toCompare(pheno_2, geno, kinship, 50);
