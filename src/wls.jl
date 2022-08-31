@@ -33,7 +33,7 @@ function wls(y::Array{Float64, 2}, X::Array{Float64, 2}, w::Array{Float64, 1};
     # square root of the weights
     sqrtw = sqrt.(w)
 
-    logdetXtX = logdet(X' * X);
+    # logdetXtX = logdet(X' * X); constant term that does not depend on the parameters (weights); is not needed
 
     # scale by weights
     yy = rowMultiply(y, sqrtw)
@@ -51,9 +51,10 @@ function wls(y::Array{Float64, 2}, X::Array{Float64, 2}, w::Array{Float64, 1};
     if(method == "qr")
         fct = qr(XX)
         b = fct\yy
+
         # logdetXXtXX = 2*logdet(fct.R) # need 2 for logdet(X'X)
         logdetXXtXX = logdet(fct.R' * fct.R);
-        # println(logdetXXtXX) for testing
+
     end
 
     yyhat = XX*b
@@ -67,12 +68,13 @@ function wls(y::Array{Float64, 2}, X::Array{Float64, 2}, w::Array{Float64, 1};
 
     # see formulas (2) and (3) of Kang (2008)
     if(loglik)
+
         # ell = -0.5 * ( n*log(sigma2) + sum(log.(w)) + rss0/sigma2 )
         ell = -0.5 * (n*log(sigma2) - sum(log.(w)) + rss0/sigma2)
 
         if(reml)
-            ell = ell + 0.5 * (p*log(sigma2) + logdetXtX - logdetXXtXX)
-            # ell = ell + 0.5 * (p*log(sigma2) - logdetXXtXX)
+            # ell = ell + 0.5 * (p*log(2pi*sigma2) + logdetXtX - logdetXXtXX) # full log-likelihood including the constant terms;
+            ell = ell + 0.5 * (p*log(sigma2) - logdetXXtXX)
         end
         
     else
