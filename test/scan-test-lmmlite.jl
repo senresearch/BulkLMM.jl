@@ -17,6 +17,7 @@ include("../src/scan.jl");
 include("../src/lmm.jl");
 include("../src/wls.jl");
 include("../src/util.jl");
+include("../src/kinship.jl");
 include("../src/readData.jl");
 
 ## Also include the helper functions for writing tests:
