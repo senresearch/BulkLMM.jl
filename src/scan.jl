@@ -88,12 +88,12 @@ function scan_null(y::Array{Float64,2}, g::Array{Float64,2}, K::Array{Float64,2}
     # rotate data
     (y0, X0, lambda0) = rotateData(y,[intercept g],K)
     # fit null lmm
-    out00 = fitlmm(y0, reshape(X0[:,1], :, 1), lambda0; reml = reml)
+    out00 = fitlmm(y0, reshape(X0[:, 1], :, 1), lambda0; reml = reml)
     # weights proportional to the variances
     wts = makeweights(out00.h2, lambda0)
     # rescale by weights
-    rowDivide!(y0, sqrt.(wts))
-    rowDivide!(X0, sqrt.(wts))
+    rowDivide!(y0, 1.0./sqrt.(wts))
+    rowDivide!(X0, 1.0./sqrt.(wts))
 
     # perform genome scan
     out0 = rss(y0, reshape(X0[:,1], n, 1))
@@ -234,8 +234,8 @@ function scan_perms(y::Array{Float64,2}, g::Array{Float64,2}, K::Array{Float64,2
 
     # compared runtime of the following with "wls(X0[:, 2:end], X0[:, 1], wts)" ?
     # rescale by weights; now these have the same mean/variance and are independent
-    rowDivide!(r0, sqrt.(wts))
-    rowDivide!(X0, sqrt.(wts))
+    rowDivide!(r0, 1.0./sqrt.(wts))
+    rowDivide!(X0, 1.0./sqrt.(wts))
     # after re-weighting X, calling resid on re-weighted X is the same as doing wls on the X after rotation.
     X00 = resid(X0[:, 2:end], reshape(X0[:,1], :, 1))
 
@@ -254,11 +254,16 @@ function scan_perms(y::Array{Float64,2}, g::Array{Float64,2}, K::Array{Float64,2
     rss1 = similar(rss0)
     ## make array to hold LOD scores
     lod = zeros(nperms + 1, m)
-    
+
+
     ## loop over markers
     for i = 1:m
+
+        # X00_i = @view X00[:, i]
         ## alternative rss
-        rss1[:] = rss(r0perm, reshape(X00[:, i], :, 1))
+        rss1[:] = rss(r0perm, reshape(X00[:, i], :, 1)) # takes time; may be optimized
+        # rss1[:] = rss(r0perm, X00_i);
+
         ## calculate LOD score and assign
         lod[:, i] = (n/2)*(log10.(rss0) .- log10.(rss1))
     end
@@ -287,8 +292,8 @@ function scan_perms_more(y::Array{Float64,2},g::Array{Float64,3},
     # weights proportional to the variances
     wts = makeweights(vc.h2, lambda0)
     # rescale by weights; now these have same mean/variance and are independent
-    rowDivide!(y0, sqrt.(wts))
-    rowDivide!(X0, sqrt.(wts))
+    rowDivide!(y0, 1.0./sqrt.(wts))
+    rowDivide!(X0, 1.0./sqrt.(wts))
 
     ## random permutations; the first column is the original data
     rng = MersenneTwister(rndseed);

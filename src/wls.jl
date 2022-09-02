@@ -3,7 +3,7 @@
 # wls: weighted least squares
 ##################################################################
 
-mutable struct LS_estimates
+mutable struct LSEstimates
     b::Array{Float64, 2}
     sigma2::Float64
     ell::Float64
@@ -53,7 +53,8 @@ function wls(y::Array{Float64, 2}, X::Array{Float64, 2}, w::Array{Float64, 1};
         b = fct\yy
 
         # logdetXXtXX = 2*logdet(fct.R) # need 2 for logdet(X'X)
-        logdetXXtXX = logdet(fct.R' * fct.R);
+        # logdetXXtXX = logdet(fct.R' * fct.R);
+        logdetXXtXX = 2*logabsdet(fct.R)[1];
 
     end
 
@@ -81,7 +82,7 @@ function wls(y::Array{Float64, 2}, X::Array{Float64, 2}, w::Array{Float64, 1};
         ell = missing;
     end
 
-    return LS_estimates(b, sigma2, ell)
+    return LSEstimates(b, sigma2, ell)
 
 end
 
@@ -115,7 +116,7 @@ function ls(y::Array{Float64, 2}, X::Array{Float64, 2};
         ell = missing
     end
 
-    return LS_estimates(b, sigma2, ell)
+    return LSEstimates(b, sigma2, ell)
 
 end
 

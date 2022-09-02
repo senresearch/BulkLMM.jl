@@ -83,14 +83,17 @@ function rotateData(y::AbstractArray{Float64,2},X::AbstractArray{Float64,2},
 end
 
 function makeweights(h2::Float64,lambda::Array{Float64,1})
-    return h2*lambda .+ (1.0-h2)
+
+    vars = h2*lambda .+ (1.0-h2)
+    return 1.0./vars
+
 end
 
 
 ##################################################################
 # function to fit linear mixed model by optimizing heritability
 ##################################################################
-mutable struct LMM_estimates
+mutable struct LMMEstimates
     b::Array{Float64,2}
     sigma2::Float64
     h2::Float64
@@ -111,15 +114,15 @@ function fitlmm(y::Array{Float64,2}, X::Array{Float64,2}, lambda::Array{Float64,
     h2vec = convert(Vector, (0:ngrid)/ngrid)
 
     function logLik0(h2::Float64)
-        out = wls(y, X, 1.0./makeweights(h2, lambda); reml = reml, loglik = loglik)
+        out = wls(y, X, makeweights(h2, lambda); reml = reml, loglik = loglik)
         return -out.ell
     end
 
     ell = map(logLik0,h2vec)
     h2 = h2vec[argmin(ell)]
-    est = wls(y, X, 1.0./makeweights(h2, lambda); reml = reml, loglik = loglik)
+    est = wls(y, X, makeweights(h2, lambda); reml = reml, loglik = loglik)
 
-    return LMM_estimates(est.b, est.sigma2, h2, est.ell)
+    return LMMEstimates(est.b, est.sigma2, h2, est.ell)
 end
 
 
@@ -136,12 +139,12 @@ reml: boolean indicating ML or REML estimation
 function fitlmm(y::Array{Float64, 2}, X::Array{Float64, 2}, lambda::Array{Float64, 1};
                 reml::Bool = false, loglik::Bool = true, h20::Float64 = 0.5, d::Float64 = 1.0)
     function logLik0(h2::Float64)
-        out = wls(y, X, 1.0./makeweights(h2, lambda); reml = reml, loglik = loglik)
+        out = wls(y, X, makeweights(h2, lambda); reml = reml, loglik = loglik)
         return -out.ell
     end
 
     opt = optimize(logLik0, max(h20-d, 0.0), min(h20+d, 1.0))
     h2 = opt.minimizer
-    est = wls(y, X, 1.0./makeweights(h2, lambda); reml = reml, loglik = loglik)
-    return LMM_estimates(est.b, est.sigma2, h2, est.ell)
+    est = wls(y, X, makeweights(h2, lambda); reml = reml, loglik = loglik)
+    return LMMEstimates(est.b, est.sigma2, h2, est.ell)
 end
