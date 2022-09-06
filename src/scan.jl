@@ -236,8 +236,11 @@ function scan_perms(y::Array{Float64,2}, g::Array{Float64,2}, K::Array{Float64,2
 
     # compared runtime of the following with "wls(X0[:, 2:end], X0[:, 1], wts)" ?
     # rescale by weights; now these have the same mean/variance and are independent
-    rowDivide!(r0, 1.0./sqrt.(wts))
-    rowDivide!(X0, 1.0./sqrt.(wts))
+    # rowDivide!(r0, 1.0./sqrt.(wts))
+    # rowDivide!(X0, 1.0./sqrt.(wts))
+    rowMultiply!(r0, sqrt.(wts));
+    rowMultiply!(X0, sqrt.(wts));
+
     
     # after re-weighting X, calling resid on re-weighted X is the same as doing wls on the X after rotation.
     X00 = resid(X0[:, 2:end], reshape(X0[:, 1], :, 1)) # consider not using sub-array, consider @view; in-place changes
