@@ -226,6 +226,8 @@ function scan_perms(y::Array{Float64,2}, g::Array{Float64,2}, K::Array{Float64,2
 
     ## Note: estimate once the variance components from the null model and use for all marker scans
     # fit lmm
+
+    # X0_intercept = @view X0[:, 1] # to compare
     vc = fitlmm(y0, reshape(X0[:, 1], :, 1), lambda0; reml = reml) # vc.b is estimated through weighted least square
     r0 = y0 - X0[:, 1]*vc.b
 
@@ -236,8 +238,9 @@ function scan_perms(y::Array{Float64,2}, g::Array{Float64,2}, K::Array{Float64,2
     # rescale by weights; now these have the same mean/variance and are independent
     rowDivide!(r0, 1.0./sqrt.(wts))
     rowDivide!(X0, 1.0./sqrt.(wts))
+    
     # after re-weighting X, calling resid on re-weighted X is the same as doing wls on the X after rotation.
-    X00 = resid(X0[:, 2:end], reshape(X0[:,1], :, 1))
+    X00 = resid(X0[:, 2:end], reshape(X0[:, 1], :, 1)) # consider not using sub-array, consider @view; in-place changes
 
     ## random permutations; the first column is the original trait (after transformation)
     rng = MersenneTwister(rndseed);
@@ -261,11 +264,12 @@ function scan_perms(y::Array{Float64,2}, g::Array{Float64,2}, K::Array{Float64,2
 
         # X00_i = @view X00[:, i]
         ## alternative rss
-        rss1[:] = rss(r0perm, reshape(X00[:, i], :, 1)) # takes time; may be optimized
+        rss1[:] = rss(r0perm, reshape(X00[:, i], :, 1)) # takes time; may be optimized; not using reshape
         # rss1[:] = rss(r0perm, X00_i);
 
         ## calculate LOD score and assign
         lod[:, i] = (n/2)*(log10.(rss0) .- log10.(rss1))
+        
     end
 
     return lod
