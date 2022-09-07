@@ -206,7 +206,7 @@ are estimated from the null model and assumed to be the same across markers.
 
 function scan_perms(y::Array{Float64,2}, g::Array{Float64,2}, K::Array{Float64,2};
               nperms::Int64 = 1024, rndseed::Int64 = 0, 
-              reml::Bool = true, original::Bool = true)
+              reml::Bool = false, original::Bool = true)
 
     # check the number of traits as this function only works for permutation testing of univariate trait
     if(size(y,2) != 1)
@@ -283,7 +283,7 @@ end
 ## more than 1df tests
 function scan_perms_more(y::Array{Float64,2},g::Array{Float64,3},
               K::Array{Float64,2},nperm::Int64=1024,
-              rndseed::Int64=0,reml::Bool=true)
+              rndseed::Int64=0, reml::Bool=true)
 
     # number of markers
     (n,m,p) = size(g)
