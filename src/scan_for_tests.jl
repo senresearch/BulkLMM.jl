@@ -47,7 +47,7 @@ end
 
 function calcLod_perms(rss0::Array{Float64, 2}, y_perms::Array{Float64, 2}, X_i::Array{Float64, 1})
 
-    n = size(y_nperms, 1); # number of observations for that trait
+    n = size(y_perms, 1); # number of observations for that trait
     rss1_i = rss(y_perms, reshape(X_i, :, 1)); # a matrix, each column is the rss after regressing each permuted y_star on the current marker
     lod_i = (n/2)*(log10.(rss0) .- log10.(rss1_i));
     return lod_i
@@ -108,7 +108,7 @@ function scan_perms_toCompare(y::Array{Float64,2}, g::Array{Float64,2}, K::Array
     rss0 = mapslices(x -> sum(x .^2), r0perm; dims = 1);
 
     lod = mapslices(x -> calcLod_perms(rss0, r0perm, x), X00; dims = 1)
-    
+
     return lod
 
 end
