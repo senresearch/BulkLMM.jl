@@ -23,16 +23,16 @@ function permuteHelper(y::Array{Float64, 2}, g::Array{Float64, 2}, K::Array{Floa
     println(r0[1:6, 1]) =# 
 
 
-    # weights proportional to the variances
-    wts = makeweights( vc.h2,lambda0 )
+    # weights inversely-proportional to the variances
+    wts = makeweights(vc.h2, lambda0)
 
     #=     println("weights: ")
     println(wts[1:6]) =#
 
     # rescale by weights; now these have the same mean/variance and are independent
     ## NOTE: although rowDivide! makes in-place changes to the inputs, it only modifies the rotated data which are returned outputs
-    rowDivide!(r0, sqrt.(wts))
-    rowDivide!(X0, sqrt.(wts))
+    rowMultiply!(r0, sqrt.(wts))
+    rowMultiply!(X0, sqrt.(wts))
     X00 = resid(X0[:, 2:end], reshape(X0[:, 1], :, 1)) # after re-weighting X, calling resid on re-weighted X is the same as doing wls too.
 
     #=     println("X: ")

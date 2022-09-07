@@ -90,10 +90,10 @@ function scan_null(y::Array{Float64,2}, g::Array{Float64,2}, K::Array{Float64,2}
     # fit null lmm
     out00 = fitlmm(y0, reshape(X0[:, 1], :, 1), lambda0; reml = reml)
     # weights proportional to the variances
-    wts = makeweights(out00.h2, lambda0)
+    sqrtw = sqrt.(makeweights(out00.h2, lambda0))
     # rescale by weights
-    rowDivide!(y0, 1.0./sqrt.(wts))
-    rowDivide!(X0, 1.0./sqrt.(wts))
+    rowMultiply!(y0, sqrtw)
+    rowMultiply!(X0, sqrtw)
 
     # perform genome scan
     out0 = rss(y0, reshape(X0[:,1], n, 1))
@@ -232,14 +232,14 @@ function scan_perms(y::Array{Float64,2}, g::Array{Float64,2}, K::Array{Float64,2
     r0 = y0 - X0[:, 1]*vc.b
 
     # weights proportional to the variances
-    wts = makeweights(vc.h2, lambda0)
+    sqrtw = sqrt.(makeweights(vc.h2, lambda0))
 
     # compared runtime of the following with "wls(X0[:, 2:end], X0[:, 1], wts)" ?
     # rescale by weights; now these have the same mean/variance and are independent
     # rowDivide!(r0, 1.0./sqrt.(wts))
     # rowDivide!(X0, 1.0./sqrt.(wts))
-    rowMultiply!(r0, sqrt.(wts));
-    rowMultiply!(X0, sqrt.(wts));
+    rowMultiply!(r0, sqrtw);
+    rowMultiply!(X0, sqrtw);
 
     
     # after re-weighting X, calling resid on re-weighted X is the same as doing wls on the X after rotation.
@@ -297,10 +297,10 @@ function scan_perms_more(y::Array{Float64,2},g::Array{Float64,3},
     # fit null lmm
     vc = fitlmm(y0,reshape(X0[:,1], :, 1), lambda0; reml = reml)
     # weights proportional to the variances
-    wts = makeweights(vc.h2, lambda0)
+    sqrtw = sqrt.(makeweights(vc.h2, lambda0))
     # rescale by weights; now these have same mean/variance and are independent
-    rowDivide!(y0, 1.0./sqrt.(wts))
-    rowDivide!(X0, 1.0./sqrt.(wts))
+    rowMultiply!(y0, sqrtw)
+    rowMultiply!(X0, sqrtw)
 
     ## random permutations; the first column is the original data
     rng = MersenneTwister(rndseed);
@@ -314,6 +314,7 @@ function scan_perms_more(y::Array{Float64,2},g::Array{Float64,3},
     ## initialize covariate matrix
     X = zeros(n, p)
     X[:, 1] = X0[:, 1]
+    
     ## loop over markers
     for i = 1:m
         ## change the rest of the elements of covariate matrix X

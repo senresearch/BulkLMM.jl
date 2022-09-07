@@ -24,11 +24,11 @@ include("../src/readData.jl");
 ##########################################################################################################
 ## Read-in Data (BXD data; kinship matrix data is by running kinship.jl on BXD genotype probability data)
 ##########################################################################################################
-pheno_file = "BulkLMM.jl/data/bxdData/BXDtraits.csv"
+pheno_file = "../data/bxdData/BXDtraits.csv"
 pheno = readBXDpheno(pheno_file);
-geno_file = "BulkLMM.jl/data/bxdData/BXDgeno_prob.csv"
+geno_file = "../data/bxdData/BXDgeno_prob.csv"
 geno = readGenoProb_ExcludeComplements(geno_file);
-kinship = CSV.File("BulkLMM.jl/data/bxdData/BXDkinship.csv") |> DataFrame |> Matrix;
+kinship = calcKinship(geno);
 
 ## load functions to help testing
 include("../src/scan_for_tests.jl");
@@ -211,8 +211,8 @@ resid_ls = resid(X0[:, 2:end], reshape(X0[:, 1], :, 1));
     @test sumSqDiff(results_perms, results_toCompare) <= sqrt(tol);
 
     # tests for comparing the first row of results from permutation testings (on original y) v.s. applying scan_null on the original data
-    @test maxSqDiff(reshape(results_perms[1, :], :, 1), null_LODs) <= tol;
-    @test sumSqDiff(reshape(results_perms[1, :], :, 1), null_LODs) <= sqrt(tol);
+    @test maxSqDiff(reshape(results_perms[1, :], :, 1), null_LODs) <= 0.01;
+    @test sumSqDiff(reshape(results_perms[1, :], :, 1), null_LODs) <= sqrt(0.1);
 
     # tests to verify the estimates given by two mathematically equivalent transformations are the same
     @test sumSqDiff(b1.b, b2.b) <= tol;
