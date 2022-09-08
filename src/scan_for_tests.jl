@@ -67,8 +67,8 @@ function scan_perms_toCompare(y::Array{Float64,2}, g::Array{Float64,2}, K::Array
 
     (r0perm, X00) = permuteHelper(y, g, K; nperms = nperms, rndseed = rndseed, reml = reml);
 
-    lod = map(eachcol(Xt)) do col
-            calcLod_perms(yt, Array{Float64, 1}(col))
+    lod = map(eachcol(X00)) do col
+            calcLod_perms(r0perm, Array{Float64, 1}(col))
           end
 
     return lod
