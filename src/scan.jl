@@ -254,12 +254,14 @@ function scan_perms(y::Array{Float64,2}, g::Array{Float64,2}, K::Array{Float64,2
     # rss0 = rss(r0perm, reshape(X0[:, 1], n, 1)) original implementation; questionable and can result in negative LOD scores
     # Instead, as by null hypothesis, mean is 0. RSS just becomes the sum of squares of the residuals (r0perm's)
     # (For theoretical derivation of the results, see notebook)
-    rss0 = mapslices(x -> sum(x .^2), r0perm; dims = 1)
+    # rss0 = mapslices(x -> sum(x .^2), r0perm; dims = 1)
+    rss0 = sum(r0perm[:, 1].^2) * ones(nperms+1)
     
     ## make array to hold Alternative RSS's for each permutated trait
     rss1 = similar(rss0)
     ## make array to hold LOD scores
-    lod = zeros(nperms + 1, m)
+    # lod = zeros(nperms + 1, m)
+    lod = Array{Float64, 2}(undef, nperms+1, m)
 
 
     ## loop over markers
@@ -272,8 +274,7 @@ function scan_perms(y::Array{Float64,2}, g::Array{Float64,2}, K::Array{Float64,2
         # rss1[:] = rss(r0perm, X00_i);
 
         ## calculate LOD score and assign
-        # @inbounds
-        lod[:, i] = (n/2)*(log10.(rss0) .- log10.(rss1))
+        @inbounds lod[:, i] = (n/2)*(log10.(rss0) .- log10.(rss1))
         
     end
 
