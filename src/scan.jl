@@ -274,7 +274,7 @@ function scan_perms(y::Array{Float64,2}, g::Array{Float64,2}, K::Array{Float64,2
         # rss1[:] = rss(r0perm, X00_i);
 
         ## calculate LOD score and assign
-        @inbounds lod[:, i] = (n/2)*(log10.(rss0) .- log10.(rss1))
+        lod[:, i] = (n/2)*(log10.(rss0) .- log10.(rss1))
         
     end
 
