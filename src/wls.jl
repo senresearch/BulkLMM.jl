@@ -133,6 +133,7 @@ the function returns the residual sum of squares of each column. The
 return values is a (row) vector of length equal to the number of columns of y.
 
 """
+
 function rss(y::Array{Float64, 2}, X::Array{Float64, 2}; method = "cholesky")
 
     r = resid(y, X; method)
@@ -141,6 +142,16 @@ function rss(y::Array{Float64, 2}, X::Array{Float64, 2}; method = "cholesky")
     return rss
 
 end
+
+function rss(y::Array{Float64, 2}, X::AbstractArray{Float64, 1}; method = "cholesky")
+
+    r = resid(y, X; method)
+    rss = reduce(+, r.^2, dims = 1)
+
+    return rss
+
+end
+
 
 """
 resid: calculate residuals
@@ -154,6 +165,28 @@ the residual matrix of the same size as the outcome matrix.
 
 """
 function resid(y::Array{Float64, 2}, X::Array{Float64, 2}; method = "cholesky")
+
+    # least squares solution
+    # faster but numerically less stable
+    if(method=="cholesky")
+        b = (X'X)\(X'y)
+    end
+
+    # slower but numerically more stable
+    if(method=="qr")
+    fct = qr(X)
+    b = fct\y
+    end
+
+    # estimate yy and calculate rss
+    yhat = X*b
+    resid = y-yhat
+
+    return resid
+
+end
+
+function resid(y::Array{Float64, 2}, X::AbstractArray{Float64, 1}; method = "cholesky")
 
     # least squares solution
     # faster but numerically less stable

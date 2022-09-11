@@ -22,7 +22,7 @@ y = phenotype matrix
 X = predictor matrix
 K = kinship matrix, expected to be symmetric and positive definite
 """
-function rotateData(y::AbstractArray{Float64,2},X::AbstractArray{Float64,2},
+function rotateData(y::AbstractArray{Float64, 2}, X::AbstractArray{Float64, 2},
                     K::Array{Float64,2})
 
     # check dimensions
@@ -82,7 +82,7 @@ function rotateData(y::AbstractArray{Float64,2},X::AbstractArray{Float64,2},
 
 end
 
-function makeweights(h2::Float64,lambda::Array{Float64,1})
+function makeweights(h2::Float64, lambda::Array{Float64,1})
 
     vars = h2*lambda .+ (1.0-h2)
     return 1.0./vars

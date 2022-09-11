@@ -209,7 +209,7 @@ function scan_perms(y::Array{Float64,2}, g::Array{Float64,2}, K::Array{Float64,2
               reml::Bool = false, original::Bool = true)
 
     # check the number of traits as this function only works for permutation testing of univariate trait
-    if(size(y,2) != 1)
+    if(size(y, 2) != 1)
         error("Can only handle one trait.")
     end
 
@@ -255,24 +255,21 @@ function scan_perms(y::Array{Float64,2}, g::Array{Float64,2}, K::Array{Float64,2
     # Instead, as by null hypothesis, mean is 0. RSS just becomes the sum of squares of the residuals (r0perm's)
     # (For theoretical derivation of the results, see notebook)
     rss0 = mapslices(x -> sum(x .^2), r0perm; dims = 1)
+    # rss0 = sum(r0perm[:, 1].^2) # a scalar; bc rss0 for every permuted trait is the same under the null (zero mean);
     
     ## make array to hold Alternative RSS's for each permutated trait
     rss1 = similar(rss0)
     ## make array to hold LOD scores
-    lod = zeros(nperms + 1, m)
-
+    # lod = zeros(nperms + 1, m)
+    lod = Array{Float64, 2}(undef, nperms+1, m)
 
     ## loop over markers
     for i = 1:m
 
-        # X00_i = @view X00[:, i]
         ## alternative rss
-        # @inbounds
         rss1[:] = rss(r0perm, reshape(X00[:, i], :, 1)) # takes time; may be optimized; not using reshape
-        # rss1[:] = rss(r0perm, X00_i);
 
         ## calculate LOD score and assign
-        # @inbounds
         lod[:, i] = (n/2)*(log10.(rss0) .- log10.(rss1))
         
     end
