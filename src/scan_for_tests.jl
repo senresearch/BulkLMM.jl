@@ -16,26 +16,14 @@ function permuteHelper(y::Array{Float64, 2}, g::Array{Float64, 2}, K::Array{Floa
     vc = fitlmm(y0, reshape(X0[:,1], :, 1), lambda0; reml = reml) # vc.b is estimated through weighted least square
     r0 = y0 - X0[:,1]*vc.b
 
-    # for testing
-    #=     println("y: ")
-    println(r0[1:6, 1]) =# 
-
-
     # weights inversely-proportional to the variances
     sqrtw = sqrt.(makeweights(vc.h2, lambda0))
     
-
-    #=     println("weights: ")
-    println(wts[1:6]) =#
-
     # rescale by weights; now these have the same mean/variance and are independent
     ## NOTE: although rowDivide! makes in-place changes to the inputs, it only modifies the rotated data which are returned outputs
     rowMultiply!(r0, sqrtw)
     rowMultiply!(X0, sqrtw)
     X00 = resid(X0[:, 2:end], reshape(X0[:, 1], :, 1)) # after re-weighting X, calling resid on re-weighted X is the same as doing wls too.
-
-    #=     println("X: ")
-    println(X00[1:6, 2]) =#
 
     ## random permutations; the first column is the original data
     rng = MersenneTwister(rndseed);
@@ -157,19 +145,20 @@ function scan_perms2(y::Array{Float64,2}, g::Array{Float64,2}, K::Array{Float64,
     # rss0 = rss(r0perm, reshape(X0[:, 1], n, 1)) original implementation; questionable and can result in negative LOD scores
     # Instead, as by null hypothesis, mean is 0. RSS just becomes the sum of squares of the residuals (r0perm's)
     # (For theoretical derivation of the results, see notebook)
-    # rss0 = mapslices(x -> sum(x .^2), r0perm; dims = 1)
     rss0 = sum(r0perm[:, 1].^2) # a scalar; bc rss0 for every permuted trait is the same under the null (zero mean);
     
     ## make array to hold Alternative RSS's for each permutated trait
-
-    ## make array to hold LOD scores
-    rss1 = Array{Float64, 2}(undef, nperms+1, m)
-
+    if original
+        rss1 = Array{Float64, 2}(undef, nperms+1, m)
+    else
+        rss1 = Array{Float64, 2}(undef, nperms, m)
+    end
+    
     ## loop over markers
     for i = 1:m
 
         ## alternative rss
-        rss1[:, i] = rss(r0perm, @view X00[:, i]);
+        @inbounds rss1[:, i] = rss(r0perm, @view X00[:, i]);
         
     end
 

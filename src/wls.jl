@@ -196,8 +196,8 @@ function resid(y::Array{Float64, 2}, X::AbstractArray{Float64, 1}; method = "cho
 
     # slower but numerically more stable
     if(method=="qr")
-    fct = qr(X)
-    b = fct\y
+        fct = qr(X)
+        b = fct\y
     end
 
     # estimate yy and calculate rss
