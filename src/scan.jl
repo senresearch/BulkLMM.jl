@@ -261,7 +261,11 @@ function scan_perms(y::Array{Float64,2}, g::Array{Float64,2}, K::Array{Float64,2
     rss1 = similar(rss0)
     ## make array to hold LOD scores
     # lod = zeros(nperms + 1, m)
-    lod = Array{Float64, 2}(undef, nperms+1, m)
+    if original
+        lod = Array{Float64, 2}(undef, nperms+1, m)
+    else
+        lod = Array{Float64, 2}(undef, nperms, m)
+    end
 
     ## loop over markers
     for i = 1:m
