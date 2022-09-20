@@ -13,9 +13,8 @@ function transform1(y::Array{Float64, 2}, g::Array{Float64, 2}, K::Array{Float64
 end
 
 # Take the rotated data
-function transform2(y0::Array{Float64, 2}, X0::Array{Float64, 2}, lambda0::Array{Float64, 1}; 
-                    nperms::Int64 = 1024, rndseed::Int64 = 0, 
-                    reml::Bool = false, original::Bool = true)
+function transform2(y0::Array{Float64, 2}, X0::Array{Float64, 2}, lambda0::Array{Float64, 1};
+                    reml::Bool = false)
 
         ## Note: estimate once the variance components from the null model and use for all marker scans
         # fit lmm
@@ -26,26 +25,34 @@ function transform2(y0::Array{Float64, 2}, X0::Array{Float64, 2}, lambda0::Array
         # weights inversely-proportional to the variances
         sqrtw = sqrt.(makeweights(vc.h2, lambda0))
 
+        copy_X0 = copy(X0);
+        copy_r0 = copy(r0);
         # rescale by weights; now these have the same mean/variance and are independent
         ## NOTE: although rowDivide! makes in-place changes to the inputs, it only modifies the rotated data which are returned outputs
-        rowMultiply!(r0, sqrtw)
-        rowMultiply!(X0, sqrtw) 
-        X00 = resid(X0[:, 2:end], reshape(X0[:, 1], :, 1)) # after re-weighting X, calling resid on re-weighted X is the same as doing wls too.
+        rowMultiply!(copy_r0, sqrtw) # dont want to change the inputs: r0, X0
+        rowMultiply!(copy_X0, sqrtw) # dont want to change the inputs: r0, X0
+        X00 = resid(copy_X0[:, 2:end], reshape(copy_X0[:, 1], :, 1)) # after re-weighting X, calling resid on re-weighted X is the same as doing wls too.
+
+        return (copy_r0, X00)
+
+end
+
+function transform3(r0::Array{Float64, 2}; 
+                    nperms::Int64 = 1024, rndseed::Int64 = 0, original::Bool = true)
 
         ## random permutations; the first column is the original data
         rng = MersenneTwister(rndseed);
         r0perm = shuffleVector(rng, r0[:, 1], nperms; original = original) # permutation on r0 which have iid standard normal distribution under null
-
-        return (r0perm, X00)
-
+    
+        return r0perm
 end
 
 function scan_distributed(y0::Array{Float64, 2}, X0::Array{Float64, 2}, lambda0::Array{Float64, 1}; 
-                    nperms::Int64 = 1024, rndseed::Int64 = 0, 
-                    reml::Bool = false, original::Bool = true)
+                          nperms::Int64 = 1024, rndseed::Int64 = 0, 
+                          reml::Bool = false, original::Bool = true, nprocs::Int64 = 0)
 
-        (r0perm, X00) = transform2(y0, X0, lambda0; 
-                                    nperms = nperms, rndseed = rndseed, reml = reml, original = original);
+        (r0, X00) = transform2(y0, X0, lambda0; reml = reml);
+        r0perm = transform3(r0; nperms = nperms, rndseed = rndseed, original = original);
 
         (n, m) = size(X00);
 
@@ -70,4 +77,30 @@ function scan_distributed(y0::Array{Float64, 2}, X0::Array{Float64, 2}, lambda0:
 
         return lod
         
+end
+
+# TODO: pass each block 
+function scan_distributed(r0perm::Array{Float64, 2}, X00::Array{Float64, 2})
+
+    (n, m) = size(X00);
+    ncopies = size(r0perm, 2); # may include the original
+
+    rss0 = sum(r0perm[:, 1].^2) # a scalar; bc rss0 for every permuted trait is the same under the null (zero mean);
+
+    ## make array to hold Alternative RSS's for each permutated trait
+    rss1_i = Array{Float64, 1}(undef, ncopies)
+    
+
+    ## alternative rss
+    if markerId < 1 || markerId > m
+        throw(error("No marker found in data."))
+    end
+
+    rss1_i = rss(r0perm, @view X00[:, markerId]);
+
+
+    lod_i = (-n/2)*(log10.(rss1_i) .- log10(rss0))
+
+    return lod_i
+
 end

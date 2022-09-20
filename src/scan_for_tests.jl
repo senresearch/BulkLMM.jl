@@ -12,12 +12,11 @@ function permuteHelper(y::Array{Float64, 2}, g::Array{Float64, 2}, K::Array{Floa
     # rotate data so errors are uncorrelated
     (y0, X0, lambda0) = rotateData(y, [intercept g], K)
 
-    lambda0 = round.(lambda0; digits = 5)
     ## Note: estimate once the variance components from the null model and use for all marker scans
     # fit lmm
-    vc = fitlmm(y0, reshape(X0[:,1], :, 1), lambda0; reml = reml)
+    vc = fitlmm(y0, reshape(X0[:, 1], :, 1), lambda0; reml = reml)
     # println(vc) # vc.b is estimated through weighted least square
-    r0 = y0 - X0[:,1]*vc.b
+    r0 = y0 - X0[:, 1]*vc.b
 
     # weights inversely-proportional to the variances
     sqrtw = sqrt.(makeweights(vc.h2, lambda0))
@@ -120,7 +119,7 @@ function scan_perms2(y::Array{Float64,2}, g::Array{Float64,2}, K::Array{Float64,
 
     # rotate data so errors are uncorrelated
     (y0, X0, lambda0) = rotateData(y, [intercept g], K)
-    lambda0 = round.(lambda0; digits = 5)
+    # lambda0 = round.(lambda0; digits = 5)
 
     ## Note: estimate once the variance components from the null model and use for all marker scans
     # fit lmm
