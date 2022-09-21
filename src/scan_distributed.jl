@@ -79,10 +79,12 @@ function scan_distributed(y0::Array{Float64, 2}, X0::Array{Float64, 2}, lambda0:
         
 end
 
-# TODO: pass each block 
-function scan_distributed(r0perm::Array{Float64, 2}, X00::Array{Float64, 2})
+# TODO: pass each block
+## -- Blocks
+## -- Distributed loop
+function scan_distributed(r0perm::Array{Float64, 2}, X00::Array{Float64, 2}, markerId::Int64)
 
-    (n, m) = size(X00);
+    (n, p) = size(X00);
     ncopies = size(r0perm, 2); # may include the original
 
     rss0 = sum(r0perm[:, 1].^2) # a scalar; bc rss0 for every permuted trait is the same under the null (zero mean);
@@ -92,7 +94,7 @@ function scan_distributed(r0perm::Array{Float64, 2}, X00::Array{Float64, 2})
     
 
     ## alternative rss
-    if markerId < 1 || markerId > m
+    if markerId < 1 || markerId > p
         throw(error("No marker found in data."))
     end
 
@@ -101,6 +103,56 @@ function scan_distributed(r0perm::Array{Float64, 2}, X00::Array{Float64, 2})
 
     lod_i = (-n/2)*(log10.(rss1_i) .- log10(rss0))
 
+    return lod_i
+
+end
+
+function scan_distributed(r0perm::Array{Float64, 2}, X00::Array{Float64, 2})
+
+    (n, p) = size(X00); # n - number of observations; p - number of markers
+    ncopies = size(r0perm, 2); # may include the original
+
+    rss0 = sum(r0perm[:, 1].^2) # a scalar; bc rss0 for every permuted trait is the same under the null (zero mean);
+
+    ## make array to hold Alternative RSS's for each permutated trait
+
+    ## alternative rss
+    rss1 = @distributed (vcat) for j = 1:p
+        @inbounds rss(r0perm, @view X00[:, j]);
+    end
+
+    lod = (-n/2)*(log10.(rss1) .- log10(rss0))
+
+    return lod
+
+end
+
+function scan_distributed_block(r0perm::Array{Float64, 2}, X00::Array{Float64, 2}, blockRange::UnitRange{Int64})
+
+    (n, p) = size(X00); # n - number of observations; p - number of markers
+    ncopies = size(r0perm, 2); # may include the original
+
+    rss0 = sum(r0perm[:, 1].^2) # a scalar; bc rss0 for every permuted trait is the same under the null (zero mean);
+
+    ## make array to hold Alternative RSS's for each permutated trait
+    rss1_i = Array{Float64, 2}(undef, ncopies, length(collect(blockRange)))
+
+    if blockRange.start < 1 || blockRange.stop > p
+        throw(error("Block is out of range of the input markers data."))
+    end
+
+    iter = 1
+    for j in blockRange
+
+        ## alternative rss
+        @inbounds rss1_i[:, iter] = rss(r0perm, @view X00[:, j]);
+        iter = iter + 1;
+
+    end
+
+ 
+    lod_i = (-n/2)*(log10.(rss1_i) .- log10(rss0))
+ 
     return lod_i
 
 end
