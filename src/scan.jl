@@ -214,8 +214,8 @@ function scan_perms(y::Array{Float64,2}, g::Array{Float64,2}, K::Array{Float64,2
     end
 
     # n - the sample size
-    # m - the number of markers
-    (n, m) = size(g)
+    # p - the number of markers
+    (n, p) = size(g)
 
     # make intercept
     intercept = ones(n, 1)
@@ -250,85 +250,95 @@ function scan_perms(y::Array{Float64,2}, g::Array{Float64,2}, K::Array{Float64,2
     ## permute r0 (which is an iid, standard normal distributed N-vector under the null)
     r0perm = shuffleVector(rng, r0[:, 1], nperms; original = original)
 
-    ## Null RSS:
+        ## Null RSS:
     # rss0 = rss(r0perm, reshape(X0[:, 1], n, 1)) original implementation; questionable and can result in negative LOD scores
     # Instead, as by null hypothesis, mean is 0. RSS just becomes the sum of squares of the residuals (r0perm's)
     # (For theoretical derivation of the results, see notebook)
-    rss0 = mapslices(x -> sum(x .^2), r0perm; dims = 1)
-    # rss0 = sum(r0perm[:, 1].^2) # a scalar; bc rss0 for every permuted trait is the same under the null (zero mean);
+    rss0 = sum(r0perm[:, 1].^2) # a scalar; bc rss0 for every permuted trait is the same under the null (zero mean);
     
     ## make array to hold Alternative RSS's for each permutated trait
-    rss1 = similar(rss0)
-    ## make array to hold LOD scores
-    # lod = zeros(nperms + 1, m)
     if original
-        lod = Array{Float64, 2}(undef, nperms+1, m)
+        rss1 = Array{Float64, 2}(undef, nperms+1, p)
     else
-        lod = Array{Float64, 2}(undef, nperms, m)
+        rss1 = Array{Float64, 2}(undef, nperms, p)
     end
-
+    
     ## loop over markers
-    for i = 1:m
+    for i = 1:p
 
         ## alternative rss
-        rss1[:] = rss(r0perm, reshape(X00[:, i], :, 1)) # takes time; may be optimized; not using reshape
-
-        ## calculate LOD score and assign
-        lod[:, i] = (n/2)*(log10.(rss0) .- log10.(rss1))
+        @inbounds rss1[:, i] = rss(r0perm, @view X00[:, i]);
         
     end
 
+    lod = (-n/2)*(log10.(rss1) .- log10(rss0))
+
     return lod
 
 end
 
-## genome scan with permutations
-## more than 1df tests
-function scan_perms_more(y::Array{Float64,2},g::Array{Float64,3},
-              K::Array{Float64,2},nperm::Int64=1024,
-              rndseed::Int64=0, reml::Bool=true)
+function scan_perms_distributed(y::Array{Float64,2}, g::Array{Float64,2}, K::Array{Float64,2};
+                                reml::Bool = false,
+                                nperms::Int64 = 1024, rndseed::Int64 = 0, original::Bool = true,
+                                # (options for blocks, nperms distribution methods...)
+                                nprocs::Int64 = 0)
 
-    # number of markers
-    (n,m,p) = size(g)
-    # flatted genotypes
-    g = permutedims(g, (1, 3, 2))
-    flatg = reshape(g, (n, p*m))
-    # make intercept
-    intcpt = ones(n,1)
-    # rotate data
-    (y0, X0, lambda0) = rotateData(y,[intercept flatg],K)
-    # fit null lmm
-    vc = fitlmm(y0,reshape(X0[:,1], :, 1), lambda0; reml = reml)
-    # weights proportional to the variances
-    sqrtw = sqrt.(makeweights(vc.h2, lambda0))
-    # rescale by weights; now these have same mean/variance and are independent
-    rowMultiply!(y0, sqrtw)
-    rowMultiply!(X0, sqrtw)
+        (y0, X0, lambda0) = transform1(y, g, K); # rotation of data
+        (r0, X00) = transform2(y0, X0, lambda0; reml = reml); # reweighting and taking residuals
+        r0perm = transform3(r0; nperms = nperms, rndseed = rndseed, original = original); # permutations
 
-    ## random permutations; the first column is the original data
-    rng = MersenneTwister(rndseed);
-    y0perm = shuffleVector(rng, y0[:,1], nperm; original=true)
+        (n, p) = size(X00);
 
-    ## null rss vector
-    rss0 = rss(y0perm,reshape(X0[:,1], n, 1))
-    rss1 = similar(out0)
-    ## make array to hold LOD scoresu 
-    lod = zeros(nperm+1, m)
-    ## initialize covariate matrix
-    X = zeros(n, p)
-    X[:, 1] = X0[:, 1]
-    
-    ## loop over markers
-    for i = 1:m
-        ## change the rest of the elements of covariate matrix X
-        idx = 1+((i-1)*p):(i*p-1)
-        X[:,2:(p-1)] = X0[:, idx]
-        ## alternative rss
-        rss1[:] = rss(y0perm, X)
-        ## calculate LOD score and assign
-        lod[:, i] = (n/2)*(log10.(rss0) .- log10.(rss1))
+        addprocs(nprocs);
+
+
+
+end
+
+function distribute_blocks(r0perm::Array{Float64, 2}, X00::Array{Float64, 2}; nblocks::Int64)
+    # Does distributed processes of calculations of LOD scores for markers in each block
+
+    ## (Create blocks...)
+    blocks = createBlocks();
+
+end
+
+function createBlocks()
+
+end
+
+function calcLODs_block(r0perm::Array{Float64, 2}, X00::Array{Float64, 2}, blockRange::UnitRange{Int64})
+    # Given a block of markers, return the LOD scores of all markers in the block
+
+    (n, p) = size(X00); # n - number of observations; p - number of markers
+    ncopies = size(r0perm, 2); # may include the original
+
+    rss0 = sum(r0perm[:, 1].^2) # a scalar; bc rss0 for every permuted trait is the same under the null (zero mean);
+
+    ## make array to hold Alternative RSS's for each permutated trait
+    rss1_i = Array{Float64, 2}(undef, ncopies, length(collect(blockRange)))
+
+    if blockRange.start < 1 || blockRange.stop > p
+        throw(error("Block is out of range of the input markers data."))
     end
 
-    return lod
+    iter = 1
+    for j in blockRange
+
+        ## alternative rss
+        @inbounds rss1_i[:, iter] = rss(r0perm, @view X00[:, j]);
+        iter = iter + 1;
+
+    end
+
+ 
+    lod_i = (-n/2)*(log10.(rss1_i) .- log10(rss0))
+ 
+    return lod_i
+end
+
+function distributed_nperms()
+    # Does distributed process of number of permutations
 
 end
+
