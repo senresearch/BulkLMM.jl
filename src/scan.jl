@@ -327,7 +327,10 @@ function distribute_by_blocks(r0perm::Array{Float64, 2}, X00::Array{Float64, 2},
     p = size(X00, 2);
 
     ## (Create blocks...)
-    blocks = createBlocks2(p, nblocks);
+    
+    block_size = ceil(Int, p/nblocks);
+    blocks = createBlocks2(p, block_size);
+    # blocks = createBlocks(p, nblocks);
 
     LODs_blocks = pmap(x -> calcLODs_block(r0perm, X00, x), blocks);
     results = reduce(hcat, LODs_blocks);
