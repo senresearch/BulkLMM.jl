@@ -4,7 +4,8 @@
 # 
 function createBlocks(nmarkers::Int64, nblocks::Int64)
 
-    block_size = Int(ceil(nmarkers/nblocks));
+    block_size = floor(Int, nmarkers/nblocks);
+
     blocks = UnitRange{Int64}[];
 
     # Interate to create the bounds of each block
@@ -13,8 +14,32 @@ function createBlocks(nmarkers::Int64, nblocks::Int64)
         id_end::Int = id_start - 1 + block_size;
 
         # for the last block, (remainder)
-        if id_end > block_size
-            id_end = block_size
+        if k == nblocks
+            if id_end < nmarkers
+                id_end = nmarkers
+            end
+        end
+
+        push!(blocks, id_start:id_end)
+    end
+        
+    return blocks
+
+end
+
+function createBlocks2(nmarkers::Int64, block_size::Int64)
+
+    nblocks = ceil(Int, nmarkers/block_size);
+
+    blocks = UnitRange{Int64}[];
+
+    # Interate to create the bounds of each block
+    for k = 1:nblocks
+        id_start::Int = 1 + block_size * (k - 1);
+        id_end::Int = id_start - 1 + block_size;
+
+        if id_end > nmarkers
+            id_end = nmarkers
         end
 
         push!(blocks, id_start:id_end)
@@ -31,12 +56,12 @@ function calcLODs_block(r0perm::Array{Float64, 2}, X00::Array{Float64, 2}, block
     # Given a block of markers, return the LOD scores of all markers in the block
 
     (n, p) = size(X00); # n - number of observations; p - number of markers
-    ncopies = size(r0perm, 2); # may include the original
+    np = size(r0perm, 2); # may include the original
 
     rss0 = sum(r0perm[:, 1].^2) # a scalar; bc rss0 for every permuted trait is the same under the null (zero mean);
 
     ## make array to hold Alternative RSS's for each permutated trait
-    rss1_i = Array{Float64, 2}(undef, ncopies, length(collect(blockRange)))
+    rss1_i = Array{Float64, 2}(undef, np, length(collect(blockRange)))
 
     if blockRange.start < 1 || blockRange.stop > p
         throw(error("Block is out of range of the input markers data."))
@@ -55,6 +80,30 @@ function calcLODs_block(r0perm::Array{Float64, 2}, X00::Array{Float64, 2}, block
     lod_i = (-n/2)*(log10.(rss1_i) .- log10(rss0))
  
     return lod_i
+end
+
+function calcLODs_perms(r0::Array{Float64, 2}, X00::Array{Float64, 2}, nperms::Int64, rndseed::Int64)
+
+    r0perm = transform3(r0; nperms = nperms, rndseed = rndseed, original = false);
+
+    (n, m) = size(X00);
+
+    rss0 = sum(r0perm[:, 1].^2) # a scalar; bc rss0 for every permuted trait is the same under the null (zero mean);
+
+    rss1 = Array{Float64, 2}(undef, nperms, m) 
+
+    ## loop over markers
+    for i = 1:m
+
+        ## alternative rss
+        rss1[:, i] = rss(r0perm, @view X00[:, i]);
+
+    end
+
+    lod = (-n/2)*(log10.(rss1) .- log10(rss0))
+
+    return lod
+
 end
 
 function transform1(y::Array{Float64, 2}, g::Array{Float64, 2}, K::Array{Float64, 2})
