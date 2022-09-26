@@ -277,68 +277,65 @@ function scan_perms(y::Array{Float64,2}, g::Array{Float64,2}, K::Array{Float64,2
 
 end
 
+
 function scan_perms_distributed(y::Array{Float64,2}, g::Array{Float64,2}, K::Array{Float64,2};
                                 reml::Bool = false,
                                 nperms::Int64 = 1024, rndseed::Int64 = 0, original::Bool = true,
                                 # (options for blocks, nperms distribution methods...)
+                                option::String = "by blocks", nblocks::Int64 = 1, ncopies::Int64 = 1, 
                                 nprocs::Int64 = 0)
 
-        (y0, X0, lambda0) = transform1(y, g, K); # rotation of data
-        (r0, X00) = transform2(y0, X0, lambda0; reml = reml); # reweighting and taking residuals
-        r0perm = transform3(r0; nperms = nperms, rndseed = rndseed, original = original); # permutations
+    # addprocs(nprocs);
+    # @everywhere using ParallelDataTransfer
+    # sendto(workers(), y = y);
+    #sendto(workers(), g = g);
+    #sendto(workers(), K = K);
+    #sendto(workers(), reml = reml);
 
-        (n, p) = size(X00);
+    #@everywhere begin
+        #include("../src/parallel_helpers.jl"); # for now; needs to be revised later
+        #(y0, X0, lambda0) = transform1(y, g, K); # rotation of data
+        # (r0, X00) = transform2(y0, X0, lambda0; reml = reml); # reweighting and taking residuals
+    
+    #end
 
-        addprocs(nprocs);
+    (y0, X0, lambda0) = transform1(y, g, K); # rotation of data
+    (r0, X00) = transform2(y0, X0, lambda0; reml = reml); # reweighting and taking residuals
+    r0perm = transform3(r0; nperms = nperms, rndseed = rndseed, original = original);
 
+    if option == "by blocks"
+        # @everywhere r0perm = transform3(r0; nperms = nperms, rndseed = rndseed, original = original); # permutations
+        results = distribute_blocks(r0perm, X00, nblocks);
+    elseif option == "by nperms"
+        results = distribute_nperms(ncopies. original);
+    else
+        throw(error("Option unsupported."))
+    end
 
+    return results
 
 end
 
-function distribute_blocks(r0perm::Array{Float64, 2}, X00::Array{Float64, 2}; nblocks::Int64)
+# Inputs: r0perm, X00, number of blocks required
+# Outputs: a matrix which is the hcat of LOD scores of all the blocks
+# calculate the results of every block distributedly
+function distribute_blocks(r0perm::Array{Float64, 2}, X00::Array{Float64, 2}, nblocks::Int64)
     # Does distributed processes of calculations of LOD scores for markers in each block
 
+    p = size(X00, 2);
     ## (Create blocks...)
-    blocks = createBlocks();
+    
+    blocks = createBlocks(p, nblocks);
+
+    LODs_blocks = pmap(x -> calcLODs_block(r0perm, X00, x), blocks);
+    results = reduce(hcat, LODs_blocks);
+
+    return results
 
 end
 
-function createBlocks()
-
-end
-
-function calcLODs_block(r0perm::Array{Float64, 2}, X00::Array{Float64, 2}, blockRange::UnitRange{Int64})
-    # Given a block of markers, return the LOD scores of all markers in the block
-
-    (n, p) = size(X00); # n - number of observations; p - number of markers
-    ncopies = size(r0perm, 2); # may include the original
-
-    rss0 = sum(r0perm[:, 1].^2) # a scalar; bc rss0 for every permuted trait is the same under the null (zero mean);
-
-    ## make array to hold Alternative RSS's for each permutated trait
-    rss1_i = Array{Float64, 2}(undef, ncopies, length(collect(blockRange)))
-
-    if blockRange.start < 1 || blockRange.stop > p
-        throw(error("Block is out of range of the input markers data."))
-    end
-
-    iter = 1
-    for j in blockRange
-
-        ## alternative rss
-        @inbounds rss1_i[:, iter] = rss(r0perm, @view X00[:, j]);
-        iter = iter + 1;
-
-    end
-
- 
-    lod_i = (-n/2)*(log10.(rss1_i) .- log10(rss0))
- 
-    return lod_i
-end
-
-function distributed_nperms()
-    # Does distributed process of number of permutations
+function distributed_nperms(ncopies::Int64, original::Bool)
+    # Does distributed process of the number of permutations
 
 end
 
