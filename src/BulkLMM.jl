@@ -19,7 +19,7 @@ export wls
 
 # code for rorateData and flmm
 include("lmm.jl")
-# sata type we are exporting
+# data type we are exporting
 export Flmm
 # functions we are exporting
 export rotateData, flmm
