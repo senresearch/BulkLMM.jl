@@ -120,7 +120,7 @@ function transform1(y::Array{Float64, 2}, g::Array{Float64, 2}, K::Array{Float64
 
 end
 
-# Take the rotated data
+# Takes the rotated data
 function transform2(y0::Array{Float64, 2}, X0::Array{Float64, 2}, lambda0::Array{Float64, 1};
                     reml::Bool = false)
 
@@ -148,9 +148,14 @@ end
 function transform3(r0::Array{Float64, 2}; 
                     nperms::Int64 = 1024, rndseed::Int64 = 0, original::Bool = true)
 
-        ## random permutations; the first column is the original data
-        rng = MersenneTwister(rndseed);
-        r0perm = shuffleVector(rng, r0[:, 1], nperms; original = original) # permutation on r0 which have iid standard normal distribution under null
+
+        if nperms == 0
+            r0perm = r0;
+        else
+            ## random permutations; the first column is the original data
+            rng = MersenneTwister(rndseed);
+            r0perm = shuffleVector(rng, r0[:, 1], nperms; original = original) # permutation on r0 which have iid standard normal distribution under null
+        end
     
         return r0perm
 end
