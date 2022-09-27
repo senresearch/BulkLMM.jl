@@ -388,3 +388,27 @@ function distribute_by_nperms(r0::Array{Float64, 2}, X00::Array{Float64, 2},
 
 end
 
+#= scan(y, g, K; Control type arg)
+
+    Control type args:
+
+        ScanType: control Type input 
+            > Serial(nperms allowed to be 0 indicating no permutations)
+            > Distributed(nperms, nblocks, type of algorithm)
+
+
+=#
+
+#= 
+Next: 
+    - multiple threads;
+    - tests, plus comparing with GEMMA performances;
+    - adjust for additional covariates (X), other than G;
+        > first scan(y_i, X, G, K)
+    - multiple traits...
+    - profile
+
+Future: 
+    - single precision (Union type to control precision type: Float64, Float32, ...)
+
+=#
