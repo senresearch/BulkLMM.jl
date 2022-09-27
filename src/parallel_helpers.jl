@@ -84,13 +84,13 @@ end
 
 function calcLODs_perms(r0::Array{Float64, 2}, X00::Array{Float64, 2}, nperms::Int64, rndseed::Int64)
 
-    r0perm = transform3(r0; nperms = nperms, rndseed = rndseed, original = false);
+    r0perm = transform_permute(r0; nperms = nperms, rndseed = rndseed, original = false);
 
     (n, m) = size(X00);
 
-    rss0 = sum(r0perm[:, 1].^2) # a scalar; bc rss0 for every permuted trait is the same under the null (zero mean);
+    rss0 = sum(r0perm[:, 1].^2); # a scalar; bc rss0 for every permuted trait is the same under the null (zero mean);
 
-    rss1 = Array{Float64, 2}(undef, nperms, m) 
+    rss1 = Array{Float64, 2}(undef, nperms, m); 
 
     ## loop over markers
     for i = 1:m
@@ -106,7 +106,7 @@ function calcLODs_perms(r0::Array{Float64, 2}, X00::Array{Float64, 2}, nperms::I
 
 end
 
-function transform1(y::Array{Float64, 2}, g::Array{Float64, 2}, K::Array{Float64, 2})
+function transform_rotation(y::Array{Float64, 2}, g::Array{Float64, 2}, K::Array{Float64, 2})
         
     # n - the sample sizes
     n = size(g, 1);
@@ -121,7 +121,7 @@ function transform1(y::Array{Float64, 2}, g::Array{Float64, 2}, K::Array{Float64
 end
 
 # Takes the rotated data
-function transform2(y0::Array{Float64, 2}, X0::Array{Float64, 2}, lambda0::Array{Float64, 1};
+function transform_reweight(y0::Array{Float64, 2}, X0::Array{Float64, 2}, lambda0::Array{Float64, 1};
                     reml::Bool = false)
 
         ## Note: estimate once the variance components from the null model and use for all marker scans
@@ -145,7 +145,7 @@ function transform2(y0::Array{Float64, 2}, X0::Array{Float64, 2}, lambda0::Array
 
 end
 
-function transform3(r0::Array{Float64, 2}; 
+function transform_permute(r0::Array{Float64, 2}; 
                     nperms::Int64 = 1024, rndseed::Int64 = 0, original::Bool = true)
 
 

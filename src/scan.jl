@@ -279,6 +279,25 @@ end
 ######################################### Distributed Processes ####################################
 ####################################################################################################
 
+#=
+
+Functions hierarchy:
+
+scan_perms_distributed(original data, 
+                       total number of permutations required, 
+                       option of which algorithm to be used, ...):
+
+    > distribute_by_blocks(number of blocks, ...): 
+        (parallel_helpers.jl)   
+        - createBlocks(number of blocks (or the size of each block?), ...): create blocks with the same sizes
+        - calcLODs_block(...): calculate LOD scores for all markers in the given block 
+    
+    > distribute_by_nperms():
+        (parallel_helpers.jl)   
+        - calcLODs_perms(rndseed, ...): calculate LOD scores for a (subset of the total) number of permutations
+
+
+=#
 
 function scan_perms_distributed(y::Array{Float64,2}, g::Array{Float64,2}, K::Array{Float64,2};
                                 reml::Bool = false,
@@ -301,9 +320,9 @@ function scan_perms_distributed(y::Array{Float64,2}, g::Array{Float64,2}, K::Arr
     
     #end
 
-    (y0, X0, lambda0) = transform1(y, g, K); # rotation of data
-    (r0, X00) = transform2(y0, X0, lambda0; reml = reml); # reweighting and taking residuals
-    r0perm = transform3(r0; nperms = nperms, rndseed = rndseed, original = original);
+    (y0, X0, lambda0) = transform_rotation(y, g, K); # rotation of data
+    (r0, X00) = transform_reweight(y0, X0, lambda0; reml = reml); # reweighting and taking residuals
+    r0perm = transform_permute(r0; nperms = nperms, rndseed = rndseed, original = original);
 
     if option == "by blocks"
         # @everywhere r0perm = transform3(r0; nperms = nperms, rndseed = rndseed, original = original); # permutations
@@ -318,9 +337,7 @@ function scan_perms_distributed(y::Array{Float64,2}, g::Array{Float64,2}, K::Arr
 
 end
 
-# Inputs: r0perm, X00, number of blocks required
-# Outputs: a matrix which is the hcat of LOD scores of all the blocks
-# calculate the results of every block distributedly
+
 function distribute_by_blocks(r0perm::Array{Float64, 2}, X00::Array{Float64, 2}, nblocks::Int64)
     # Does distributed processes of calculations of LOD scores for markers in each block
 
