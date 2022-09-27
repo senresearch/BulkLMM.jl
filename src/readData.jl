@@ -203,9 +203,11 @@ end
 function transform_bxd_geno_to_gemma(inputfile::AbstractString, outputfile::AbstractString)
     data = readdlm(inputfile, ','; header=true)
     marker_names = data[2][2:2:end]
-    data = data[1][:, 2:2:end]
-    ignore_columns = fill("X", size(data)[2], 2)
-    output = hcat(hcat(marker_names,ignore_columns), transpose(data))
-    writeToFile(output , outputfile)
+    marker_names = map(x -> SubString(x, 1, length(x)-3), marker_names);
+    data = 2 .* data[1][:, 2:2:end]
+    minor_allele = fill("A", size(data)[2], 1);
+    major_allele = fill("B", size(data)[2], 1);
+    output = hcat(hcat(marker_names, minor_allele, major_allele), transpose(data))
+    # writeToFile(output , outputfile)
     return output
 end
