@@ -194,10 +194,11 @@ function writeToFile(data, filename)
 end
 
 function transform_bxd_pheno_to_gemma(inputfile::AbstractString, outputfile::AbstractString, iter::Int64)
-    pheno = readdlm(inputfile, ',', skipstart=1)[:, 2:end-1];
-    open(outputfile,"w") do io
-        writedlm(io, pheno[:,iter])
+    pheno = readdlm(inputfile, ',', skipstart = 1)[:, 2:end-1];
+    open(outputfile, "w") do io
+        writedlm(io, pheno[:, iter])
     end
+    return pheno
 end
 
 function transform_bxd_geno_to_gemma(inputfile::AbstractString, outputfile::AbstractString)
@@ -208,6 +209,6 @@ function transform_bxd_geno_to_gemma(inputfile::AbstractString, outputfile::Abst
     minor_allele = fill("A", size(data)[2], 1);
     major_allele = fill("B", size(data)[2], 1);
     output = hcat(hcat(marker_names, minor_allele, major_allele), transpose(data))
-    # writeToFile(output , outputfile)
+    writeToFile(output , outputfile)
     return output
 end
