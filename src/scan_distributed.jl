@@ -52,7 +52,12 @@ function scan_distributed(y0::Array{Float64, 2}, X0::Array{Float64, 2}, lambda0:
                           reml::Bool = false, original::Bool = true, nprocs::Int64 = 0)
 
         (r0, X00) = transform2(y0, X0, lambda0; reml = reml);
-        r0perm = transform3(r0; nperms = nperms, rndseed = rndseed, original = original);
+        
+        if nperms == 0
+            r0perm = r0;
+        else
+            r0perm = transform3(r0; nperms = nperms, rndseed = rndseed, original = original);
+        end
 
         (n, m) = size(X00);
 
