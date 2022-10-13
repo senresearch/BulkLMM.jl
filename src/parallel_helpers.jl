@@ -146,7 +146,7 @@ function transform_rotation(y::Array{Float64, 2}, g::Array{Float64, 2}, K::Array
 
 end
 
-# Takes the rotated data
+# Takes the rotated data, evaluates the VC estimators (only based on the intercept model) for weights calculation, and finally re-weights the input data.
 function transform_reweight(y0::Array{Float64, 2}, X0::Array{Float64, 2}, lambda0::Array{Float64, 1};
                     reml::Bool = false)
 
@@ -158,7 +158,8 @@ function transform_reweight(y0::Array{Float64, 2}, X0::Array{Float64, 2}, lambda
 
         # weights inversely-proportional to the variances
         sqrtw = sqrt.(makeweights(vc.h2, lambda0))
-
+    
+        # make copies so that the original data will not be overwritten
         copy_X0 = copy(X0);
         copy_r0 = copy(r0);
         # rescale by weights; now these have the same mean/variance and are independent
