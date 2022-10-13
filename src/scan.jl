@@ -332,57 +332,6 @@ function scan_perms_distributed(y::Array{Float64,2}, g::Array{Float64,2}, K::Arr
 
 end
 
-
-function distribute_by_blocks(r0perm::Array{Float64, 2}, X00::Array{Float64, 2}, nblocks::Int64)
-    # Does distributed processes of calculations of LOD scores for markers in each block
-
-    p = size(X00, 2);
-
-    ## (Create blocks...)
-    
-    block_size = ceil(Int, p/nblocks);
-    blocks = createBlocks(p, block_size);
-    # blocks = createBlocks(p, nblocks);
-
-    LODs_blocks = pmap(x -> calcLODs_block(r0perm, X00, x), blocks);
-    results = reduce(hcat, LODs_blocks);
-
-    return results
-
-end
-
-function distribute_by_nperms(r0::Array{Float64, 2}, X00::Array{Float64, 2}, 
-    nperms::Int64, ncopies::Int64, original::Bool)
-
-    (n, m) = size(X00);
-    seeds_list = sample((1:(10*ncopies)), ncopies; replace = false);
-
-    # Does distributed process of the number of permutations
-    each_nperms = Int(ceil(nperms/ncopies));
-    LODs_nperms = pmap(x -> calcLODs_perms(r0, X00, each_nperms, x), seeds_list);
-    results = reduce(vcat, LODs_nperms);
-
-    # If we want the results for the original trait vector, calculate LODs separately from 
-    # the distributed processes.
-    if original == true
-        rss0 = sum(r0[:, 1].^2);
-        rss1 = Array{Float64, 2}(undef, 1, m);
-        
-        for i = 1:m
-
-            ## alternative rss for the original trait vector
-            rss1[:, i] = rss(r0, @view X00[:, i]);
-            
-        end
-
-        original_LODs = (-n/2)*(log10.(rss1) .- log10(rss0));
-        results = vcat(original_LODs, results);
-    end
-
-    return results
-
-end
-
 #= scan(y, g, K; Control type arg)
 
     Control type args:
