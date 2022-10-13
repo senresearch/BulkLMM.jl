@@ -306,23 +306,19 @@ function scan_perms_distributed(y::Array{Float64,2}, g::Array{Float64,2}, K::Arr
                                 option::String = "by blocks", nblocks::Int64 = 1, ncopies::Int64 = 1, 
                                 nprocs::Int64 = 0)
 
-    # addprocs(nprocs);
-    # @everywhere using ParallelDataTransfer
-    # sendto(workers(), y = y);
-    #sendto(workers(), g = g);
-    #sendto(workers(), K = K);
-    #sendto(workers(), reml = reml);
-
-    #@everywhere begin
-        #include("../src/parallel_helpers.jl"); # for now; needs to be revised later
-        #(y0, X0, lambda0) = transform1(y, g, K); # rotation of data
-        # (r0, X00) = transform2(y0, X0, lambda0; reml = reml); # reweighting and taking residuals
-    
-    #end
-
     (y0, X0, lambda0) = transform_rotation(y, g, K); # rotation of data
     (r0, X00) = transform_reweight(y0, X0, lambda0; reml = reml); # reweighting and taking residuals
-    r0perm = transform_permute(r0; nperms = nperms, rndseed = rndseed, original = original);
+
+    # If no permutation testing is required, move forward to process the single original vector
+    if nperms == 0
+        if original == false
+            throw(error("If no permutation testing is required, input value of `original` has to be `true`."));
+        end
+
+        r0perm = r0;
+    else
+        r0perm = transform_permute(r0; nperms = nperms, rndseed = rndseed, original = original);
+    end
 
     if option == "by blocks"
         # @everywhere r0perm = transform3(r0; nperms = nperms, rndseed = rndseed, original = original); # permutations
