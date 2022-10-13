@@ -1,33 +1,8 @@
 
 # Inputs: total number of markers to be divided, number of blocks required
 # Outputs: a list of ranges for every block
-# 
-function createBlocks(nmarkers::Int64, nblocks::Int64)
 
-    block_size = floor(Int, nmarkers/nblocks);
-
-    blocks = UnitRange{Int64}[];
-
-    # Interate to create the bounds of each block
-    for k = 1:nblocks
-        id_start::Int = 1 + block_size * (k - 1);
-        id_end::Int = id_start - 1 + block_size;
-
-        # for the last block, (remainder)
-        if k == nblocks
-            if id_end < nmarkers
-                id_end = nmarkers
-            end
-        end
-
-        push!(blocks, id_start:id_end)
-    end
-        
-    return blocks
-
-end
-
-function createBlocks2(nmarkers::Int64, block_size::Int64)
+function createBlocks(nmarkers::Int64, block_size::Int64)
 
     nblocks = ceil(Int, nmarkers/block_size);
 

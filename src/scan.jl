@@ -45,7 +45,6 @@ end
 # scan markers under the null
 ###
 
-
 """
     scan_null(y, g, K, reml, method)
 
@@ -342,7 +341,7 @@ function distribute_by_blocks(r0perm::Array{Float64, 2}, X00::Array{Float64, 2},
     ## (Create blocks...)
     
     block_size = ceil(Int, p/nblocks);
-    blocks = createBlocks2(p, block_size);
+    blocks = createBlocks(p, block_size);
     # blocks = createBlocks(p, nblocks);
 
     LODs_blocks = pmap(x -> calcLODs_block(r0perm, X00, x), blocks);
