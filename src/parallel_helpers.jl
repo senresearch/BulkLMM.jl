@@ -175,14 +175,9 @@ end
 function transform_permute(r0::Array{Float64, 2}; 
                     nperms::Int64 = 1024, rndseed::Int64 = 0, original::Bool = true)
 
-
-        if nperms == 0
-            r0perm = r0;
-        else
-            ## random permutations; the first column is the original data
-            rng = MersenneTwister(rndseed);
-            r0perm = shuffleVector(rng, r0[:, 1], nperms; original = original) # permutation on r0 which have iid standard normal distribution under null
-        end
+        ## random permutations; the first column is the original data
+        rng = MersenneTwister(rndseed);
+        r0perm = shuffleVector(rng, r0[:, 1], nperms; original = original) # permutation on r0 which have iid standard normal distribution under null
     
         return r0perm
 end
