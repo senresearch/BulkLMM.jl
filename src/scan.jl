@@ -320,7 +320,6 @@ function scan_perms_distributed(y::Array{Float64,2}, g::Array{Float64,2}, K::Arr
     end
 
     if option == "by blocks"
-        # @everywhere r0perm = transform3(r0; nperms = nperms, rndseed = rndseed, original = original); # permutations
         results = distribute_by_blocks(r0perm, X00, nblocks);
     elseif option == "by nperms"
         results = distribute_by_nperms(r0, X00, nperms, ncopies, original);
