@@ -295,7 +295,7 @@ function scan_lite(Y0::Array{Float64, 2}, X0::Array{Float64, 2},
     wY0 = rowMultiply(Y0, sqrtw);
     wX0 = rowMultiply(X0, sqrtw);
 
-    wX0_intercept = wX0[:, 1];
+    wX0_intercept = reshape(wX0[:, 1], :, 1);
     wX0_covar = wX0[:, 2:end];
 
     R = computeR_LMM(wY0, wX0_covar, wX0_intercept);
