@@ -148,7 +148,7 @@ function scan_alt(y::Array{Float64,2},g::Array{Float64,2}, K::Array{Float64,2};
                   reml::Bool = false)
 
     # number of markers
-    (n, m) = size(g)
+    (n, p) = size(g)
     # make intercept
     intercept = ones(n, 1)
     # rotate data
@@ -158,14 +158,35 @@ function scan_alt(y::Array{Float64,2},g::Array{Float64,2}, K::Array{Float64,2};
     # fit null lmm
     out00 = fitlmm(y0, X00, lambda0; reml = reml);
 
+    # weights proportional to the variances
+    sqrtw = sqrt.(makeweights(out00.h2, lambda0))
 
-    lod = zeros(m)
+    # rescale by weights
+    wy0_null = rowMultiply(y0, sqrtw)
+    wX0_null = rowMultiply(X0, sqrtw)
+
+    rss0 = rss(wy0_null, reshape(wX0_null[:, 1], n, 1))[1]
+
+    lod = zeros(p)
     X = zeros(n, 2)
-    X[:,1] = X0[:, 1]
-    for i = 1:m
+    X[:, 1] = X0[:, 1]
+    for i = 1:p
         X[:, 2] = X0[:, i+1]
-        out11 = fitlmm(y0, X, lambda0; reml = reml)
-        lod[i] = (out11.ell - out00.ell)/log(10)
+        out11 = fitlmm(y0, X, lambda0; reml = reml);
+
+        # weights proportional to the variances
+        sqrtw = sqrt.(makeweights(out11.h2, lambda0))
+
+        # rescale by weights
+        wy0_alt = rowMultiply(y0, sqrtw)
+        wX0_alt = rowMultiply(X0, sqrtw)
+
+        rss1 = rss(wy0_alt, reshape(wX0_alt[:, 1], n, 1))[1]
+
+        lrt = (rss0 - rss1)/out00.sigma2
+        lod[i] = lrt/(2*log(10))
+
+        # lod[i] = (out11.ell - out00.ell)/log(10)
     end
 
     return (out00.sigma2, out00.h2, lod)
