@@ -95,14 +95,15 @@ function scan_null(y::Array{Float64,2}, g::Array{Float64,2}, K::Array{Float64,2}
     rowMultiply!(X0, sqrtw)
 
     # perform genome scan
-    out0 = rss(y0, reshape(X0[:, 1], n, 1))
+    rss0 = rss(y0, reshape(X0[:, 1], n, 1))[1]
     lod = zeros(m)
     X = zeros(n, 2)
     X[:, 1] = X0[:, 1]
     for i = 1:m
         X[:, 2] = X0[:, i+1]
-        out1 = rss(y0, X)
-        lod[i] = (n/2)*(log10(out0[1]) - log10(out1[1]))
+        rss1 = rss(y0, X)[1]
+        lrt = (rss0 - rss1)/out00.sigma2
+        lod[i] = lrt/(2*log(10))
     end
 
     return (out00.sigma2, out00.h2, lod)
