@@ -18,7 +18,7 @@ Given the pairwise correlation `r` and sample size `n`, convert `r` to the corre
 function r2lod(r::Float64, n::Int64)
     rsq = (r/n)^2
 
-    return -(n/2.0) * log10(1.0-rsq);
+    return -(n/2.0) * log10(abs(1.0-rsq));
 end
 
 
