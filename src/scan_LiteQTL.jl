@@ -132,7 +132,7 @@ function scan_lite_univar(y0_j::Array{Float64, 1}, X0_intercept::Array{Float64, 
 
     # estimate the heritability from the null model and apply it to the reweighting of all markers;
     vc = fitlmm(y0, X0_intercept, lambda0; reml = reml);
-    sqrtw = sqrt.(makeweights(vc.h2, lambda0));
+    sqrtw = sqrt.(abs.(makeweights(vc.h2, lambda0)));
 
     # re-weight the data; then in theory, the observations are homoskedestic and independent.
     wy0 = rowMultiply(y0, sqrtw);
@@ -291,7 +291,7 @@ function scan_lite(Y0::Array{Float64, 2}, X0::Array{Float64, 2},
     hsq::Float64, lambda0::Array{Float64, 1})
 
     n = size(Y0, 1)
-    sqrtw = sqrt.(makeweights(hsq, lambda0));
+    sqrtw = sqrt.(abs.(makeweights(hsq, lambda0)));
 
     wY0 = rowMultiply(Y0, sqrtw);
     wX0 = rowMultiply(X0, sqrtw);
