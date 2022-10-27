@@ -165,7 +165,7 @@ function scan_alt(y::Array{Float64,2},g::Array{Float64,2}, K::Array{Float64,2};
     wy0_null = rowMultiply(y0, sqrtw)
     wX0_null = rowMultiply(X0, sqrtw)
 
-    rss0 = rss(wy0_null, reshape(wX0_null[:, 1], n, 1))[1]
+    rss0 = rss(wy0_null, reshape(wX0_null[:, 1], n, 1))[1]/out00.sigma2
 
     lod = zeros(p)
     X = zeros(n, 2)
@@ -181,9 +181,9 @@ function scan_alt(y::Array{Float64,2},g::Array{Float64,2}, K::Array{Float64,2};
         wy0_alt = rowMultiply(y0, sqrtw)
         wX0_alt = rowMultiply(X0, sqrtw)
 
-        rss1 = rss(wy0_alt, reshape(wX0_alt[:, 1], n, 1))[1]
+        rss1 = rss(wy0_alt, reshape(wX0_alt[:, 1], n, 1))[1]/out11.sigma2
 
-        lrt = (rss0 - rss1)/out00.sigma2
+        lrt = rss0 - rss1
         lod[i] = lrt/(2*log(10))
 
         # lod[i] = (out11.ell - out00.ell)/log(10)
