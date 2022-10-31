@@ -154,6 +154,8 @@ function scan_alt(y::Array{Float64,2},g::Array{Float64,2}, K::Array{Float64,2};
     # rotate data
     (y0, X0, lambda0) = rotateData(y, [intercept g], K)
 
+    pve_list = Array{Float64, 1}(undef, p);
+
     X00 = reshape(X0[:, 1], :, 1)
     # fit null lmm
     out00 = fitlmm(y0, X00, lambda0; reml = reml);
@@ -166,10 +168,12 @@ function scan_alt(y::Array{Float64,2},g::Array{Float64,2}, K::Array{Float64,2};
         
         out11 = fitlmm(y0, X, lambda0; reml = reml);
 
+        pve_list[i] = out11.h2;
+
         lod[i] = (out11.ell - out00.ell)/log(10)
     end
 
-    return (out00.sigma2, out00.h2, lod)
+    return (out00.sigma2, out00.h2, pve_list, lod)
 
 end
 
