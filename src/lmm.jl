@@ -142,6 +142,7 @@ function fitlmm(y::Array{Float64, 2}, X::Array{Float64, 2}, lambda::Array{Float6
         out = wls(y, X, makeweights(h2, lambda); reml = reml, loglik = loglik)
         return -out.ell
     end
+    ## avoid the use of global variable in inner function;
 
     opt = optimize(logLik0, max(h20-d, 0.0), min(h20+d, 1.0))
     h2 = opt.minimizer
