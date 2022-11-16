@@ -33,11 +33,12 @@ A list of output values are returned:
 """
 
 function scan(y::Array{Float64,2}, g::Array{Float64,2}, K::Array{Float64,2};
-              reml::Bool = false, method::String = "null")
-    if(method == "null")
-        return scan_null(y, g, K; reml = reml)
-    elseif(method == "alt")
-        return scan_alt(y, g, K; reml = reml)
+              prior::Array{Float64, 1} = [0, 0], 
+              reml::Bool = false, assumption::String = "null", method::String = "qr")
+    if(assumption == "null")
+        return scan_null(y, g, K, prior; reml = reml, method = method)
+    elseif(assumption == "alt")
+        return scan_alt(y, g, K, prior; reml = reml, method = method)
     end
 end
 
@@ -77,8 +78,8 @@ A list of output values are returned:
 """
 
 
-function scan_null(y::Array{Float64,2}, g::Array{Float64,2}, K::Array{Float64,2};
-                   reml::Bool = false)
+function scan_null(y::Array{Float64, 2}, g::Array{Float64, 2}, K::Array{Float64, 2}, prior::Array{Float64, 1};
+                   reml::Bool = false, method::String = "qr")
 
     # number of markers
     (n, m) = size(g)
@@ -87,7 +88,7 @@ function scan_null(y::Array{Float64,2}, g::Array{Float64,2}, K::Array{Float64,2}
     # rotate data
     (y0, X0, lambda0) = rotateData(y, [intercept g], K)
     # fit null lmm
-    out00 = fitlmm(y0, reshape(X0[:, 1], :, 1), lambda0; reml = reml)
+    out00 = fitlmm(y0, reshape(X0[:, 1], :, 1), lambda0, prior; reml = reml, method = method)
     # weights proportional to the variances
     sqrtw = sqrt.(makeweights(out00.h2, lambda0))
     # rescale by weights
@@ -95,13 +96,13 @@ function scan_null(y::Array{Float64,2}, g::Array{Float64,2}, K::Array{Float64,2}
     rowMultiply!(X0, sqrtw)
 
     # perform genome scan
-    rss0 = rss(y0, reshape(X0[:, 1], n, 1))[1]
+    rss0 = rss(y0, reshape(X0[:, 1], n, 1); method = method)[1]
     lod = zeros(m)
     X = zeros(n, 2)
     X[:, 1] = X0[:, 1]
     for i = 1:m
         X[:, 2] = X0[:, i+1]
-        rss1 = rss(y0, X)[1]
+        rss1 = rss(y0, X; method = method)[1]
         lrt = (rss0 - rss1)/out00.sigma2
         lod[i] = lrt/(2*log(10))
     end
@@ -144,8 +145,8 @@ A list of output values are returned:
 
 """
 
-function scan_alt(y::Array{Float64,2},g::Array{Float64,2}, K::Array{Float64,2}; 
-                  reml::Bool = false)
+function scan_alt(y::Array{Float64, 2}, g::Array{Float64, 2}, K::Array{Float64, 2}, prior::Array{Float64, 1};
+                 reml::Bool = false, method::String = "qr")
 
     # number of markers
     (n, p) = size(g)
@@ -158,7 +159,7 @@ function scan_alt(y::Array{Float64,2},g::Array{Float64,2}, K::Array{Float64,2};
 
     X00 = reshape(X0[:, 1], :, 1)
     # fit null lmm
-    out00 = fitlmm(y0, X00, lambda0; reml = reml);
+    out00 = fitlmm(y0, X00, lambda0, prior; reml = reml, method = method);
 
     lod = zeros(p)
     X = zeros(n, 2)
@@ -166,7 +167,7 @@ function scan_alt(y::Array{Float64,2},g::Array{Float64,2}, K::Array{Float64,2};
     for i = 1:p
         X[:, 2] = X0[:, i+1]
         
-        out11 = fitlmm(y0, X, lambda0; reml = reml);
+        out11 = fitlmm(y0, X, lambda0, prior; reml = reml, method = method);
 
         pve_list[i] = out11.h2;
 

@@ -136,16 +136,18 @@ lambda: 1-d array of eigenvalues
 reml: boolean indicating ML or REML estimation
 
 """
-function fitlmm(y::Array{Float64, 2}, X::Array{Float64, 2}, lambda::Array{Float64, 1};
-                reml::Bool = false, loglik::Bool = true, h20::Float64 = 0.5, d::Float64 = 1.0)
+function fitlmm(y::Array{Float64, 2}, X::Array{Float64, 2}, lambda::Array{Float64, 1}, prior::Array{Float64, 1};
+                reml::Bool = false, loglik::Bool = true, method::String = "qr", 
+                h20::Float64 = 0.5, d::Float64 = 1.0)
+
     function logLik0(h2::Float64)
-        out = wls(y, X, makeweights(h2, lambda); reml = reml, loglik = loglik)
+        out = wls(y, X, makeweights(h2, lambda); reml = reml, loglik = loglik, method = method)
         return -out.ell
     end
     ## avoid the use of global variable in inner function;
 
     opt = optimize(logLik0, max(h20-d, 0.0), min(h20+d, 1.0))
     h2 = opt.minimizer
-    est = wls(y, X, makeweights(h2, lambda); reml = reml, loglik = loglik)
+    est = wls(y, X, makeweights(h2, lambda); reml = reml, loglik = loglik, method = method)
     return LMMEstimates(est.b, est.sigma2, h2, est.ell)
 end

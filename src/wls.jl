@@ -18,8 +18,8 @@ X = predictors, matrix
 w = weights (positive, inversely proportional to variance), one-dim vector
 
 """
-function wls(y::Array{Float64, 2}, X::Array{Float64, 2}, w::Array{Float64, 1};
-             reml::Bool = false, loglik::Bool = true, method = "qr")
+function wls(y::Array{Float64, 2}, X::Array{Float64, 2}, w::Array{Float64, 1}, prior::Array{Float64, 1};
+             reml::Bool = false, loglik::Bool = true, method::String = "qr")
 
     (n, p) = size(X); # get number of observations and the number of markers from geno dimensions      
 
@@ -134,7 +134,7 @@ return values is a (row) vector of length equal to the number of columns of y.
 
 """
 
-function rss(y::Array{Float64, 2}, X::Array{Float64, 2}; method = "cholesky")
+function rss(y::Array{Float64, 2}, X::Array{Float64, 2}; method = "qr")
 
     r = resid(y, X; method)
     rss = reduce(+, r.^2, dims = 1)
@@ -143,7 +143,7 @@ function rss(y::Array{Float64, 2}, X::Array{Float64, 2}; method = "cholesky")
 
 end
 
-function rss(y::Array{Float64, 2}, X::AbstractArray{Float64, 1}; method = "cholesky")
+function rss(y::Array{Float64, 2}, X::AbstractArray{Float64, 1}; method = "qr")
 
     r = resid(y, X; method)
     rss = reduce(+, r.^2, dims = 1)
@@ -164,7 +164,7 @@ outcome matrix can be multivariate in which case the function returns
 the residual matrix of the same size as the outcome matrix.
 
 """
-function resid(y::Array{Float64, 2}, X::Array{Float64, 2}; method = "cholesky")
+function resid(y::Array{Float64, 2}, X::Array{Float64, 2}; method = "qr")
 
     # least squares solution
     # faster but numerically less stable
