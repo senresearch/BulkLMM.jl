@@ -12,76 +12,6 @@
 #
 # ################################################################
 
-##################################################################
-# rotateData: rotate by orthogonal transformation
-##################################################################
-"""
-rotateData: Rotates data with respect to the kinship matrix
-
-y = phenotype matrix
-X = predictor matrix
-K = kinship matrix, expected to be symmetric and positive definite
-"""
-function rotateData(y::AbstractArray{Float64, 2}, X::AbstractArray{Float64, 2},
-                    K::Array{Float64,2})
-
-    # check dimensions
-    n = size(y,1)
-    if( ( size(X,1) != n ) | ( size(K,1) != n ))
-        error("Dimension mismatch.")
-    end
-
-#    # check symmetry and positive definiteness of K
-#    if( !(issym(K)) )
-#        error("K is not symmetric.")
-#    end
-
-#    if( !(isposdef(K)) )
-#        error("K is not positive definite.")
-#    end
-
-    # spectral decomposition of a symmetric matrix
-    EF = eigen(K)
-
-    # return rotated phenotype, covariates, and eigenvalues
-    return EF.vectors'y, EF.vectors'X, EF.values
-
-end
-
-"""
-rotateData: Rotates data with respect to the kinship matrix
-
-y = phenotype matrix
-X = predictor matrix
-K = kinship matrix, expected to be symmetric and positive definite
-weights = vector of sample sizes (or weights inversely proportional to
-    error variance)
-"""
-
-function rotateData(y::AbstractArray{Float64,2},X::AbstractArray{Float64,2},
-                    K::Array{Float64,2}, weights::Array{Float64,1})
-
-    # check dimensions
-    n = size(y,1)
-    if( ( size(X,1) != n ) | ( size(K,1) != n ))
-        error("Dimension mismatch.")
-    end
-
-    # make vector of square root of the sample sizes
-    w = sqrt.(n)
-    # transform kinship
-    scale!(K, w)
-    scale!(w, K)
-    # transform phenotype
-    scale!(w, y)
-    # transform predictor
-    scale!(w, X)
-
-    # pass to old function
-    return rotateData(y,X,K)
-
-end
-
 function makeweights(h2::Float64, lambda::Array{Float64,1})
 
     delta = h2/(1-h2);
@@ -142,13 +72,13 @@ function fitlmm(y::Array{Float64, 2}, X::Array{Float64, 2}, lambda::Array{Float6
                 h20::Float64 = 0.5, d::Float64 = 1.0)
 
     function logLik0(h2::Float64)
-        out = wls(y, X, makeweights(h2, lambda); reml = reml, loglik = loglik, method = method)
+        out = wls(y, X, makeweights(h2, lambda), prior; reml = reml, loglik = loglik, method = method)
         return -out.ell
     end
     ## avoid the use of global variable in inner function;
 
     opt = optimize(logLik0, max(h20-d, 0.0), min(h20+d, 1.0))
     h2 = opt.minimizer
-    est = wls(y, X, makeweights(h2, lambda); reml = reml, loglik = loglik, method = method)
+    est = wls(y, X, makeweights(h2, lambda), prior; reml = reml, loglik = loglik, method = method)
     return LMMEstimates(est.b, est.sigma2, h2, est.ell)
 end

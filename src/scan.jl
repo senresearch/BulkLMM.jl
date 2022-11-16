@@ -33,13 +33,15 @@ A list of output values are returned:
 """
 
 function scan(y::Array{Float64,2}, g::Array{Float64,2}, K::Array{Float64,2};
-              prior::Array{Float64, 1} = [0, 0], 
+              prior_a::Float64 = 0.0, prior_b::Float64 = 0.0, addIntercept::Bool = true,
               reml::Bool = false, assumption::String = "null", method::String = "qr")
+
     if(assumption == "null")
-        return scan_null(y, g, K, prior; reml = reml, method = method)
+        return scan_null(y, g, K, [prior_a, prior_b], addIntercept; reml = reml, method = method)
     elseif(assumption == "alt")
-        return scan_alt(y, g, K, prior; reml = reml, method = method)
+        return scan_alt(y, g, K, [prior_a, prior_b], addIntercept; reml = reml, method = method)
     end
+
 end
 
 ###
@@ -78,15 +80,15 @@ A list of output values are returned:
 """
 
 
-function scan_null(y::Array{Float64, 2}, g::Array{Float64, 2}, K::Array{Float64, 2}, prior::Array{Float64, 1};
+function scan_null(y::Array{Float64, 2}, g::Array{Float64, 2}, K::Array{Float64, 2}, prior::Array{Float64, 1}, addIntercept::Bool;
                    reml::Bool = false, method::String = "qr")
 
     # number of markers
-    (n, m) = size(g)
-    # make intercept
-    intercept = ones(n, 1)
+    (n, p) = size(g)
+
     # rotate data
-    (y0, X0, lambda0) = rotateData(y, [intercept g], K)
+    (y0, X0, lambda0) = transform_rotation(y, g, K; addIntercept = addIntercept)
+
     # fit null lmm
     out00 = fitlmm(y0, reshape(X0[:, 1], :, 1), lambda0, prior; reml = reml, method = method)
     # weights proportional to the variances
@@ -97,10 +99,10 @@ function scan_null(y::Array{Float64, 2}, g::Array{Float64, 2}, K::Array{Float64,
 
     # perform genome scan
     rss0 = rss(y0, reshape(X0[:, 1], n, 1); method = method)[1]
-    lod = zeros(m)
+    lod = zeros(p)
     X = zeros(n, 2)
     X[:, 1] = X0[:, 1]
-    for i = 1:m
+    for i = 1:p
         X[:, 2] = X0[:, i+1]
         rss1 = rss(y0, X; method = method)[1]
         lrt = (rss0 - rss1)/out00.sigma2
@@ -145,15 +147,14 @@ A list of output values are returned:
 
 """
 
-function scan_alt(y::Array{Float64, 2}, g::Array{Float64, 2}, K::Array{Float64, 2}, prior::Array{Float64, 1};
+function scan_alt(y::Array{Float64, 2}, g::Array{Float64, 2}, K::Array{Float64, 2}, prior::Array{Float64, 1}, addIntercept::Bool;
                  reml::Bool = false, method::String = "qr")
 
     # number of markers
     (n, p) = size(g)
-    # make intercept
-    intercept = ones(n, 1)
+
     # rotate data
-    (y0, X0, lambda0) = rotateData(y, [intercept g], K)
+    (y0, X0, lambda0) = transform_rotation(y, g, K; addIntercept = addIntercept)
 
     pve_list = Array{Float64, 1}(undef, p);
 

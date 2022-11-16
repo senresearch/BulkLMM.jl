@@ -132,27 +132,84 @@ function calcLODs_perms(r0::Array{Float64, 2}, X00::Array{Float64, 2}, nperms::I
 
 end
 
-function transform_rotation(y::Array{Float64, 2}, g::Array{Float64, 2}, K::Array{Float64, 2})
+function transform_rotation(y::Array{Float64, 2}, g::Array{Float64, 2}, K::Array{Float64, 2}; addIntercept::Bool = true)
         
     # n - the sample sizes
-    n = size(g, 1);
+    n = size(y, 1)
+
+    # check dimensions
+    if((size(g, 1) != n)|(size(K, 1)!= n))
+        throw(error("Dimension mismatch."))
+    end
 
     # make intercept
-    intercept = ones(n, 1);
-    # rotate data so errors are uncorrelated
-    (y0, X0, lambda0) = rotateData(y, [intercept g], K);
+    if addIntercept
+        intercept = ones(n, 1);
+        X = [intercept g];
+    else
+        X = g; # Safe; will not make in-place changes to X.
+    end
 
-    return (y0, X0, lambda0);
+
+    ## Perform checks for K...
+
+
+
+    ## Eigen-decomposition:
+    EF = eigen(K);
+    Ut = EF.vectors';
+
+    # rotate data so errors are uncorrelated
+
+    return Ut*y, Ut*X, EF.values
 
 end
 
+#################################################### Unfinished functions ##########################################################
+"""
+rotateData: Rotates data with respect to the kinship matrix
+
+y = phenotype matrix
+X = predictor matrix
+K = kinship matrix, expected to be symmetric and positive definite
+weights = vector of sample sizes (or weights inversely proportional to
+    error variance)
+"""
+
+function rotateData(y::AbstractArray{Float64,2},X::AbstractArray{Float64,2},
+                    K::Array{Float64,2}, weights::Array{Float64,1}; addIntercept::Bool = true)
+
+    # check dimensions
+    n = size(y,1)
+    if( ( size(X,1) != n ) | ( size(K,1) != n ))
+        error("Dimension mismatch.")
+    end
+
+    # make vector of square root of the sample sizes
+    w = sqrt.(n)
+    # transform kinship
+    scale!(K, w)
+    scale!(w, K)
+    # transform phenotype
+    scale!(w, y)
+    # transform predictor
+    scale!(w, X)
+
+    # pass to old function
+    return transform_rotation(y, X, K; addIntercept = addIntercept);
+
+end
+######################################################################################################################################
+
+
 # Takes the rotated data, evaluates the VC estimators (only based on the intercept model) for weights calculation, and finally re-weights the input data.
 function transform_reweight(y0::Array{Float64, 2}, X0::Array{Float64, 2}, lambda0::Array{Float64, 1};
+                    prior_a::Float64 = 0.0, prior_b::Float64 = 0.0, method::String = "qr",
                     reml::Bool = false)
 
         ## Note: estimate once the variance components from the null model and use for all marker scans
         # fit lmm
-        vc = fitlmm(y0, reshape(X0[:, 1], :, 1), lambda0; reml = reml)
+        vc = fitlmm(y0, reshape(X0[:, 1], :, 1), lambda0, [prior_a, prior_b]; reml = reml, method = method);
         # println(vc) # vc.b is estimated through weighted least square
         r0 = y0 - X0[:, 1]*vc.b
 
