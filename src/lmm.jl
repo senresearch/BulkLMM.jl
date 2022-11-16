@@ -84,7 +84,8 @@ end
 
 function makeweights(h2::Float64, lambda::Array{Float64,1})
 
-    vars = h2*lambda .+ (1.0-h2)
+    delta = h2/(1-h2);
+    vars = (delta.*lambda .+ 1);
     return 1.0./vars
 
 end

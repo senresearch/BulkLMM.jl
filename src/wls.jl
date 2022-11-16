@@ -64,15 +64,14 @@ function wls(y::Array{Float64, 2}, X::Array{Float64, 2}, w::Array{Float64, 1}, p
     if(reml)
         sigma2 = rss0/(n-p)
     else
-        sigma2 = rss0/n
+        sigma2 = (rss0+prior[1]*prior[2])/n
     end
 
     # see formulas (2) and (3) of Kang (2008)
     if(loglik)
 
-        # ell = -0.5 * ( n*log(sigma2) + sum(log.(w)) + rss0/sigma2 )
-        ell = -0.5 * (n*log(sigma2) - sum(log.(w)) + rss0/sigma2)
-
+        ell = -0.5 * ((n+prior[2])*log(sigma2) - sum(log.(w)) + (rss0+prior[1]*prior[2])/sigma2)
+        
         if(reml)
             # ell = ell + 0.5 * (p*log(2pi*sigma2) + logdetXtX - logdetXXtXX) # full log-likelihood including the constant terms;
             ell = ell + 0.5 * (p*log(sigma2) - logdetXXtXX)
@@ -136,7 +135,7 @@ return values is a (row) vector of length equal to the number of columns of y.
 
 function rss(y::Array{Float64, 2}, X::Array{Float64, 2}; method = "qr")
 
-    r = resid(y, X; method)
+    r = resid(y, X; method = method)
     rss = reduce(+, r.^2, dims = 1)
 
     return rss
@@ -145,7 +144,7 @@ end
 
 function rss(y::Array{Float64, 2}, X::AbstractArray{Float64, 1}; method = "qr")
 
-    r = resid(y, X; method)
+    r = resid(y, X; method = method)
     rss = reduce(+, r.^2, dims = 1)
 
     return rss
@@ -186,7 +185,7 @@ function resid(y::Array{Float64, 2}, X::Array{Float64, 2}; method = "qr")
 
 end
 
-function resid(y::Array{Float64, 2}, X::AbstractArray{Float64, 1}; method = "cholesky")
+function resid(y::Array{Float64, 2}, X::AbstractArray{Float64, 1}; method = "qr")
 
     # least squares solution
     # faster but numerically less stable
