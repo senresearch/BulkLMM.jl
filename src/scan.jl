@@ -105,8 +105,9 @@ function scan_null(y::Array{Float64, 2}, g::Array{Float64, 2}, K::Array{Float64,
     for i = 1:p
         X[:, 2] = X0[:, i+1]
         rss1 = rss(y0, X; method = method)[1]
-        lrt = (rss0 - rss1)/out00.sigma2
-        lod[i] = lrt/(2*log(10))
+        lod[i] = (-n/2)*(log10(rss1) .- log10(rss0))
+        # lrt = (rss0 - rss1)/out00.sigma2
+        # lod[i] = lrt/(2*log(10))
     end
 
     return (out00.sigma2, out00.h2, lod)
@@ -229,7 +230,18 @@ function scan_perms(y::Array{Float64,2}, g::Array{Float64,2}, K::Array{Float64,2
     # fit lmm
     (y0, X0, lambda0) = transform_rotation(y, g, K; addIntercept = addIntercept); # rotation of data
     (r0, X00) = transform_reweight(y0, X0, lambda0; prior_a = prior_a, prior_b = prior_b, reml = reml, method = method); # reweighting and taking residuals
-    r0perm = transform_permute(r0; nperms = nperms, rndseed = rndseed, original = original);
+
+    # If no permutation testing is required, move forward to process the single original vector
+    if nperms == 0
+
+        if original == false
+            throw(error("If no permutation testing is required, input value of `original` has to be `true`."));
+        end
+    
+        r0perm = r0;
+    else
+        r0perm = transform_permute(r0; nperms = nperms, rndseed = rndseed, original = original);
+    end
 
 
     ## Null RSS:
