@@ -212,6 +212,7 @@ are estimated from the null model and assumed to be the same across markers.
 """
 
 function scan_perms(y::Array{Float64,2}, g::Array{Float64,2}, K::Array{Float64,2};
+              prior_a::Float64 = 0.0, prior_b::Float64 = 0.0, addIntercept::Bool = true, method::String = "qr",
               nperms::Int64 = 1024, rndseed::Int64 = 0, 
               reml::Bool = false, original::Bool = true)
 
@@ -224,36 +225,12 @@ function scan_perms(y::Array{Float64,2}, g::Array{Float64,2}, K::Array{Float64,2
     # p - the number of markers
     (n, p) = size(g)
 
-    # make intercept
-    intercept = ones(n, 1)
-
-    # rotate data so errors are uncorrelated
-    (y0, X0, lambda0) = rotateData(y, [intercept g], K)
-
-
     ## Note: estimate once the variance components from the null model and use for all marker scans
     # fit lmm
+    (y0, X0, lambda0) = transform_rotation(y, g, K; addIntercept = addIntercept); # rotation of data
+    (r0, X00) = transform_reweight(y0, X0, lambda0; prior_a = prior_a, prior_b = prior_b, reml = reml, method = method); # reweighting and taking residuals
+    r0perm = transform_permute(r0; nperms = nperms, rndseed = rndseed, original = original);
 
-    # X0_intercept = @view X0[:, 1] # to compare
-    vc = fitlmm(y0, reshape(X0[:, 1], :, 1), lambda0; reml = reml) # vc.b is estimated through weighted least square
-    r0 = y0 - X0[:, 1]*vc.b
-
-    # weights proportional to the variances
-    sqrtw = sqrt.(makeweights(vc.h2, lambda0))
-
-    # compared runtime of the following with "wls(X0[:, 2:end], X0[:, 1], wts)" ?
-    # rescale by weights; now these have the same mean/variance and are independent
-    rowMultiply!(r0, sqrtw);
-    rowMultiply!(X0, sqrtw);
-
-    
-    # after re-weighting X, calling resid on re-weighted X is the same as doing wls on the X after rotation.
-    X00 = resid(X0[:, 2:end], reshape(X0[:, 1], :, 1)) # consider not using sub-array, consider @view; in-place changes
-
-    ## random permutations; the first column is the original trait (after transformation)
-    rng = MersenneTwister(rndseed);
-    ## permute r0 (which is an iid, standard normal distributed N-vector under the null)
-    r0perm = shuffleVector(rng, r0[:, 1], nperms; original = original)
 
     ## Null RSS:
     # By null hypothesis, mean is 0. RSS just becomes the sum of squares of the residuals (r0perm's)
@@ -313,8 +290,10 @@ function scan_perms_distributed(y::Array{Float64,2}, g::Array{Float64,2}, K::Arr
                                 option::String = "by blocks", nblocks::Int64 = 1, ncopies::Int64 = 1, 
                                 nprocs::Int64 = 0)
 
-    (y0, X0, lambda0) = transform_rotation(y, g, K); # rotation of data
-    (r0, X00) = transform_reweight(y0, X0, lambda0; reml = reml); # reweighting and taking residuals
+    ## Note: estimate once the variance components from the null model and use for all marker scans
+    # fit lmm
+    (y0, X0, lambda0) = transform_rotation(y, g, K; addIntercept = addIntercept); # rotation of data
+    (r0, X00) = transform_reweight(y0, X0, lambda0; prior_a = prior_a, prior_b = prior_b, reml = reml, method = method); # reweighting and taking residuals
 
     # If no permutation testing is required, move forward to process the single original vector
     if nperms == 0
