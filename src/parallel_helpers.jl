@@ -225,7 +225,7 @@ function transform_reweight(y0::Array{Float64, 2}, X0::Array{Float64, 2}, lambda
         rowMultiply!(copy_X0, sqrtw) # dont want to change the inputs: r0, X0
         X00 = resid(copy_X0[:, 2:end], reshape(copy_X0[:, 1], :, 1)) # after re-weighting X, calling resid on re-weighted X is the same as doing wls too.
 
-        return (copy_r0, X00)
+        return (copy_r0, X00, vc.sigma2)
 
 end
 

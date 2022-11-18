@@ -222,14 +222,17 @@ function scan_perms(y::Array{Float64,2}, g::Array{Float64,2}, K::Array{Float64,2
         error("Can only handle one trait.")
     end
 
+    sy = colStandardize(y);
+    sg = colStandardize(g);
+
     # n - the sample size
     # p - the number of markers
     (n, p) = size(g)
 
     ## Note: estimate once the variance components from the null model and use for all marker scans
     # fit lmm
-    (y0, X0, lambda0) = transform_rotation(y, g, K; addIntercept = addIntercept); # rotation of data
-    (r0, X00) = transform_reweight(y0, X0, lambda0; prior_a = prior_a, prior_b = prior_b, reml = reml, method = method); # reweighting and taking residuals
+    (y0, X0, lambda0) = transform_rotation(sy, sg, K; addIntercept = addIntercept); # rotation of data
+    (r0, X00, sigma2) = transform_reweight(y0, X0, lambda0; prior_a = prior_a, prior_b = prior_b, reml = reml, method = method); # reweighting and taking residuals
 
     # If no permutation testing is required, move forward to process the single original vector
     if nperms == 0
@@ -258,12 +261,12 @@ function scan_perms(y::Array{Float64,2}, g::Array{Float64,2}, K::Array{Float64,2
     
     ## loop over markers
     for i = 1:p
-
         ## alternative rss
         @inbounds rss1[:, i] = rss(r0perm, @view X00[:, i]);
         
     end
 
+    
     lod = (-n/2)*(log10.(rss1) .- log10(rss0))
 
     return lod

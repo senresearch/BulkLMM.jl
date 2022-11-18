@@ -85,6 +85,16 @@ function colStandardize!(A::Matrix{Float64})
 
 end
 
+function colStandardize(A::Array{Float64, 2})
+
+    sA = A .- mean(A; dims = 1);
+    s = std(sA,dims=1) |> vec
+    colDivide!(sA, s);
+
+    return sA
+    
+end
+
 function rowDivide!(A::Matrix{Float64}, x::Vector{Float64})
 
     (n, m) = size(A)
