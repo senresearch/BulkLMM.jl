@@ -64,7 +64,7 @@ function wls(y::Array{Float64, 2}, X::Array{Float64, 2}, w::Array{Float64, 1}, p
     if(reml)
         sigma2 = rss0/(n-p)
     else
-        sigma2 = (rss0+prior[1]*prior[2])/n
+        sigma2 = (rss0+prior[1]*prior[2])/(n+prior[2])
     end
 
     # see formulas (2) and (3) of Kang (2008)
