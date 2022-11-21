@@ -18,7 +18,7 @@ include("../src/kinship.jl");
 include("../src/readData.jl");
 
 ## Also include the helper functions for writing tests:
-include("../test/testHelper.jl");
+include("testHelpers.jl");
 
 
 ## Read in BXD data:
@@ -33,6 +33,3 @@ nperms = 1024; # number of permutated copies required;
 n = size(pheno, 1);
 m = size(pheno, 2);
 p = size(geno, 2); # number of markers
-
-## Consider the 7919-th trait
-pheno_y = reshape(pheno[:, 7919], :, 1);
