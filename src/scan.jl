@@ -12,11 +12,15 @@ Performs genome scan for univariate trait and each of the gene markers, one mark
 - y = 1d array of floats consisting of the N observations for a certain quantitative trait (dimension: N*1)
 - g = 2d array of floats consisting of all p gene markers (dimension: N*p)
 - K = 2d array of floats consisting of the genetic relatedness of the N observations (dimension:N*N)
+- prior_a = a float of prior distribution parameter
+- prior_b = a float of prior distribution parameter
 
 # Keyword arguments
 
-- reml = Boolean flag indicating how variance component parameters are to be estimated
-- method = String indicating whether the variance component parameters are the same across all markers (null) or not (alt); Default is `null`.
+- addIntercept = Boolean flag indicating if an intercept column needs to be added to the design matrix; Default is to add an intercept
+- reml = Bool flag indicating if VCs are estimated by REML likelihood; Default is ML
+- assumption = String indicating whether the variance component parameters are the same across all markers (null) or not (alt); Default is `null`
+- method = String indicating the matrix factorization method to use; Default is QR.
 
 # Value
 
@@ -31,7 +35,6 @@ A list of output values are returned:
     Output data structure might need some revisions.
 
 """
-
 function scan(y::Array{Float64,2}, g::Array{Float64,2}, K::Array{Float64,2};
               prior_a::Float64 = 0.0, prior_b::Float64 = 0.0, addIntercept::Bool = true,
               reml::Bool = false, assumption::String = "null", method::String = "qr")
@@ -62,7 +65,9 @@ assuming the variance components are the same for all markers.
 
 # Keyword arguments
 
-- reml = Boolean flag indicating how variance component parameters are to be estimated
+- addIntercept = Boolean flag indicating if an intercept column needs to be added to the design matrix; Default is to add an intercept
+- reml = Bool flag indicating if VCs are estimated by REML likelihood; Default is ML
+- method = String indicating the matrix factorization method to use; Default is QR.
 
 # Value
 
@@ -78,8 +83,6 @@ A list of output values are returned:
     as `null` (default).
 
 """
-
-
 function scan_null(y::Array{Float64, 2}, g::Array{Float64, 2}, K::Array{Float64, 2}, prior::Array{Float64, 1}, addIntercept::Bool;
                    reml::Bool = false, method::String = "qr")
 
@@ -131,7 +134,9 @@ assuming the variance components may not be the same for all markers.
 
 # Keyword arguments
 
-- reml = Boolean flag indicating how variance component parameters are to be estimated
+- addIntercept = Boolean flag indicating if an intercept column needs to be added to the design matrix; Default is to add an intercept
+- reml = Bool flag indicating if VCs are estimated by REML likelihood; Default is ML
+- method = String indicating the matrix factorization method to use; Default is QR.
 
 # Value
 
@@ -147,7 +152,6 @@ A list of output values are returned:
     field is passed as `alt`.
 
 """
-
 function scan_alt(y::Array{Float64, 2}, g::Array{Float64, 2}, K::Array{Float64, 2}, prior::Array{Float64, 1}, addIntercept::Bool;
                  reml::Bool = false, method::String = "qr")
 
@@ -211,7 +215,6 @@ are estimated from the null model and assumed to be the same across markers.
 # Some notes
 
 """
-
 function scan_perms(y::Array{Float64,2}, g::Array{Float64,2}, K::Array{Float64,2};
               prior_a::Float64 = 0.0, prior_b::Float64 = 0.0, addIntercept::Bool = true, method::String = "qr",
               nperms::Int64 = 1024, rndseed::Int64 = 0, 
@@ -273,6 +276,57 @@ function scan_perms(y::Array{Float64,2}, g::Array{Float64,2}, K::Array{Float64,2
 
 end
 
+
+function scan_perms_lite(y::Array{Float64,2}, g::Array{Float64,2}, K::Array{Float64,2};
+    prior_a::Float64 = 0.0, prior_b::Float64 = 0.0, addIntercept::Bool = true, method::String = "qr",
+    nperms::Int64 = 1024, rndseed::Int64 = 0, 
+    reml::Bool = false, original::Bool = true)
+
+
+    # check the number of traits as this function only works for permutation testing of univariate trait
+    if(size(y, 2) != 1)
+        error("Can only handle one trait.")
+    end
+
+    sy = colStandardize(y);
+    sg = colStandardize(g);
+
+
+    # n - the sample size
+    # p - the number of markers
+    (n, p) = size(g)
+
+    ## Note: estimate once the variance components from the null model and use for all marker scans
+    # fit lmm
+    (y0, X0, lambda0) = transform_rotation(sy, sg, K; addIntercept = addIntercept); # rotation of data
+    (r0, X00, sigma2) = transform_reweight(y0, X0, lambda0; prior_a = prior_a, prior_b = prior_b, reml = reml, method = method); # reweighting and taking residuals
+
+    # If no permutation testing is required, move forward to process the single original vector
+    if nperms == 0
+
+        if original == false
+            throw(error("If no permutation testing is required, input value of `original` has to be `true`."));
+        end
+
+        r0perm = r0;
+    else
+        r0perm = transform_permute(r0; nperms = nperms, rndseed = rndseed, original = original);
+    end
+
+    norm_y = mapslices(x -> norm(x)/sqrt(n), r0perm, dims = 1) |> vec;
+
+    norm_X = mapslices(x -> norm(x)/sqrt(n), X00, dims = 1) |> vec;
+
+
+    colDivide!(r0perm, norm_y);
+    colDivide!(X00, norm_X);
+
+    lods = X00' * r0perm
+    tR2LOD!(lods, n);
+
+    return lods
+
+end
 
 ####################################################################################################
 ######################################### Distributed Processes ####################################
@@ -355,5 +409,6 @@ Next:
 
 Future: 
     - single precision (Union type to control precision type: Float64, Float32, ...)
+    - different ways to return outputs (named tuples, options...)
 
 =#
