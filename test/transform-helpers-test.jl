@@ -8,7 +8,7 @@ using BenchmarkTools
 include("BXDdata_for_test.jl");
 
 ## load the helper functions to be tested
-include("../src/parallel_helpers.jl");
+include("../src/transform_helpers.jl");
 
 pheno_y = reshape(pheno[:, 1126], :, 1);
 
