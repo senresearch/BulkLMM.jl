@@ -43,14 +43,14 @@ function wls(y::Array{Float64, 2}, X::Array{Float64, 2}, w::Array{Float64, 1}, p
     # faster but numerically less stable
     if(method == "cholesky")
         fct = cholesky(XX'XX)
-        b = fct\(XX'yy)
+        coef = fct\(XX'yy)
         logdetXXtXX = logdet(fct)
     end
 
     # slower but numerically more stable
     if(method == "qr")
         fct = qr(XX)
-        b = fct\yy
+        coef = fct\yy
 
         # logdetXXtXX = 2*logdet(fct.R) # need 2 for logdet(X'X)
         # logdetXXtXX = logdet(fct.R' * fct.R);
@@ -61,26 +61,26 @@ function wls(y::Array{Float64, 2}, X::Array{Float64, 2}, w::Array{Float64, 1}, p
     rss0 = sum((yy-yyhat).^2)
 
     if(reml)
-        sigma2 = (rss0+prior[1]*prior[2])/(n+prior[2]-p)
+        sigma2_e = (rss0+prior[1]*prior[2])/(n+prior[2]-p)
     else
-        sigma2 = (rss0+prior[1]*prior[2])/(n+prior[2])
+        sigma2_e = (rss0+prior[1]*prior[2])/(n+prior[2])
     end
 
     # see formulas (2) and (3) of Kang (2008)
     if(loglik)
 
-        ell = -0.5 * ((n+prior[2])*log(sigma2) - sum(log.(w)) + (rss0+prior[1]*prior[2])/sigma2)
+        loglik = -0.5 * ((n+prior[2])*log(sigma2_e) - sum(log.(w)) + (rss0+prior[1]*prior[2])/sigma2_e)
         
         if(reml)
             # ell = ell + 0.5 * (p*log(2pi*sigma2) + logdetXtX - logdetXXtXX) # full log-likelihood including the constant terms;
-            ell = ell + 0.5 * (p*log(sigma2) - logdetXXtXX)
+            loglik = loglik + 0.5 * (p*log(sigma2_e) - logdetXXtXX)
         end
         
     else
         ell = missing;
     end
 
-    return LSEstimates(b, sigma2, ell)
+    return LSEstimates(coef, sigma2_e, loglik)
 
 end
 
