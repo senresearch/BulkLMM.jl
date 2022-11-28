@@ -9,7 +9,7 @@ using Random
 
 ## Loading functions to be tested:
 include("../src/util.jl")
-include("testHelper.jl")
+include("testHelpers.jl")
 
 
 ##########################################################################################################

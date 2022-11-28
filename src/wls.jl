@@ -55,7 +55,6 @@ function wls(y::Array{Float64, 2}, X::Array{Float64, 2}, w::Array{Float64, 1}, p
         # logdetXXtXX = 2*logdet(fct.R) # need 2 for logdet(X'X)
         # logdetXXtXX = logdet(fct.R' * fct.R);
         logdetXXtXX = 2*logabsdet(fct.R)[1];
-
     end
 
     yyhat = XX*b

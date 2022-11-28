@@ -157,7 +157,7 @@ end
 
 
 function readBXDpheno(file::AbstractString)
-    return convert(Array{Float64,2},readdlm(file, ','; skipstart=1)[:,2:end-1])
+    return convert(Array{Float64,2}, readdlm(file, ','; skipstart=1)[:, 2:end-1])
 end
 
 function readBXDgeno(file::AbstractString; skipstart=1)
