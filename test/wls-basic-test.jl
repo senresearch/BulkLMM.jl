@@ -11,6 +11,39 @@ using BenchmarkTools
 include("../src/wls.jl")
 include("../src/util.jl")
 
+function ls(y::Array{Float64, 2}, X::Array{Float64, 2};
+    reml::Bool = false, loglik = true)
+
+    # number of individuals
+    n = size(y,1)
+    # number of covariates
+    p = size(X,2)
+
+    b = X\y # uses QR decomposition
+    yhat = X*b
+    rss0 = sum((y-yhat).^2)
+
+    if( reml )
+    sigma2 = rss0/(n-p)
+    else
+    sigma2 = rss0/n
+    end
+
+    if(loglik) 
+    if ( reml )
+        logdetSigma = (n-p)*log(sigma2)
+    else
+        logdetSigma = n*log(sigma2)
+    end
+
+    ell = -0.5 * ( logdetSigma + rss0/sigma2 )
+    else
+    ell = missing
+    end
+
+    return LSEstimates(b, sigma2, ell)
+
+end
 
 ## Simulate multivariate traits data
 N = 100;
