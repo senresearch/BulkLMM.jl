@@ -113,7 +113,7 @@ end;
 ## TEST: transform_permute()
 ##########################################################################################################
 
-(r0, X00, vc.sigma2) = transform_reweight(y0, X0, lambda0);
+(r0, X00, sigma2) = transform_reweight(y0, X0, lambda0);
 
 ## Note: nested function `shuffleVector` has been tested in another testing file
 
