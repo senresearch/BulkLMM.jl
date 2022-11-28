@@ -69,18 +69,18 @@ function wls(y::Array{Float64, 2}, X::Array{Float64, 2}, w::Array{Float64, 1}, p
     # see formulas (2) and (3) of Kang (2008)
     if(loglik)
 
-        loglik = -0.5 * ((n+prior[2])*log(sigma2_e) - sum(log.(w)) + (rss0+prior[1]*prior[2])/sigma2_e)
+        ll = -0.5 * ((n+prior[2])*log(sigma2_e) - sum(log.(w)) + (rss0+prior[1]*prior[2])/sigma2_e)
         
         if(reml)
             # ell = ell + 0.5 * (p*log(2pi*sigma2) + logdetXtX - logdetXXtXX) # full log-likelihood including the constant terms;
-            loglik = loglik + 0.5 * (p*log(sigma2_e) - logdetXXtXX)
+            ll = ll + 0.5 * (p*log(sigma2_e) - logdetXXtXX)
         end
         
     else
-        ell = missing;
+        ll = missing;
     end
 
-    return LSEstimates(coef, sigma2_e, loglik)
+    return LSEstimates(coef, sigma2_e, ll)
 
 end
 
