@@ -57,7 +57,7 @@ function wls(y::Array{Float64, 2}, X::Array{Float64, 2}, w::Array{Float64, 1}, p
         logdetXXtXX = 2*logabsdet(fct.R)[1];
     end
 
-    yyhat = XX*b
+    yyhat = XX*coef
     rss0 = sum((yy-yyhat).^2)
 
     if(reml)
