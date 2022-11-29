@@ -113,7 +113,7 @@ function scan_null(y::Array{Float64, 2}, g::Array{Float64, 2}, K::Array{Float64,
         # lod[i] = lrt/(2*log(10))
     end
 
-    return (out00.sigma2, out00.h2, lod)
+    return (sigma2_e = out00.sigma2, h2_null = out00.h2, lod = lod)
 
 end
 
@@ -180,7 +180,7 @@ function scan_alt(y::Array{Float64, 2}, g::Array{Float64, 2}, K::Array{Float64, 
         lod[i] = (out11.ell - out00.ell)/log(10)
     end
 
-    return (out00.sigma2, out00.h2, pve_list, lod)
+    return (sigma2_e = out00.sigma2, h2_null = out00.h2, h2_each_marker = pve_list, lod = lod)
 
 end
 
