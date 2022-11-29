@@ -24,7 +24,7 @@ test_makeweights1 = quote
     try 
         makeweights(1.0, [0.0]);
     catch e
-        @test e.msg == "Exists heritability of 1 which is not allowed for modeling.";
+        @test e.msg == "Heritability of 1 is not allowed.";
     end
 end;
 
@@ -32,7 +32,7 @@ test_makeweights2 = quote
     try 
         makeweights(2.0, [1.0]);
     catch e
-        @test e.msg == "Resulting non-positive environmental variance which is not reasonable; check input values.";
+        @test e.msg == "Non-positive environmental variance is not allowed; check input values.";
     end
 end;
 
