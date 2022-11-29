@@ -41,8 +41,8 @@ pheno_y = reshape(pheno[:, 7919], :, 1);
 reml_results = scan(pheno_y, geno, kinship; reml = true); # by default uses scan_null;
 ml_results = scan(pheno_y, geno, kinship; reml = false);
 
-lods_BulkLMM_reml = reshape(reml_results[3], :, 1);
-lods_BulkLMM_ml = reshape(ml_results[3], :, 1);
+lods_BulkLMM_reml = reshape(reml_results.lod, :, 1);
+lods_BulkLMM_ml = reshape(ml_results.lod, :, 1);
 
 
 ## Compare with lmmlite results:
