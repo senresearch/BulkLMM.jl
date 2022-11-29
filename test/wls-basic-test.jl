@@ -94,7 +94,7 @@ end
     eval(test2_resids)
     eval(test3_resids)
     eval(tests_rss)
-end
+end;
 
 ##########################################################################################################
 ## BENCHMARKING:
