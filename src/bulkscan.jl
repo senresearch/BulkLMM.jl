@@ -42,18 +42,18 @@ Calculates the LOD scores for one trait, using the LiteQTL approach.
 Inputs are rotated, re-weighted.
 
 """
-
 function computeR_LMM(wY::Array{Float64, 2}, wX::Array{Float64, 2}, wIntercept::Array{Float64, 2})
 
     # exclude the effect of (rotated) intercept (idea is similar as centering data in the linear model case)
     y00 = resid(wY, wIntercept);
     X00 = resid(wX, wIntercept);
 
-    # standardize the response and 
-    sy = std(y00, dims = 1) |> vec;
-    sx = std(X00, dims = 1) |> vec;
-    colDivide!(y00, sy);
-    colDivide!(X00, sx);
+    # standardize the response and covariates by dividing by their norms
+    norm_y = mapslices(x -> norm(x)/sqrt(n), y00, dims = 1) |> vec;
+    norm_X = mapslices(x -> norm(x)/sqrt(n), X00, dims = 1) |> vec;
+
+    colDivide!(y00, norm_y);
+    colDivide!(X00, norm_X);
 
     R = X00' * y00; # p-by-1 matrix
 
@@ -121,8 +121,6 @@ Assumes the heritabilities only differ by traits but remain the same across all 
 
 
 """
-
-
 function scan_lite_univar(y0_j::Array{Float64, 1}, X0_intercept::Array{Float64, 2}, 
     X0_covar::Array{Float64, 2}, lambda0::Array{Float64, 1};
     reml::Bool = true)
@@ -169,7 +167,6 @@ Calculates the LOD scores for all pairs of traits and markers, by a (multi-threa
 Inputs are rotated, re-weighted.
 
 """
-
 function scan_lite(Y::Array{Float64, 2}, G::Array{Float64, 2}, K::Array{Float64, 2}, nb::Int64; nt_blas::Int64 = 1,
     reml::Bool = true)
 
@@ -251,7 +248,6 @@ Nothing; does in-place maximizations.
 Will modify input matrix `max` by a parallelized loop; uses @tturbo in the package `LoopVectorization.jl`
 
 """
-
 function tmax!(max::Array{Float64, 2}, toCompare::Array{Float64, 2})
     
     (p, m) = size(max);
@@ -330,7 +326,6 @@ Maximal LOD scores are taken independently for each pair of trait and marker; wh
     this is a shortcut of doing the exact scan_alt() independently for each trait and each marker.
 
 """
-
 function bulkscan(Y::Array{Float64, 2}, G::Array{Float64, 2}, K::Array{Float64, 2}, hsq_list::Array{Float64, 1})
 
     (Y0, X0, lambda0) = transform_rotation(Y, G, K);
