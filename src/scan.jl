@@ -36,13 +36,13 @@ A list of output values are returned:
 
 """
 function scan(y::Array{Float64,2}, g::Array{Float64,2}, K::Array{Float64,2};
-              prior_a::Float64 = 0.0, prior_b::Float64 = 0.0, addIntercept::Bool = true,
+              prior_variance::Float64 = 0.0, prior_sample_size::Float64 = 0.0, addIntercept::Bool = true,
               reml::Bool = false, assumption::String = "null", method::String = "qr")
 
     if(assumption == "null")
-        return scan_null(y, g, K, [prior_a, prior_b], addIntercept; reml = reml, method = method)
+        return scan_null(y, g, K, [prior_variance, prior_sample_size], addIntercept; reml = reml, method = method)
     elseif(assumption == "alt")
-        return scan_alt(y, g, K, [prior_a, prior_b], addIntercept; reml = reml, method = method)
+        return scan_alt(y, g, K, [prior_variance, prior_sample_size], addIntercept; reml = reml, method = method)
     end
 
 end
@@ -216,7 +216,7 @@ are estimated from the null model and assumed to be the same across markers.
 
 """
 function scan_perms(y::Array{Float64,2}, g::Array{Float64,2}, K::Array{Float64,2};
-              prior_a::Float64 = 0.0, prior_b::Float64 = 0.0, addIntercept::Bool = true, method::String = "qr",
+              prior_variance::Float64 = 1.0, prior_sample_size::Float64 = 0.0, addIntercept::Bool = true, method::String = "qr",
               nperms::Int64 = 1024, rndseed::Int64 = 0, 
               reml::Bool = false, original::Bool = true)
 
@@ -235,7 +235,8 @@ function scan_perms(y::Array{Float64,2}, g::Array{Float64,2}, K::Array{Float64,2
     ## Note: estimate once the variance components from the null model and use for all marker scans
     # fit lmm
     (y0, X0, lambda0) = transform_rotation(sy, sg, K; addIntercept = addIntercept); # rotation of data
-    (r0, X00, sigma2) = transform_reweight(y0, X0, lambda0; prior_a = prior_a, prior_b = prior_b, reml = reml, method = method); # reweighting and taking residuals
+    (r0, X00) = transform_reweight(y0, X0, lambda0; prior_a = prior_variance, prior_b = prior_sample_size, 
+                                                    reml = reml, method = method); # reweighting and taking residuals
 
     # If no permutation testing is required, move forward to process the single original vector
     if nperms == 0
@@ -252,7 +253,7 @@ function scan_perms(y::Array{Float64,2}, g::Array{Float64,2}, K::Array{Float64,2
 
     ## Null RSS:
     # By null hypothesis, mean is 0. RSS just becomes the sum of squares of the residuals (r0perm's)
-    # (For theoretical derivation of the results, see notebook)
+    # (For theoretical derivation of the results, see supplement results)
     rss0 = sum(r0perm[:, 1].^2) # a scalar; bc rss0 for every permuted trait is the same under the null (zero mean);
     
     ## make array to hold Alternative RSS's for each permutated trait
@@ -278,7 +279,7 @@ end
 
 
 function scan_perms_lite(y::Array{Float64,2}, g::Array{Float64,2}, K::Array{Float64,2};
-    prior_a::Float64 = 0.0, prior_b::Float64 = 0.0, addIntercept::Bool = true, method::String = "qr",
+    prior_variance::Float64 = 1.0, prior_sample_size::Float64 = 0.0, addIntercept::Bool = true, method::String = "qr",
     nperms::Int64 = 1024, rndseed::Int64 = 0, 
     reml::Bool = false, original::Bool = true)
 
@@ -294,12 +295,12 @@ function scan_perms_lite(y::Array{Float64,2}, g::Array{Float64,2}, K::Array{Floa
 
     # n - the sample size
     # p - the number of markers
-    (n, p) = size(g)
+    n = size(g, 1)
 
     ## Note: estimate once the variance components from the null model and use for all marker scans
     # fit lmm
     (y0, X0, lambda0) = transform_rotation(sy, sg, K; addIntercept = addIntercept); # rotation of data
-    (r0, X00, sigma2) = transform_reweight(y0, X0, lambda0; prior_a = prior_a, prior_b = prior_b, reml = reml, method = method); # reweighting and taking residuals
+    (r0, X00) = transform_reweight(y0, X0, lambda0; prior_a = prior_variance, prior_b = prior_sample_size, reml = reml, method = method); # reweighting and taking residuals
 
     # If no permutation testing is required, move forward to process the single original vector
     if nperms == 0
@@ -328,87 +329,3 @@ function scan_perms_lite(y::Array{Float64,2}, g::Array{Float64,2}, K::Array{Floa
 
 end
 
-####################################################################################################
-######################################### Distributed Processes ####################################
-####################################################################################################
-
-#=
-
-Functions hierarchy:
-
-scan_perms_distributed(original data, 
-                       total number of permutations required, 
-                       option of which algorithm to be used, ...):
-
-    > distribute_by_blocks(number of blocks, ...): 
-        (parallel_helpers.jl)   
-        - createBlocks(number of blocks (or the size of each block?), ...): create blocks with the same sizes
-        - calcLODs_block(...): calculate LOD scores for all markers in the given block 
-    
-    > distribute_by_nperms():
-        (parallel_helpers.jl)   
-        - calcLODs_perms(rndseed, ...): calculate LOD scores for a (subset of the total) number of permutations
-
-
-=#
-
-function scan_perms_distributed(y::Array{Float64,2}, g::Array{Float64,2}, K::Array{Float64,2};
-                                reml::Bool = false,
-                                nperms::Int64 = 1024, rndseed::Int64 = 0, original::Bool = true,
-                                # (options for blocks, nperms distribution methods...)
-                                option::String = "by blocks", nblocks::Int64 = 1, ncopies::Int64 = 1, 
-                                nprocs::Int64 = 0)
-
-    ## Note: estimate once the variance components from the null model and use for all marker scans
-    # fit lmm
-    (y0, X0, lambda0) = transform_rotation(y, g, K; addIntercept = addIntercept); # rotation of data
-    (r0, X00) = transform_reweight(y0, X0, lambda0; prior_a = prior_a, prior_b = prior_b, reml = reml, method = method); # reweighting and taking residuals
-
-    # If no permutation testing is required, move forward to process the single original vector
-    if nperms == 0
-        if original == false
-            throw(error("If no permutation testing is required, input value of `original` has to be `true`."));
-        end
-
-        r0perm = r0;
-    else
-        r0perm = transform_permute(r0; nperms = nperms, rndseed = rndseed, original = original);
-    end
-
-    if option == "by blocks"
-        results = distribute_by_blocks(r0perm, X00, nblocks);
-    elseif option == "by nperms"
-        results = distribute_by_nperms(r0, X00, nperms, ncopies, original);
-    else
-        throw(error("Option unsupported."))
-    end
-
-    return results
-
-end
-
-#= scan(y, g, K; Control type arg)
-
-    Control type args:
-
-        ScanType: control Type input 
-            > Serial(nperms allowed to be 0 indicating no permutations)
-            > Distributed(nperms, nblocks, type of algorithm)
-
-
-=#
-
-#= 
-Next: 
-    - multiple threads;
-    - tests, plus comparing with GEMMA performances;
-    - adjust for additional covariates (X), other than G;
-        > first scan(y_i, X, G, K)
-    - multiple traits...
-    - profile
-
-Future: 
-    - single precision (Union type to control precision type: Float64, Float32, ...)
-    - different ways to return outputs (named tuples, options...)
-
-=#
