@@ -13,40 +13,6 @@ using BenchmarkTools
 include("../src/wls.jl")
 include("../src/util.jl")
 
-function ls(y::Array{Float64, 2}, X::Array{Float64, 2};
-    reml::Bool = false, loglik = true)
-
-    # number of individuals
-    n = size(y,1)
-    # number of covariates
-    p = size(X,2)
-
-    b = X\y # uses QR decomposition
-    yhat = X*b
-    rss0 = sum((y-yhat).^2)
-
-    if( reml )
-    sigma2 = rss0/(n-p)
-    else
-    sigma2 = rss0/n
-    end
-
-    if(loglik) 
-    if ( reml )
-        logdetSigma = (n-p)*log(sigma2)
-    else
-        logdetSigma = n*log(sigma2)
-    end
-
-    ell = -0.5 * ( logdetSigma + rss0/sigma2 )
-    else
-    ell = missing
-    end
-
-    return LSEstimates(b, sigma2, ell)
-
-end
-
 ## Simulate multivariate traits data
 N = 100;
 m = 3; # number of traits to perform scan on
@@ -80,9 +46,9 @@ test1_resids = quote
     @test size(model_resids) == (N, m)
 end
 
-### Test2: compare results uisng both methods (cholesky v.s. qr)
+### Test2: compare results using both methods (cholesky v.s. qr)
 test2_resids = quote
-    @test biasSquared(resid(Y, X), resid(Y, X, "qr")) <= tol
+    @test biasSquared(resid(Y, X; method = "cholesky"), resid(Y, X; method = "qr")) <= tol
 end
 
 ## Test3: compare with manually computed residuals
