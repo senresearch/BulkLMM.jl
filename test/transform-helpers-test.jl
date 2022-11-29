@@ -154,4 +154,4 @@ end;
     eval(test_permute1);
     eval(test_permute2);
 
-end
+end;
