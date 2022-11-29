@@ -122,14 +122,14 @@ Assumes the heritabilities only differ by traits but remain the same across all 
 
 """
 function scan_lite_univar(y0_j::Array{Float64, 1}, X0_intercept::Array{Float64, 2}, 
-    X0_covar::Array{Float64, 2}, lambda0::Array{Float64, 1};
+    X0_covar::Array{Float64, 2}, lambda0::Array{Float64, 1}; prior_variance = 0.0, prior_sample_size = 0.0,
     reml::Bool = true)
 
     n = size(y0_j, 1);
     y0 = reshape(y0_j, :, 1);
 
     # estimate the heritability from the null model and apply it to the reweighting of all markers;
-    vc = fitlmm(y0, X0_intercept, lambda0; reml = reml);
+    vc = fitlmm(y0, X0_intercept, lambda0, [prior_variance, prior_sample_size]; reml = reml);
     sqrtw = sqrt.(abs.(makeweights(vc.h2, lambda0)));
 
     # re-weight the data; then in theory, the observations are homoskedestic and independent.
