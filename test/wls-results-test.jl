@@ -1,5 +1,7 @@
 # WLS Functions Tests - by comparing final outputs running on simulated heteroskedestic data
 
+## Note: make sure pwd() is "BulkLMM.jl/test"
+
 ## Loading required libraries
 using Random
 using Distributions

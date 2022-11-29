@@ -1,5 +1,7 @@
 # Test basic helper functions:
 
+## Note: make sure pwd() is "BulkLMM.jl/test"
+
 ## Loading required packages:
 using Test
 using BenchmarkTools

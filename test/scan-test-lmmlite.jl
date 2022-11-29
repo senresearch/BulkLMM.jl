@@ -1,5 +1,7 @@
 # This test file will test univariate scan functions by running on BXD data and comparing results with R lmmlite package
 
+## Note: make sure pwd() is "BulkLMM.jl/test"
+
 ## Load required packages:
 using DelimitedFiles
 using LinearAlgebra
@@ -14,6 +16,7 @@ using BenchmarkTools
 
 ## Include the source code of BulkLMM to be tested:
 include("../src/scan.jl");
+include("../src/transform_helpers.jl");
 include("../src/lmm.jl");
 include("../src/wls.jl");
 include("../src/util.jl");
@@ -21,7 +24,7 @@ include("../src/kinship.jl");
 include("../src/readData.jl");
 
 ## Also include the helper functions for writing tests:
-include("testHelper.jl");
+include("testHelpers.jl");
 
 ## Read in BXD data:
 pheno_file = "../data/bxdData/BXDtraits.csv"
@@ -44,8 +47,8 @@ lods_BulkLMM_ml = reshape(ml_results[3], :, 1);
 
 ## Compare with lmmlite results:
 ## Read in lmmlite results:
-reml_results_lmmlite = CSV.read("notebooks/lmmlite_R/output/result.lmmlite_REML.csv", DataFrame);
-ml_results_lmmlite = CSV.read("notebooks/lmmlite_R/output/result.lmmlite_ML.csv", DataFrame);
+reml_results_lmmlite = CSV.read("run-lmmlite_R/output/result.lmmlite_REML.csv", DataFrame);
+ml_results_lmmlite = CSV.read("run-lmmlite_R/output/result.lmmlite_ML.csv", DataFrame);
 
 lods_lmmlite_reml = parse.(Float64, reshape(reml_results_lmmlite[2:end, 5], :, 1));
 lods_lmmlite_ml = parse.(Float64, reshape(ml_results_lmmlite[2:end, 5], :, 1));
@@ -58,4 +61,4 @@ lods_lmmlite_ml = parse.(Float64, reshape(ml_results_lmmlite[2:end, 5], :, 1));
     @test sumSqDiff(lods_lmmlite_ml, lods_BulkLMM_ml) <= sqrt(tol);
     @test maxSqDiff(lods_lmmlite_reml, lods_BulkLMM_reml) <= tol;
     @test maxSqDiff(lods_lmmlite_ml, lods_BulkLMM_ml) <= tol;
-end
+end;

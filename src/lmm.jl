@@ -15,7 +15,17 @@
 function makeweights(h2::Float64, lambda::Array{Float64,1})
 
     delta = h2/(1-h2);
+
+    if isinf(delta)
+        throw(error("Exists heritability of 1 which is not allowed for modeling."));
+    end
+
     vars = (delta.*lambda .+ 1);
+
+    if any(vars .<= 0.0)
+        throw(error("Resulting non-positive environmental variance which is not reasonable; check input values."));
+    end
+
     return 1.0./vars
 
 end

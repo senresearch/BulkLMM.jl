@@ -1,5 +1,7 @@
 # WLS Functions Tests - basic tests for resid, rss functions
 
+## Note: make sure pwd() is "BulkLMM.jl/test"
+
 ## Loading required libraries
 using Random
 using LinearAlgebra
