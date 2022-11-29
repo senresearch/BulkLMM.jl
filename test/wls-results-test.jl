@@ -41,7 +41,7 @@ prior = [0.0, 0.0]; # default setting not using prior correction
 
 # Construct means
 group = repeat([0.0, 1.0], inner = Int64(N/2));
-mean = beta[1] .+ group .* beta[2];
+mu = beta[1] .+ group .* beta[2];
 
 # Construct heteroscedestic errors
 vars = rand(Uniform(0, 0.1), 100);
@@ -49,7 +49,7 @@ errors_dist = generateErrors(vars);
 errors = rand(errors_dist, 1);
 
 # Finally, construct heteroscedestic dependent variables
-y = mean .+ errors;
+y = mu .+ errors;
 
 X = hcat(repeat([1.0], inner = N), group) # design matrix
 weights = 1.0 ./ sqrt.(vars); # construct weights by standard deviations
