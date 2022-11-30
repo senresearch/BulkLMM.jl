@@ -168,7 +168,7 @@ Inputs are rotated, re-weighted.
 
 """
 function scan_lite(Y::Array{Float64, 2}, G::Array{Float64, 2}, K::Array{Float64, 2}, nb::Int64; 
-                   nt_blas::Int64 = 1, prior_variance = 1.0, prior_sample_size = 0.0
+                   nt_blas::Int64 = 1, prior_variance = 1.0, prior_sample_size = 0.0,
                    reml::Bool = true)
 
 
