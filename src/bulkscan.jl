@@ -167,8 +167,9 @@ Calculates the LOD scores for all pairs of traits and markers, by a (multi-threa
 Inputs are rotated, re-weighted.
 
 """
-function scan_lite(Y::Array{Float64, 2}, G::Array{Float64, 2}, K::Array{Float64, 2}, nb::Int64; nt_blas::Int64 = 1,
-    reml::Bool = true)
+function scan_lite(Y::Array{Float64, 2}, G::Array{Float64, 2}, K::Array{Float64, 2}, nb::Int64; 
+                   nt_blas::Int64 = 1, prior_variance = 1.0, prior_sample_size = 0.0
+                   reml::Bool = true)
 
 
     (n, m) = size(Y);
@@ -194,7 +195,9 @@ function scan_lite(Y::Array{Float64, 2}, G::Array{Float64, 2}, K::Array{Float64,
         @simd for i = 1:len
             j = i+(t-1)*len;
 
-            @inbounds lods_currBlock[:, i] = scan_lite_univar(Y0[:, j], X0_intercept, X0_covar, lambda0; reml = reml);
+            @inbounds lods_currBlock[:, i] = scan_lite_univar(Y0[:, j], X0_intercept, X0_covar, lambda0; 
+                                                              prior_variance = prior_variance, prior_sample_size = prior_sample_size,
+                                                              reml = reml);
         end
 
         results[t] = lods_currBlock;
