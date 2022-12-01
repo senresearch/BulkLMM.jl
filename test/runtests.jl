@@ -1,6 +1,5 @@
 using BulkLMM
 using Test
-# include("../src/BulkLMM.jl");
 
 include("testHelpers.jl");
 
