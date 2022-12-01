@@ -1,34 +1,40 @@
 module BulkLMM
 
-module FaSTLMM
-
 # packages we need to work
-using Optim
 using DelimitedFiles
+using DataFrames
+using CSV
 using Missings
 using LinearAlgebra
-using Distributed
-using Random
-using DataFrames
 using Statistics
+using Optim
 using Random
+using Distributions
+using LoopVectorization
+
 
 # code for (wls) weighted least squares
-include("wls.jl")
+include("wls.jl");
 export wls
 
 # code for rorateData and flmm
-include("lmm.jl")
+include("lmm.jl");
 # data type we are exporting
-export Flmm
-# functions we are exporting
-export rotateData, flmm
+export LMMEstimates
 
-include("scan.jl")
+include("scan.jl");
 export scan
+export scan_perms
+export scan_perms_lite
 
-include("util.jl")
+include("bulkscan.jl");
+export scan_lite_multivar
+
+include("util.jl");
+
+include("transform_helpers.jl");
+export transform_rotation
+
+include("readData.jl");
 
 end # module
-
-end

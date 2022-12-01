@@ -148,7 +148,7 @@ end
 
 
 """
-scan_lite(Y, G, K, nb; reml = true)
+scan_lite_multivar(Y, G, K, nb; reml = true)
 
 Calculates the LOD scores for all pairs of traits and markers, by a (multi-threaded) loop over blocks of traits and the LiteQTL-type of approach
 
@@ -164,10 +164,8 @@ Calculates the LOD scores for all pairs of traits and markers, by a (multi-threa
 
 # Notes:
 
-Inputs are rotated, re-weighted.
-
 """
-function scan_lite(Y::Array{Float64, 2}, G::Array{Float64, 2}, K::Array{Float64, 2}, nb::Int64; 
+function scan_lite_multivar(Y::Array{Float64, 2}, G::Array{Float64, 2}, K::Array{Float64, 2}, nb::Int64; 
                    nt_blas::Int64 = 1, prior_variance = 1.0, prior_sample_size = 0.0,
                    reml::Bool = true)
 

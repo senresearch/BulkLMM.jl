@@ -1,16 +1,4 @@
-using DelimitedFiles
-using LinearAlgebra
-using Optim
-using Distributions
-using Test
-using BenchmarkTools
-using Random
-using CSV
-using DataFrames
-using Distributed
-
-
-## Also include the helper functions for writing tests:
+## Include the helper functions for writing tests:
 include("../src/kinship.jl");
 include("../src/readData.jl");
 include("testHelpers.jl");
