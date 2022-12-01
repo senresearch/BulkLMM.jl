@@ -44,7 +44,7 @@ end
 test_resids = zeros(Float64, N, m)
 
 for t in 1:m
-    y = Y[:, t];
+    local y = Y[:, t];
     
     # perform OLS for each trait
     b = X\y;

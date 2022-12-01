@@ -1,8 +1,4 @@
 ## Include the helper functions for writing tests:
-include("../src/kinship.jl");
-include("../src/readData.jl");
-include("testHelpers.jl");
-
 
 ## Read in BXD data:
 pheno_file = "../data/bxdData/BXDtraits.csv"
