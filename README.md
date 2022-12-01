@@ -2,3 +2,5 @@
 
 Package for running genome scans with linear mixed models for many
 traits.
+
+Try updating README.md
