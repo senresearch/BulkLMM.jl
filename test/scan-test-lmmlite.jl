@@ -1,39 +1,5 @@
 # This test file will test univariate scan functions by running on BXD data and comparing results with R lmmlite package
 
-## Note: make sure pwd() is "BulkLMM.jl/test"
-
-## Load required packages:
-using DelimitedFiles
-using LinearAlgebra
-using Optim
-using Distributions
-using Random
-using CSV
-using DataFrames
-### For writing tests:
-using Test
-using BenchmarkTools
-
-## Include the source code of BulkLMM to be tested:
-include("../src/scan.jl");
-include("../src/transform_helpers.jl");
-include("../src/lmm.jl");
-include("../src/wls.jl");
-include("../src/util.jl");
-include("../src/kinship.jl");
-include("../src/readData.jl");
-
-## Also include the helper functions for writing tests:
-include("testHelpers.jl");
-
-## Read in BXD data:
-pheno_file = "../data/bxdData/BXDtraits.csv"
-pheno = readBXDpheno(pheno_file);
-geno_file = "../data/bxdData/BXDgeno_prob.csv"
-geno = readGenoProb_ExcludeComplements(geno_file);
-
-kinship = calcKinship(geno); # calculate kinship matrix from genotype data
-
 ## Consider the 7919-th trait
 pheno_y = reshape(pheno[:, 7919], :, 1);
 

@@ -2,17 +2,6 @@
 
 ## Note: make sure pwd() is "BulkLMM.jl/test"
 
-## Loading required packages:
-using Test
-using BenchmarkTools
-
-## load the BXD data for testing:
-include("BXDdata_for_test.jl");
-
-## load the helper functions to be tested
-include("../src/lmm.jl");
-include("../src/wls.jl");
-
 pheno_y = reshape(pheno[:, 1126], :, 1);
 
 ##########################################################################################################

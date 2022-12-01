@@ -2,17 +2,6 @@
 
 ## Note: make sure pwd() is "BulkLMM.jl/test"
 
-## Loading required libraries
-using Random
-using LinearAlgebra
-using Statistics
-using Test
-using BenchmarkTools
-
-## Loading functions to test
-include("../src/wls.jl")
-include("../src/util.jl")
-
 ## Simulate multivariate traits data
 N = 100;
 m = 3; # number of traits to perform scan on
@@ -95,28 +84,4 @@ end
     eval(test3_resids)
     eval(tests_rss)
 end;
-
-##########################################################################################################
-## BENCHMARKING:
-##########################################################################################################
-
-function toCompare!(Y::Array{Float64, 2}, X::Array{Float64, 2}, m::Int64, holder::Array{Float64, 2})
-
-    for t in 1:m
-    
-        y = Y[:, t];
-        
-        b = X\y;
-        yhat = X*b;
-        curr_res = y .- yhat;
-        
-        holder[:, t] = curr_res
-        
-    end
-
-end
-
-@btime model_resids = resid(Y, X)
-@btime toCompare!(Y, X, m, test_resids)
-
  

@@ -2,20 +2,6 @@
 
 ## Note: make sure pwd() is "BulkLMM.jl/test"
 
-## Loading required libraries
-using Random
-using Distributions
-using LinearAlgebra
-using Statistics
-using Test
-using BenchmarkTools
-
-## Loading functions to test
-include("../src/wls.jl")
-include("../src/util.jl")
-
-
-
 ##########################################################################################################
 ## Simulation Settings:
 ##########################################################################################################
@@ -121,19 +107,3 @@ truth = reshape([1.0 0.5], 2, 1);
     @test biasSquared(result_wls.b, truth) <= tol
     @test biasSquared(result_ls.b, truth) <= tol
 end;
-
-##########################################################################################################
-## BENCHMARKING:
-##########################################################################################################
-
-@btime wls(y, X, weights, prior; reml = false, loglik = true, method = "qr");
-
-alternative = quote
-    W = weights .* (1.0*Matrix(I, N, N));
-    Wy = sqrt.(W) * y;
-    WX = sqrt.(W) * X;
-
-    ls(Wy, WX; reml = false, loglik = true);
-end
-
-@btime eval(alternative);

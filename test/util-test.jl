@@ -1,17 +1,5 @@
 # Util Functions Tests
 
-## Loading required packages:
-using Test
-using BenchmarkTools
-using LinearAlgebra
-using Statistics
-using Random
-
-## Loading functions to be tested:
-include("../src/util.jl")
-include("testHelpers.jl")
-
-
 ##########################################################################################################
 ## TEST: colCenter!()
 ##########################################################################################################
