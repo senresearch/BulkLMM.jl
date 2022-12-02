@@ -1,4 +1,5 @@
 using BulkLMM
+using CSV
 using Test
 
 include("testHelpers.jl");

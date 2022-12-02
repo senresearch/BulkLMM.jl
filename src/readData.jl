@@ -151,8 +151,8 @@ end
 
 #####################################################################
 function str2num(x::SubString{String})
-    n = tryparse(Float64,x)
-    return isnull(n) ? NA : get(n)
+    #n = tryparse(Float64,x)
+    #return isnull(n) ? NA : get(n)
 end
 
 
