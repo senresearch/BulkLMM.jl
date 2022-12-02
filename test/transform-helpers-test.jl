@@ -11,7 +11,7 @@ pheno_y = reshape(pheno[:, 1126], :, 1);
 ## check dimensions:
 test_rotation1 = quote
     try
-        transform_rotation(pheno_y[2:end, :], geno, kinship);
+        BulkLMM.transform_rotation(pheno_y[2:end, :], geno, kinship);
     catch e
         @test e.msg == "Dimension mismatch.";
     end
@@ -19,8 +19,8 @@ end;
 
 ## check add intercept
 test_rotation2 = quote
-    X_intercept = transform_rotation(pheno_y, geno, kinship)[2];
-    X_nointercept = transform_rotation(pheno_y, geno, kinship; addIntercept = false)[2];
+    X_intercept = BulkLMM.transform_rotation(pheno_y, geno, kinship)[2];
+    X_nointercept = BulkLMM.transform_rotation(pheno_y, geno, kinship; addIntercept = false)[2];
     @test size(X_intercept, 2) == p+1;
     @test size(X_nointercept, 2) == p;
 end;
@@ -30,7 +30,7 @@ test_rotation3 = quote
     M_notSPD = diagm(ones(n));
     M_notSPD[22, 22] = -1.0;
     try 
-        transform_rotation(pheno_y, geno, M_notSPD);
+        BulkLMM.transform_rotation(pheno_y, geno, M_notSPD);
     catch e
         @test e.msg == "Negative eigenvalues exist. The kinship matrix supplied may not be SPD.";
     end
@@ -38,7 +38,7 @@ end;
 
 ## check if final results are as desired:
 test_rotation4 = quote
-    results = transform_rotation(pheno_y, geno, kinship; addIntercept = false);
+    results = BulkLMM.transform_rotation(pheno_y, geno, kinship; addIntercept = false);
 
     EF = eigen(kinship);
 
@@ -54,7 +54,7 @@ end;
 ## TEST: transform_reweight()
 ##########################################################################################################
 
-(y0, X0, lambda0) = transform_rotation(pheno_y, geno, kinship);
+(y0, X0, lambda0) = BulkLMM.transform_rotation(pheno_y, geno, kinship);
 X0_inter = reshape(X0[:, 1], :, 1);
 X0_covar = X0[:, 2:end];
 
@@ -65,7 +65,7 @@ test_reweight1 = quote
     c_y0 = copy(y0);
     c_X0 = copy(X0);
 
-    transform_reweight(y0, X0, lambda0);
+    BulkLMM.transform_reweight(y0, X0, lambda0);
 
     @test sumSqDiff(c_y0, y0) < 1e-10;
     @test sumSqDiff(c_X0, X0) < 1e-10;
@@ -73,7 +73,7 @@ end;
 
 ## check if the dimensions of the output are as desired (especially for the covariate matrix)
 test_reweight2 = quote
-    results = transform_reweight(y0, X0, lambda0);
+    results = BulkLMM.transform_reweight(y0, X0, lambda0);
 
     @test size(results[1], 1) == n;
     # check if the output covariate matrix excludes the intercept
@@ -82,11 +82,11 @@ end;
 
 ## check results, by comparing with equivalent wls results
 test_reweight3 = quote
-    results = transform_reweight(y0, X0, lambda0);
+    results = BulkLMM.transform_reweight(y0, X0, lambda0);
     prior = zeros(2);
 
-    vc = fitlmm(y0, X0_inter, lambda0, prior);
-    sqrtw = sqrt.(makeweights(vc.h2, lambda0));
+    vc = BulkLMM.fitlmm(y0, X0_inter, lambda0, prior);
+    sqrtw = sqrt.(BulkLMM.makeweights(vc.h2, lambda0));
 
     wlsEsts = wls(X0_covar, X0_inter, sqrtw, prior);
 
@@ -105,14 +105,14 @@ end;
 ## TEST: transform_permute()
 ##########################################################################################################
 
-(r0, X00, sigma2_e) = transform_reweight(y0, X0, lambda0);
+(r0, X00, sigma2_e) = BulkLMM.transform_reweight(y0, X0, lambda0);
 
 ## Note: nested function `shuffleVector` has been tested in another testing file
 
 ## check is the output has the desired size
 test_permute1 = quote
-    result_noOri = transform_permute(r0; nperms = 1000, original = false);
-    result = transform_permute(r0; nperms = 1000);
+    result_noOri = BulkLMM.transform_permute(r0; nperms = 1000, original = false);
+    result = BulkLMM.transform_permute(r0; nperms = 1000);
 
     @test mean(size(result_noOri) .== [n, 1000]) == 1;
     @test mean(size(result) .== [n, 1001]) == 1;
@@ -121,7 +121,7 @@ end;
 
 ## check if the original is kept;
 test_permute2 = quote
-    result = transform_permute(r0; nperms = 1000);
+    result = BulkLMM.transform_permute(r0; nperms = 1000);
 
     @test mean(r0 .== result[:, 1]) == 1;
 

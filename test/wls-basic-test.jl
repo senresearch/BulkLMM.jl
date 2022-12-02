@@ -27,7 +27,7 @@ end
 
 tol = 1e-8;
 
-model_resids = resid(Y, X);
+model_resids = BulkLMM.resid(Y, X);
 
 ## Test1: simply check the output dimensions
 
@@ -37,7 +37,7 @@ end
 
 ### Test2: compare results using both methods (cholesky v.s. qr)
 test2_resids = quote
-    @test biasSquared(resid(Y, X; method = "cholesky"), resid(Y, X; method = "qr")) <= tol
+    @test biasSquared(BulkLMM.resid(Y, X; method = "cholesky"), BulkLMM.resid(Y, X; method = "qr")) <= tol
 end
 
 ## Test3: compare with manually computed residuals
@@ -63,7 +63,7 @@ end
 ## TEST: rss()
 ##########################################################################################################
 
-model_rss = rss(Y, X);
+model_rss = BulkLMM.rss(Y, X);
 test_rss = reshape([sum(test_resids[:, 1].^2), 
                     sum(test_resids[:, 2].^2),
                     sum(test_resids[:, 3].^2)], 1, :);

@@ -1,9 +1,7 @@
 # Util Functions Tests
-
 ##########################################################################################################
 ## TEST: colCenter!()
 ##########################################################################################################
-
 
 ### When data is a vector (1-dim array)
 test1_colCenter = quote
@@ -12,7 +10,7 @@ test1_colCenter = quote
     ## Manually center columns of A
     colMean_A = sum(A)/N;
     true_centered_A = transpose(round.(transpose(A) .- colMean_A; digits = 2));
-    colCenter!(A);
+    BulkLMM.colCenter!(A);
     A .= round.(A; digits = 2);
     @test true_centered_A == A;
 end;
@@ -27,7 +25,7 @@ test2_colCenter = quote
     ## Manually center columns of A
     colMean_A = sum(A, dims = 1)./N;
     true_centered_A = round.(A .- colMean_A; digits = 2);
-    colCenter!(A);
+    BulkLMM.colCenter!(A);
     A .= round.(A; digits = 2);
     @test true_centered_A == A;
 end;
@@ -49,7 +47,7 @@ test1_rowCenter = quote
     A = rand([0.0, 1.0], N, p);
 
     try 
-        rowCenter!(A)
+        BulkLMM.rowCenter!(A)
     catch e
         @test typeof(e) == ErrorException
     end
@@ -66,7 +64,7 @@ test2_rowCenter = quote
     rowMean_A = sum(A, dims = 2)./p;
     true_centered_A = round.(A .- rowMean_A; digits = 2);
     
-    rowCenter!(A);
+    BulkLMM.rowCenter!(A);
     A .= round.(A; digits = 2);
     
     @test true_centered_A == A;
@@ -91,7 +89,7 @@ test1_colDivide = quote
     w[length(w)] = 0.0;
 
     try 
-        colDivide!(A, w)
+        BulkLMM.colDivide!(A, w)
     catch e
         @test typeof(e) == ErrorException
     end
@@ -106,7 +104,7 @@ test2_colDivide = quote
     colVars = mapslices(var, A, dims = 1) |> vec;
     true_weighted_A = transpose(round.(transpose(A) ./ colVars; digits = 2));
     
-    colDivide!(A, colVars);
+    BulkLMM.colDivide!(A, colVars);
     A = round.(A; digits = 2);
     
     @test true_weighted_A == A;
@@ -131,7 +129,7 @@ test1_rowDivide = quote
     w[length(w)] = 0.0;
 
     try 
-        rowDivide!(A, w)
+        BulkLMM.rowDivide!(A, w)
     catch e
         @test typeof(e) == ErrorException
     end
@@ -154,7 +152,7 @@ test2_rowDivide = quote
     
     true_weighted_A = round.(A ./ rowVars; digits = 2);
     
-    rowDivide!(A, rowVars);
+    BulkLMM.rowDivide!(A, rowVars);
     A = round.(A; digits = 2);
     
     @test true_weighted_A == A;
@@ -179,7 +177,7 @@ test_colStandardize = quote
     true_standardized_A = round.(transpose(A) .- colMeans; digits = 2)
     true_standardized_A = transpose(round.(true_standardized_A ./ colVars; digits = 2));
     
-    colStandardize!(A);
+    BulkLMM.colStandardize!(A);
     A = round.(A; digits = 2);
     
     @test true_standardized_A == A;
@@ -203,7 +201,7 @@ test1_rowMultiply = quote
     x = zeros(N+1)
 
     try 
-        rowMultiply(A, x)
+        BulkLMM.rowMultiply(A, x)
     catch e
         @test typeof(e) == ErrorException
     end
@@ -220,7 +218,7 @@ test2_rowMultiply = quote
     
     true_weighted_A = round.(A .* w; digits = 2);
     
-    test_weighted_A = round.(rowMultiply(A, w); digits = 2)
+    test_weighted_A = round.(BulkLMM.rowMultiply(A, w); digits = 2)
 
     
     @test true_weighted_A == test_weighted_A;
@@ -234,9 +232,9 @@ test3_rowMultiply = quote
     
     w = rand(N)
     
-    test_weighted_A = round.(rowMultiply(A, w); digits = 2)
+    test_weighted_A = round.(BulkLMM.rowMultiply(A, w); digits = 2)
     
-    rowDivide!(A, 1.0 ./w)
+    BulkLMM.rowDivide!(A, 1.0 ./w)
 
     A = round.(A; digits = 2)
     
@@ -260,7 +258,7 @@ test1_shuffleVector = quote
     A = rand([0.0, 1.0], N, p) |> vec; # fixed to be a vector
     rng = MersenneTwister();
     
-    result = shuffleVector(rng, A, 5);
+    result = BulkLMM.shuffleVector(rng, A, 5);
     
     
     @test size(result, 2) == 6;
@@ -273,7 +271,7 @@ test2_shuffleVector = quote
     A = rand([0.0, 1.0], N, p) |> vec; # fixed to be a vector
     rng = MersenneTwister();
     
-    result = shuffleVector(rng, A, 5; original = false);
+    result = BulkLMM.shuffleVector(rng, A, 5; original = false);
     
     
     @test size(result, 2) == 5;
@@ -286,7 +284,7 @@ test3_shuffleVector = quote
     A = rand([0.0, 1.0], N, p) |> vec; # fixed to be a vector
     rng = MersenneTwister();
     
-    result = shuffleVector(rng, A, 5);
+    result = BulkLMM.shuffleVector(rng, A, 5);
     
     colSums = sum(result, dims = 1) |> vec;
     
@@ -310,7 +308,7 @@ test1_compareValues = quote
     b_test = convert(Array{Float64, 1}, zeros(length(b_true)+1));
 
     try 
-        compareValues(b_true, b_test, 1e-3, 1e5)
+        BulkLMM.compareValues(b_true, b_test, 1e-3, 1e5)
     catch e
         @test typeof(e) == ErrorException
     end
@@ -325,7 +323,7 @@ test2_compareValues = quote
     b_test[length(b_true)] = 1.0
     b_test[length(b_true)-1] = 2.0
 
-    @test compareValues(b_test, b_true, 0.0, 1e5)[1] == length(b_true) - 2
+    @test BulkLMM.compareValues(b_test, b_true, 0.0, 1e5)[1] == length(b_true) - 2
 end;
 
 tests_compareValues = quote

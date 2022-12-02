@@ -82,7 +82,7 @@ end
 ##########################################################################################################
 
 # Get results from wls implementation
-result_wls = wls(y, X, weights, prior; reml = false, loglik = true, method = "cholesky");
+result_wls = BulkLMM.wls(y, X, weights, prior; reml = false, loglik = true, method = "cholesky");
 
 # Get weighted LS results by manually weighting and then perform OLS:
 W = weights .* (1.0*Matrix(I, N, N));

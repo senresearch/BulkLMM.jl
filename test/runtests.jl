@@ -1,6 +1,11 @@
 using BulkLMM
 using CSV
 using Test
+using Statistics
+using Random
+using Distributions
+using LinearAlgebra
+using DataFrames
 
 include("testHelpers.jl");
 

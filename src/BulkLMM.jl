@@ -5,17 +5,21 @@ module BulkLMM
 
     include("./util.jl");
     include("./kinship.jl");
+    export calcKinship
 
     include("./readData.jl");
+    export readBXDpheno
+    export readGenoProb_ExcludeComplements
 
     # code for (wls) weighted least squares
     include("./wls.jl");
-    # export wls
+    export wls
+    export LSEstimates
 
     # code for rorateData and flmm
     include("./lmm.jl");
     # data type we are exporting
-    # export LMMEstimates
+    export LMMEstimates
 
     include("./scan.jl");
     # export scan

@@ -4,8 +4,8 @@
 pheno_y = reshape(pheno[:, 7919], :, 1);
 
 ## Run BulkLMM code to get results:
-reml_results = scan(pheno_y, geno, kinship; reml = true); # by default uses scan_null;
-ml_results = scan(pheno_y, geno, kinship; reml = false);
+reml_results = BulkLMM.scan(pheno_y, geno, kinship; reml = true); # by default uses scan_null;
+ml_results = BulkLMM.scan(pheno_y, geno, kinship; reml = false);
 
 lods_BulkLMM_reml = reshape(reml_results.lod, :, 1);
 lods_BulkLMM_ml = reshape(ml_results.lod, :, 1);
