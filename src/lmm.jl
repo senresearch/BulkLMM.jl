@@ -22,9 +22,11 @@ function makeweights(h2::Float64, lambda::Array{Float64,1})
 
     vars = (delta.*lambda .+ 1);
 
+    #=
     if any(vars .<= 0.0)
         throw(error("Non-positive environmental variance is not allowed; check input values."));
     end
+    =#
 
     return 1.0./vars
 
