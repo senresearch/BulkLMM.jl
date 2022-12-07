@@ -30,8 +30,8 @@ test_computeR_LMM1 = quote
 
     x = reshape(x, :, 1);
     y = reshape(y, :, 1);
-    BulkLMM.colStandardize!(x);
-    BulkLMM.colStandardize!(y);
+    # BulkLMM.colStandardize!(x);
+    # BulkLMM.colStandardize!(y);
 
     intercept = reshape(ones(100).*1.0, :, 1);
 
@@ -43,8 +43,8 @@ test_computeR_LMM2 = quote
     rng = MersenneTwister(1234);
     X = randn(100, 100);
     Y = randn(100, 100);
-    BulkLMM.colStandardize!(x);
-    BulkLMM.colStandardize!(y);
+    # BulkLMM.colStandardize!(x);
+    # BulkLMM.colStandardize!(y);
 
     intercept = reshape(ones(100).*1.0, :, 1);
 
