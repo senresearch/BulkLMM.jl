@@ -18,4 +18,5 @@ include("testHelpers.jl");
     include("lmm-test.jl");
     include("transform-helpers-test.jl");
     include("scan-test-lmmlite.jl");
+    include("bulkscan-test.jl");
 end;

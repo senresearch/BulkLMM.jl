@@ -16,8 +16,7 @@ Given the pairwise correlation `r` and sample size `n`, convert `r` to the corre
 """
 
 function r2lod(r::Float64, n::Int64)
-    rsq = (r/n)^2
-
+    rsq = r^2
     return -(n/2.0) * log10(abs(1.0-rsq));
 end
 
@@ -47,10 +46,12 @@ function computeR_LMM(wY::Array{Float64, 2}, wX::Array{Float64, 2}, wIntercept::
     # exclude the effect of (rotated) intercept (idea is similar as centering data in the linear model case)
     y00 = resid(wY, wIntercept);
     X00 = resid(wX, wIntercept);
+    
+    # n = size(y00, 1);
 
     # standardize the response and covariates by dividing by their norms
-    norm_y = mapslices(x -> norm(x)/sqrt(n), y00, dims = 1) |> vec;
-    norm_X = mapslices(x -> norm(x)/sqrt(n), X00, dims = 1) |> vec;
+    norm_y = mapslices(x -> norm(x), y00, dims = 1) |> vec;
+    norm_X = mapslices(x -> norm(x), X00, dims = 1) |> vec;
 
     colDivide!(y00, norm_y);
     colDivide!(X00, norm_X);
@@ -123,7 +124,7 @@ Assumes the heritabilities only differ by traits but remain the same across all 
 """
 function scan_lite_univar(y0_j::Array{Float64, 1}, X0_intercept::Array{Float64, 2}, 
     X0_covar::Array{Float64, 2}, lambda0::Array{Float64, 1}; prior_variance = 0.0, prior_sample_size = 0.0,
-    reml::Bool = true)
+    reml::Bool = false)
 
     n = size(y0_j, 1);
     y0 = reshape(y0_j, :, 1);
@@ -167,7 +168,7 @@ Calculates the LOD scores for all pairs of traits and markers, by a (multi-threa
 """
 function scan_lite_multivar(Y::Array{Float64, 2}, G::Array{Float64, 2}, K::Array{Float64, 2}, nb::Int64; 
                    nt_blas::Int64 = 1, prior_variance = 1.0, prior_sample_size = 0.0,
-                   reml::Bool = true)
+                   reml::Bool = false)
 
 
     (n, m) = size(Y);
