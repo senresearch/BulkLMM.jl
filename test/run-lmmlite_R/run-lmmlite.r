@@ -1,20 +1,9 @@
----
-title: "run-lmmlite"
-author: "Fred Yu"
-date: "2022-07-18"
-output: pdf_document
----
+# run-lmmlite.r: this is an R script generating data outputs used for testing. 
+# It runs the R package lmmlite on BXD data to perform single trait genome scans on the 7919-th BXD trait.
+# To be able to execute the script, one will need to set the working directory as 
+# setwd("../BulkLMM.jl/test/run-lmmlite_R")
 
-```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE)
 rm(list = ls())
-setwd("/Users/zifanyu/Documents/GitHub/BulkLMM.jl/test/notebooks/lmmlite_R")
-```
-
-
-## Load libraries:
-
-```{r libraries, echo = T}
 # install.packages("devtools")
 library(devtools)
 
@@ -26,48 +15,27 @@ library(lmmlite)
 
 library(knitr)
 
-```
 
-```{r checking-cwd, echo = F, include = F}
 ## Check working directory
 getwd()
 
-```
 
-## Read in the data:
-
-```{r read-in-data, echo = T}
 
 pheno = read.csv("processed_bxdData/BXDpheno.csv")
 geno = read.csv("processed_bxdData/BXDgeno.csv")
 K = read.csv("processed_bxdData/BXDkinship.csv")
 
-```
 
-```{r type-conversion, echo = T}
 
 pheno_y = pheno[, 7919]
 K_mat = data.matrix(K)
 geno_mat = data.matrix(geno)
 
-```
 
-## Run lmmlite:
-
-Here we will only consider scanning the second quantitative trait for comparing results:
-
-```{r run-model-rotate-null, echo = T}
 
 e_null = eigen_rotation(K_mat, pheno_y, NULL)
 
-```
 
-
-By default, lmmlite will estimate the variance components parameters using restricted maximum likelihood estimators (REML).
-
-In this notebook, we can run the following code twice - for the first time use line 77 and comment out line 78, save output as a CSV file to get REML result, and for the second time we do the other way around to get ML result and save it.
-
-```{r run-model-getVCEsts, echo = T}
 
 n = nrow(geno_mat)
 p = ncol(geno_mat)
@@ -78,9 +46,7 @@ params_null = fitLMM(e_null$Kva, e_null$y, e_null$X, reml = F)
 est_hsq = params_null$hsq
 est_sigmasq = params_null$sigmasq
 
-```
 
-```{r run-model-helpers, echo = T}
 
 ## Helper functions:
 
@@ -129,24 +95,18 @@ rss2Lod = function(rss_null, rss_mod, n){
   return(lod)
 }
 
-```
 
-
-Essentially, what the lmmlite program does is for a given $h^2$, it estimates the $\sigma_e^2$ and the fixed effects of based on optimizing the likelihood function given $y$ and each marker $G_j$, $j = 1,..., p$. So, one of the variance component $\sigma_e^2$ will be re-estimated for every marker.
-
-We use lmmlite by first estimate the heritability $\hat h^2_0$ for the null model that includes only the intercept, and use it for the estimations of other parameters (fixed effects, variance due to noises) for every marker:
-
-```{r run-model-formal-run, echo = T}
 # Run model for each marker:
 
 list_Gj = construct_Gj(geno)
 
 
-### Manually give the hsq estimated from BulkLMM flmm to getMLsoln
+### You can manually give the hsq estimated from BulkLMM flmm to getMLsoln
 ## est_hsq = 
 ###
 
-# results_null = getMLsoln(est_hsq, e_null$Kva, e_null$y, e_null$X, reml = T)
+# Compute the residual sum of squares for the null model (including just the intercept)
+# results_null = getMLsoln(est_hsq, e_null$Kva, e_null$y, e_null$X, reml = T) # to evaluate the null model results using REML
 results_null = getMLsoln(est_hsq, e_null$Kva, e_null$y, e_null$X, reml = F)
 
 
@@ -156,6 +116,7 @@ list_RSS[1] = rss_null
 
 list_ml_solns = list(results_null)
 
+# Extract the residual sum of squares for each model including an intercept and one of the p markers
 for(j in 1:p){
   
   ml_soln = run_model(K_eVals, K_eVects, list_Gj[[j]], pheno_y, est_hsq)
@@ -166,12 +127,8 @@ for(j in 1:p){
 
 }
 
-```
 
-After we got the estimated fixed effects for each marker, we can then compute the RSSs and finally compute the LOD scores:
-
-```{r view_results, echo = T}
-
+# Compute the LOD scores using residual sum of squares of the models
 list_LOD = sapply(list_RSS[2:length(list_RSS)], 
        function(x) rss2Lod(list_RSS[1], x, n))
 list_LOD = c(NA, list_LOD)
@@ -199,12 +156,10 @@ head(list_Sigma_e)
 tail(list_Sigma_e)
 
 
-```
 
-Saved results is a CSV table that has fields of the estimated fixed effects (intercept + marker effect), estimated $\sigma^2_e$ and the LOD score for each marker.
-
-```{r save-results, echo = T}
-
+# Generate the output files. 
+# They will include the information about the estimated fixed effects coefficients, 
+# the estimated environmental variance, and the LOD scores.
 results_lmmlite = data.frame(cbind(list_Beta_0, list_Beta_1, 
                                    list_Sigma_e, list_LOD))
 colnames(results_lmmlite) = c("Est_Beta_0", "Est_Beta_1", 
@@ -220,6 +175,4 @@ kable(head(results_lmmlite))
 
 # write.csv(results_lmmlite, "output/result.lmmlite_REML.csv")
 write.csv(results_lmmlite, "output/result.lmmlite_ML.csv")
-
-```
 
