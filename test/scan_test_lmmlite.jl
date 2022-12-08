@@ -13,8 +13,10 @@ lods_BulkLMM_ml = reshape(ml_results.lod, :, 1);
 
 ## Compare with lmmlite results:
 ## Read in lmmlite results:
-reml_results_lmmlite = CSV.read("run-lmmlite_R/output/result.lmmlite_REML.csv", DataFrame);
-ml_results_lmmlite = CSV.read("run-lmmlite_R/output/result.lmmlite_ML.csv", DataFrame);
+file_reml_path = string(@__DIR__, "/run-lmmlite_R/output/result.lmmlite_REML.csv") 
+file_ml_path = string(@__DIR__, "/run-lmmlite_R/output/result.lmmlite_ML.csv")
+reml_results_lmmlite = CSV.read(file_reml_path, DataFrame);
+ml_results_lmmlite = CSV.read(file_ml_path, DataFrame);
 
 lods_lmmlite_reml = parse.(Float64, reshape(reml_results_lmmlite[2:end, 5], :, 1));
 lods_lmmlite_ml = parse.(Float64, reshape(ml_results_lmmlite[2:end, 5], :, 1));
