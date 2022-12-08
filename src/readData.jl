@@ -151,41 +151,18 @@ end
 
 #####################################################################
 function str2num(x::SubString{String})
-    n = tryparse(Float64,x)
-    return isnull(n) ? NA : get(n)
+    #n = tryparse(Float64,x)
+    #return isnull(n) ? NA : get(n)
 end
 
 
 function readBXDpheno(file::AbstractString)
-    return convert(Array{Float64,2},readdlm(file, ','; skipstart=1)[:,2:end-1])
+    return convert(Array{Float64,2}, readdlm(file, ','; skipstart=1)[:, 2:end-1])
 end
 
 function readBXDgeno(file::AbstractString; skipstart=1)
     return convert(Array{Float64,2},readdlm(file, ','; skipstart=skipstart)[:,2:2:end])
 end
-
-# function readMarkerNames(file::AbstractString; skipstart=0)
-#     return convert(Array{String,1},readdlm(file, ','; skipstart=skipstart)[1,2:2:end] )
-# end
-
-# function generate_x(x)
-#     # # Random create covariates for now. This for loop can be used for real data later.
-#     # for row in 1:size(x)[1]
-#     #     if x[row] == "f"
-#     #         x[row] = 1.0
-#     #     else
-#     #         x[row] = -1.0
-#     #     end
-#     # end
-#     # return convert(Array{Float64,1}, x)
-
-#     return rand([-1.0,1.0], size(x)[1])
-# end
-
-# function readBXDtraits(file::AbstractString)
-#     x_temp = readdlm(file, ','; skipstart=1)[:,end]
-#     return hcat(ones(size(X_temp)[1]),process_x(X_temp))
-# end
 
 function writeToFile(data, filename)
     open(filename, "w") do io
@@ -194,18 +171,21 @@ function writeToFile(data, filename)
 end
 
 function transform_bxd_pheno_to_gemma(inputfile::AbstractString, outputfile::AbstractString, iter::Int64)
-    pheno = readdlm(inputfile, ',', skipstart=1)[:, 2:end-1];
-    open(outputfile,"w") do io
-        writedlm(io, pheno[:,iter])
+    pheno = readdlm(inputfile, ',', skipstart = 1)[:, 2:end-1];
+    open(outputfile, "w") do io
+        writedlm(io, pheno[:, iter])
     end
+    return pheno
 end
 
 function transform_bxd_geno_to_gemma(inputfile::AbstractString, outputfile::AbstractString)
     data = readdlm(inputfile, ','; header=true)
     marker_names = data[2][2:2:end]
-    data = data[1][:, 2:2:end]
-    ignore_columns = fill("X", size(data)[2], 2)
-    output = hcat(hcat(marker_names,ignore_columns), transpose(data))
+    marker_names = map(x -> SubString(x, 1, length(x)-3), marker_names);
+    data = 2 .* data[1][:, 2:2:end]
+    minor_allele = fill("A", size(data)[2], 1);
+    major_allele = fill("B", size(data)[2], 1);
+    output = hcat(hcat(marker_names, minor_allele, major_allele), transpose(data))
     writeToFile(output , outputfile)
     return output
 end
