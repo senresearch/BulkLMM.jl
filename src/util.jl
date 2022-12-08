@@ -85,9 +85,19 @@ function colStandardize!(A::Matrix{Float64})
 
 end
 
+function colStandardize(A::Array{Float64, 2})
+
+    sA = A .- mean(A; dims = 1);
+    s = std(sA,dims=1) |> vec
+    colDivide!(sA, s);
+
+    return sA
+    
+end
+
 function rowDivide!(A::Matrix{Float64}, x::Vector{Float64})
 
-    (n,m) = size(A)
+    (n, m) = size(A)
 
     # Checking validity of inputs:
     ## Checking dimensions of inputs
@@ -100,11 +110,30 @@ function rowDivide!(A::Matrix{Float64}, x::Vector{Float64})
         throw(error("Dividing by zeros: the input vector can not contain any zeros!"))
     end
 
-    for i=1:m
-        for j=1:n
-            @inbounds A[j,i] = A[j,i]/x[j]
+    for i = 1:m
+        for j = 1:n
+            @inbounds A[j, i] = A[j, i]/x[j]
         end
     end
+
+end
+
+function rowMultiply!(A::Matrix{Float64}, x::Vector{Float64})
+
+    (n, m) = size(A)
+
+    # Checking validity of inputs:
+    ## Checking dimensions of inputs
+    if(length(x)!=n)
+        throw(error("Matrix and vector size do not match."))
+    end
+    
+    for i = 1:m
+        for j = 1:n
+            @inbounds A[j, i] = A[j, i] * x[j]
+        end
+    end
+
 end
 
 function rowMultiply(A::Matrix{Float64}, x::Vector{Float64})

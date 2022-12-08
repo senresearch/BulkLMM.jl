@@ -1,16 +1,6 @@
 # WLS Functions Tests - basic tests for resid, rss functions
 
-## Loading required libraries
-using Random
-using LinearAlgebra
-using Statistics
-using Test
-using BenchmarkTools
-
-## Loading functions to test
-include("../src/wls.jl")
-include("../src/util.jl")
-
+## Note: make sure pwd() is "BulkLMM.jl/test"
 
 ## Simulate multivariate traits data
 N = 100;
@@ -37,7 +27,7 @@ end
 
 tol = 1e-8;
 
-model_resids = resid(Y, X);
+model_resids = BulkLMM.resid(Y, X);
 
 ## Test1: simply check the output dimensions
 
@@ -45,16 +35,16 @@ test1_resids = quote
     @test size(model_resids) == (N, m)
 end
 
-### Test2: compare results uisng both methods (cholesky v.s. qr)
+### Test2: compare results using both methods (cholesky v.s. qr)
 test2_resids = quote
-    @test biasSquared(resid(Y, X), resid(Y, X, "qr")) <= tol
+    @test biasSquared(BulkLMM.resid(Y, X; method = "cholesky"), BulkLMM.resid(Y, X; method = "qr")) <= tol
 end
 
 ## Test3: compare with manually computed residuals
 test_resids = zeros(Float64, N, m)
 
 for t in 1:m
-    y = Y[:, t];
+    local y = Y[:, t];
     
     # perform OLS for each trait
     b = X\y;
@@ -73,7 +63,7 @@ end
 ## TEST: rss()
 ##########################################################################################################
 
-model_rss = rss(Y, X);
+model_rss = BulkLMM.rss(Y, X);
 test_rss = reshape([sum(test_resids[:, 1].^2), 
                     sum(test_resids[:, 2].^2),
                     sum(test_resids[:, 3].^2)], 1, :);
@@ -93,29 +83,5 @@ end
     eval(test2_resids)
     eval(test3_resids)
     eval(tests_rss)
-end
-
-##########################################################################################################
-## BENCHMARKING:
-##########################################################################################################
-
-function toCompare!(Y::Array{Float64, 2}, X::Array{Float64, 2}, m::Int64, holder::Array{Float64, 2})
-
-    for t in 1:m
-    
-        y = Y[:, t];
-        
-        b = X\y;
-        yhat = X*b;
-        curr_res = y .- yhat;
-        
-        holder[:, t] = curr_res
-        
-    end
-
-end
-
-@btime model_resids = resid(Y, X)
-@btime toCompare!(Y, X, m, test_resids)
-
+end;
  

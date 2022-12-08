@@ -1,208 +1,347 @@
-###########################################################
-# univariate genome scan functions for many traits
-# no covariates, two genotype groups, no missing data
-###########################################################
 
+"""
+r2lod(r, n)
 
+Given the pairwise correlation `r` and sample size `n`, convert `r` to the corresponding LOD score. 
 
-################################################################
-# plain genome scan
-################################################################
+# Arguments
 
-function bulkscan(y::Array{Float64,2},g::Array{Float64,2})
+- r = Float; correlation between a trait and a genetic marker
+- n = Int; sample size
 
-    y0 = deepcopy(y)
-    g0 = deepcopy(g)
+# Value
 
-    colStandardize!(y0)
-    colStandardize!(g0)
+- lod = Float; LOD score of the corresponding trait and marker
 
-    lod = calcLod(y0,g0)
-    return lod
+"""
+
+function r2lod(r::Float64, n::Int64)
+    rsq = r^2
+    return -(n/2.0) * log10(abs(1.0-rsq));
 end
 
-# bulk weighted linear regression
-# weights inversely proportional to variance
 
-function bulkscan(y::Array{Float64,2},g::Array{Float64,2},w::Vector{Float64})
 
-    n = size(y,1)
-    p = size(y,2)
-    m = size(g0,2)
+"""
+computeR_LMM(wY, wX, wIntercept)
 
-    X0 = ones(n,1)
-    y0=deepcopy(y)
-    g0 = deepcopy(g)
+Calculates the LOD scores for one trait, using the LiteQTL approach.
 
-    # convert problem to least squares
-    sqrtw = sqrt.(w)
-    rowScale!(X0, 1.0./sqrtw)
-    rowScale!(y0, 1.0./sqrtw)
-    rowScale!(g0, 1.0./sqrtw)
+# Arguments
+- wY = 2d Array of Float; (weighted) a single trait (matrix of one column) or multiple traits (matrix of more than one column)
+- wX = 2d Array of Float; (weighted)
+- wIntercept
 
-    y0 = bulkresid(y0,X0)
-    g0 = bulkresid(g0,X0)
+# Value
 
-    # baseline sum of squares
-    rss0 = sum(y0^.2,dims=1)
+- R = 2d Array of Float; p-by-m matrix the correlation coefficients between each pair of traits (in wY) and markers (in wX)
 
-    # normalize genotypes
-    g0ss = sum(g0^.2,dims=1)
-    # rowScale!(g0,g0norm)
+# Notes:
 
-    b = (y0'*g0)
+Inputs are rotated, re-weighted.
 
-    lod = zeros(p,m)
+"""
+function computeR_LMM(wY::Array{Float64, 2}, wX::Array{Float64, 2}, wIntercept::Array{Float64, 2})
 
-    for i=1:p
-        for j=1:m
-            lod[i,j] = (n/2)*log10(b[i,j]^2/(rss0[i]*g0ss[j]))
+    # exclude the effect of (rotated) intercept (idea is similar as centering data in the linear model case)
+    y00 = resid(wY, wIntercept);
+    X00 = resid(wX, wIntercept);
+    
+    # n = size(y00, 1);
+
+    # standardize the response and covariates by dividing by their norms
+    norm_y = mapslices(x -> norm(x), y00, dims = 1) |> vec;
+    norm_X = mapslices(x -> norm(x), X00, dims = 1) |> vec;
+
+    colDivide!(y00, norm_y);
+    colDivide!(X00, norm_X);
+
+    R = X00' * y00; # p-by-1 matrix
+
+    return R
+
+end
+
+
+
+"""
+tR2LOD!(R, n)
+
+Converts the input matrix R of pairwise correlations to the corresponding LOD score matrix
+
+# Arguments
+- R = 2d Array of Float; matrix of pairwise correlations
+- n = Float; sample sizes
+
+# Value
+
+Nothing; does in-place conversions from correlation coefficients to LOD scores.
+
+# Notes:
+
+Will modify input matrix R; uses a multi-threaded loop.
+
+"""
+function tR2LOD!(R::Array{Float64, 2}, n::Int64)
+    
+    (p, m) = size(R)
+    
+    Threads.@threads for j in 1:m
+        for i in 1:p
+            @inbounds R[i, j] = r2lod(R[i, j], n)
         end
     end
-
-    return lod
+    
 end
 
 
-function bulkls(y::Matrix{Float64},X::Matrix{Float64},loglik::Bool=false)
+"""
+scan_lite_univar(y0_j, X0_intercept, X0_covar, lambda0; reml = true)
 
-    n = size(y,1)
+Calculates the LOD scores for one trait, using the LiteQTL approach.
 
-    fct = qr(X)
-    b = fct\y
-    yhat = X*b
-    resid = y-yhat
-    rss = sum(resid.^2,dims=1)
+# Arguments
 
-    sigma2 = rss./n
-    logdetSigma = n .* log.(sigma2)
-    ell = -0.5 .* (logdetSigma .+ rss ./ sigma2)
+- y0_j = the j-th trait rotated
+- X0_intercept = the intercept rotated
+- X0_covar = the markers rotated
+- lambda0 = eigenvalues of the kinship matrix
 
-    return b, sigma2, ell
+# Keyword Arguments
+
+- reml = Bool indicating whether ML or REML estimate is required; default is REML.
+
+# Value
+
+- R = Float; LOD score of the corresponding trait and marker
+
+# Notes:
+
+Assumes the heritabilities only differ by traits but remain the same across all markers for the same trait;
+    hence, VC is estimated once based on the null model and used for all markers scans for that trait.
+
+
+"""
+function scan_lite_univar(y0_j::Array{Float64, 1}, X0_intercept::Array{Float64, 2}, 
+    X0_covar::Array{Float64, 2}, lambda0::Array{Float64, 1}; prior_variance = 0.0, prior_sample_size = 0.0,
+    reml::Bool = false)
+
+    n = size(y0_j, 1);
+    y0 = reshape(y0_j, :, 1);
+
+    # estimate the heritability from the null model and apply it to the reweighting of all markers;
+    vc = fitlmm(y0, X0_intercept, lambda0, [prior_variance, prior_sample_size]; reml = reml);
+    sqrtw = sqrt.(abs.(makeweights(vc.h2, lambda0)));
+
+    # re-weight the data; then in theory, the observations are homoskedestic and independent.
+    wy0 = rowMultiply(y0, sqrtw);
+    wX0_intercept = rowMultiply(X0_intercept, sqrtw);
+    wX0_covar = rowMultiply(X0_covar, sqrtw);
+
+    R = computeR_LMM(wy0, wX0_covar, wX0_intercept);
+    tR2LOD!(R, n);
+
+    return R; # results will be p-by-1, i.e. all LOD scores for the j-th trait and p markers
 
 end
 
-# residual from least squares
 
-function bulkresid(y::Matrix{Float64}, X::Matrix{Float64})
 
-    n = size(y,1)
 
-    fct = qr(X)
-    b = fct\y
-    yhat = X*b
-    resid = y-yhat
+"""
+scan_lite_multivar(Y, G, K, nb; reml = true)
 
-    return resid
+Calculates the LOD scores for all pairs of traits and markers, by a (multi-threaded) loop over blocks of traits and the LiteQTL-type of approach
 
-end
+# Arguments
+- Y = 2d Array of Float; matrix of one trait or multiple traits
+- G = 2d Array of Float; matrix of genotype probabilities
+- K = 2d Array of Float; kinship matrix
+- nb = Int; number of blocks of traits required; ideally to be the same number of threads used for parallelization 
 
-function bulkWls(y::Matrix{Float64},X::Matrix{Float64},
-    w::Vector{Float64},loglik::Bool=false)
+# Value
 
-    # check if weights are positive
-    if(any(w.<=.0))
-        error("Some weights are not positive.")
+- LOD = 2d Array of Float; LOD scores for all pairs of traits and markers
+
+# Notes:
+
+"""
+function scan_lite_multivar(Y::Array{Float64, 2}, G::Array{Float64, 2}, K::Array{Float64, 2}, nb::Int64; 
+                   nt_blas::Int64 = 1, prior_variance = 1.0, prior_sample_size = 0.0,
+                   reml::Bool = false)
+
+
+    (n, m) = size(Y);
+    p = size(G, 2);
+
+    BLAS.set_num_threads(nt_blas);
+
+    # rotate data
+    (Y0, X0, lambda0) = transform_rotation(Y, G, K);
+    X0_intercept = reshape(X0[:, 1], :, 1);
+    X0_covar = X0[:, 2:end];
+
+    # distribute the `m` traits equally to every block
+    (len, rem) = divrem(m, nb);
+
+    results = Array{Array{Float64, 2}, 1}(undef, nb);
+
+    Threads.@threads for t = 1:nb # so the N blocks will share the (nthreads - N) BLAS threads
+
+        lods_currBlock = Array{Float64, 2}(undef, p, len);
+
+        # process every trait in the block by a @simd loop 
+        @simd for i = 1:len
+            j = i+(t-1)*len;
+
+            @inbounds lods_currBlock[:, i] = scan_lite_univar(Y0[:, j], X0_intercept, X0_covar, lambda0; 
+                                                              prior_variance = prior_variance, prior_sample_size = prior_sample_size,
+                                                              reml = reml);
+        end
+
+        results[t] = lods_currBlock;
+
     end
 
-    sqrtw = sqrt.(w)
-    y0 = rowScale!(deepcopy(y),1.0 ./ sqrtw)
-    X0 = rowScale!(deepcopy(X),1.0 ./ sqrtw)
+    LODs_all = reduce(hcat, results);
 
-    (b,sigma2,ell) = bulkls(y0,X0,loglik)
-     ell = ell + sum(log.(w))/2
-
-    return b,sigma2,ell
-end
-
-# estimate heritability
-
-function esth2(y::Matrix{Float64},X::Matrix{Float64},
-               lambda::Vector{Float64})
-    est = flmm(y,X,lambda,false)
-    return est.h2
-end
-
-function esth2_grid(y::Matrix{Float64},X::Matrix{Float64},
-                    lambda::Vector{Float64},ngrid::Int64)
-
-    h2grid = (0:(ngrid-1)+0.5)/(ngrid)
-    loglik = zeros(ngrid)
-
-
-    for i=1:ngrid
-        wts = makeweights(h2grid[i],lambda)
-        # rowScale!(y0,sqrt.(wts))
-        # rowScale!(X0,sqrt.(wts))
-        out = wls(y,X,1.0./wts,false,true)
-        loglik[i] = out.ell
+    # if no remainder as the result of blocking, no remaining traits need to be scanned
+    if rem == 0
+        return LODs_all
     end
-    return h2grid[argmax(loglik)]
-end
+        
+    # else, process up the remaining traits
+    lods_remBlock = Array{Float64, 2}(undef, p, rem);
 
+    for i in 1:rem
 
-# estimate heritability for multiple phenotypes
+        j = m-rem+i;
 
-function bulkesth2(y::Matrix{Float64},X::Matrix{Float64},
-                   lambda::Vector{Float64})
-    p = size(y,2)
-    h2 = zeros(p)
-    Threads.@threads for i=1:p
-    # for i=1:p
-        h2[i] = esth2(reshape(y[:,i],:,1),X,lambda)
+        lods_remBlock[:, i] = scan_lite_univar(Y0[:, j], X0_intercept, X0_covar, lambda0;
+                   reml = reml);
+
     end
-    return h2
-end
 
-function bulkesth2_grid(y::Matrix{Float64},X::Matrix{Float64},
-                   lambda::Vector{Float64},ngrid::Int64)
-    p = size(y,2)
-    h2 = zeros(p)
-    Threads.@threads for i=1:p
-    # for i=1:p
-        h2[i] = esth2_grid(reshape(y[:,i],:,1),X,lambda,ngrid)
-    end
-    return h2
-end
+    LODs_all = hcat(LODs_all, lods_remBlock);
 
-# calculate LOD scores
+    return LODs_all
 
-function calcLod(y::Matrix{Float64},g::Matrix{Float64})
+end 
 
-    n = size(y,1)
-    r = (y'*g) ./ n
-    # r = LinearAlgebra.BLAS.gemm('T','N',y,g) ./ n
-    r2lod!(r,n)
-    return r
 
-end
+###### Given the heritability (hsq), compute all LOD scores with performing LiteQTL once.
 
-# convert correlations to LOD scores
 
-function r2lod!(r::Matrix{Float64},n::Int64)
+"""
+tmax!(max, toCompare)
 
-    c = -n/(2*log(10))
-    (nr,nc) = size(r)
-    # lod = zeros(nr,nc)
-    Threads.@threads for j=1:nc
-        for i=1:nr
-            r[i,j] = c*log1p(-r[i,j]^2)
+Does element-wise comparisons of two 2d Arrays and keep the larger elements in-place. 
+
+# Arguments
+- max = 2d Array of Float; matrix of current maximum values
+- toCompare = 2d Array of Flopat; matrix of values to compare with the current maximum values
+
+# Value
+
+Nothing; does in-place maximizations.
+
+# Notes:
+
+Will modify input matrix `max` by a parallelized loop; uses @tturbo in the package `LoopVectorization.jl`
+
+"""
+function tmax!(max::Array{Float64, 2}, toCompare::Array{Float64, 2})
+    
+    (p, m) = size(max);
+    
+    @tturbo for j in 1:m
+        for i in 1:p
+            
+            max[i, j] = (max[i, j] >= toCompare[i, j]) ? max[i, j] : toCompare[i, j];
+            
         end
     end
-    # return lod
+    
 end
 
-function r2lod_dist!(r::Matrix{Float64},n::Int64)
+"""
+scan_lite(Y0, X0, hsq, lambda0)
 
-    c = -n/(2*log(10))
-    (nr,nc) = size(r)
-    r0 = SharedArray(r)
-    # lod = zeros(nr,nc)
-    @distributed for j=1:nc
-        for i=1:nr
-            r0[i,j] = c*log1p(-r0[i,j]^2)
-        end
+Calculates LOD scores for all pairs of traits and markers with a given hsq estimate.
+
+# Arguments
+- Y0 = 2d Array of Float; rotated traits 
+- X0 = 2d Array of Float; rotated genotype probabilities
+- hsq = Float; heritability
+- lambda0 = 1d Array of Float; eigenvalues of the kinship matrix
+
+
+# Value
+
+- R = 2d Array of Float; matrix of LOD scores for all traits and markers calculated under the given heritability
+
+# Notes:
+
+Inputs data are assumed to be rotated.
+
+"""
+function scan_lite(Y0::Array{Float64, 2}, X0::Array{Float64, 2}, 
+    hsq::Float64, lambda0::Array{Float64, 1})
+
+    n = size(Y0, 1)
+    sqrtw = sqrt.(abs.(makeweights(hsq, lambda0)));
+
+    wY0 = rowMultiply(Y0, sqrtw);
+    wX0 = rowMultiply(X0, sqrtw);
+
+    wX0_intercept = reshape(wX0[:, 1], :, 1);
+    wX0_covar = wX0[:, 2:end];
+
+    R = computeR_LMM(wY0, wX0_covar, wX0_intercept);
+
+    tR2LOD!(R, n); # results will be p-by-1, i.e. all LOD scores for the j-th trait and p markers
+
+    return R
+end
+
+
+
+"""
+bulkscan(Y, G, K, hsq_list)
+
+Calculates LOD scores for all pairs of traits and markers for each heritability in the supplied list, and returns the 
+    maximal LOD scores for each pair among all calculated ones
+
+# Arguments
+- Y = 2d Array of Float; traits 
+- G = 2d Array of Float; genotype probabilities
+- K = 2d Array of Floatl kinship matrix
+- hsq_list = 1d array of Float; the list of heritabilities requested to choose from
+
+# Value
+
+- R = 2d Array of Float; matrix of LOD scores for all traits and markers estimated
+# Notes:
+
+Maximal LOD scores are taken independently for each pair of trait and marker; while the number of candidated hsq's are finite,
+    doing such maximization is like performing maximum-likelihood approach on discrete values for the heritability parameter;
+    this is a shortcut of doing the exact scan_alt() independently for each trait and each marker.
+
+"""
+function bulkscan(Y::Array{Float64, 2}, G::Array{Float64, 2}, K::Array{Float64, 2}, hsq_list::Array{Float64, 1})
+
+    (Y0, X0, lambda0) = transform_rotation(Y, G, K);
+
+    maxL = scan_lite(Y0, X0, hsq_list[1], lambda0);
+
+    for hsq in hsq_list[2:end]
+
+        currL = scan_lite(Y0, X0, hsq, lambda0);
+        tmax!(maxL, currL);
+
     end
-    r[:] = Matrix(r0)
-    # return lod
+
+    return maxL
+
 end
+

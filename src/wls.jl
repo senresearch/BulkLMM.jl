@@ -3,7 +3,7 @@
 # wls: weighted least squares
 ##################################################################
 
-mutable struct LS_estimates
+mutable struct LSEstimates
     b::Array{Float64, 2}
     sigma2::Float64
     ell::Float64
@@ -18,8 +18,8 @@ X = predictors, matrix
 w = weights (positive, inversely proportional to variance), one-dim vector
 
 """
-function wls(y::Array{Float64, 2}, X::Array{Float64, 2}, w::Array{Float64, 1};
-             reml::Bool = false, loglik::Bool = true, method = "cholesky")
+function wls(y::Array{Float64, 2}, X::Array{Float64, 2}, w::Array{Float64, 1}, prior::Array{Float64, 1};
+             reml::Bool = false, loglik::Bool = true, method::String = "qr")
 
     (n, p) = size(X); # get number of observations and the number of markers from geno dimensions      
 
@@ -32,86 +32,57 @@ function wls(y::Array{Float64, 2}, X::Array{Float64, 2}, w::Array{Float64, 1};
 
     # square root of the weights
     sqrtw = sqrt.(w)
+
+    # logdetXtX = logdet(X' * X); constant term that does not depend on the parameters (weights); is not needed
+
     # scale by weights
-    # yy = y.*sqrtw
     yy = rowMultiply(y, sqrtw)
-    # XX = diagm(sqrtw)*X
     XX = rowMultiply(X, sqrtw)
 
     # least squares solution
     # faster but numerically less stable
     if(method == "cholesky")
         fct = cholesky(XX'XX)
-        b = fct\(XX'yy)
+        coef = fct\(XX'yy)
         logdetXXtXX = logdet(fct)
     end
 
     # slower but numerically more stable
     if(method == "qr")
         fct = qr(XX)
-        b = fct\yy
-        logdetXXtXX = 2*logdet(fct.R) # need 2 for logdet(X'X)
+        coef = fct\yy
+
+        # logdetXXtXX = 2*logdet(fct.R) # need 2 for logdet(X'X)
+        # logdetXXtXX = logdet(fct.R' * fct.R);
+        logdetXXtXX = 2*logabsdet(fct.R)[1];
     end
 
-    yyhat = XX*b
+    yyhat = XX*coef
     rss0 = sum((yy-yyhat).^2)
 
     if(reml)
-        sigma2 = rss0/(n-p)
+        sigma2_e = (rss0+prior[1]*prior[2])/(n+prior[2]-p)
     else
-        sigma2 = rss0/n
+        sigma2_e = (rss0+prior[1]*prior[2])/(n+prior[2])
     end
 
     # see formulas (2) and (3) of Kang (2008)
     if(loglik)
-        ell = -0.5 * ( n*log(sigma2) + sum(log.(w)) + rss0/sigma2 )
 
+        ll = -0.5 * ((n+prior[2])*log(sigma2_e) - sum(log.(w)) + (rss0+prior[1]*prior[2])/sigma2_e)
+        
         if(reml)
-            ell = ell + 0.5 * ( p*log(sigma2) - logdetXXtXX ) 
+            # ell = ell + 0.5 * (p*log(2pi*sigma2) + logdetXtX - logdetXXtXX) # full log-likelihood including the constant terms;
+            ll = ll + 0.5 * (p*log(sigma2_e) - logdetXXtXX)
         end
         
     else
-        ell = missing;
+        ll = missing;
     end
 
-    return LS_estimates(b, sigma2, ell)
+    return LSEstimates(coef, sigma2_e, ll)
 
 end
-
-function ls(y::Array{Float64, 2}, X::Array{Float64, 2};
-            reml::Bool = false, loglik = true)
-
-    # number of individuals
-    n = size(y,1)
-    # number of covariates
-    p = size(X,2)
-
-    b = X\y # uses QR decomposition
-    yhat = X*b
-    rss0 = sum((y-yhat).^2)
-    
-    if( reml )
-        sigma2 = rss0/(n-p)
-    else
-        sigma2 = rss0/n
-    end
-
-    if(loglik) 
-        if ( reml )
-            logdetSigma = (n-p)*log(sigma2)
-        else
-            logdetSigma = n*log(sigma2)
-        end
-        
-        ell = -0.5 * ( logdetSigma + rss0/sigma2 )
-    else
-        ell = missing
-    end
-
-    return LS_estimates(b, sigma2, ell)
-
-end
-
 
 """
 rss: residual sum of squares
@@ -125,14 +96,25 @@ the function returns the residual sum of squares of each column. The
 return values is a (row) vector of length equal to the number of columns of y.
 
 """
-function rss(y::Array{Float64, 2}, X::Array{Float64, 2}; method = "cholesky")
 
-    r = resid(y, X; method)
+function rss(y::Array{Float64, 2}, X::Array{Float64, 2}; method = "qr")
+
+    r = resid(y, X; method = method)
     rss = reduce(+, r.^2, dims = 1)
 
     return rss
 
 end
+
+function rss(y::Array{Float64, 2}, X::AbstractArray{Float64, 1}; method = "qr")
+
+    r = resid(y, X; method = method)
+    rss = reduce(+, r.^2, dims = 1)
+
+    return rss
+
+end
+
 
 """
 resid: calculate residuals
@@ -145,7 +127,7 @@ outcome matrix can be multivariate in which case the function returns
 the residual matrix of the same size as the outcome matrix.
 
 """
-function resid(y::Array{Float64, 2}, X::Array{Float64, 2}; method = "cholesky")
+function resid(y::Array{Float64, 2}, X::Array{Float64, 2}; method = "qr")
 
     # least squares solution
     # faster but numerically less stable
@@ -157,6 +139,28 @@ function resid(y::Array{Float64, 2}, X::Array{Float64, 2}; method = "cholesky")
     if(method=="qr")
     fct = qr(X)
     b = fct\y
+    end
+
+    # estimate yy and calculate rss
+    yhat = X*b
+    resid = y-yhat
+
+    return resid
+
+end
+
+function resid(y::Array{Float64, 2}, X::AbstractArray{Float64, 1}; method = "qr")
+
+    # least squares solution
+    # faster but numerically less stable
+    if(method=="cholesky")
+        b = (X'X)\(X'y)
+    end
+
+    # slower but numerically more stable
+    if(method=="qr")
+        fct = qr(X)
+        b = fct\y
     end
 
     # estimate yy and calculate rss
