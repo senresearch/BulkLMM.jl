@@ -86,7 +86,8 @@ function tR2LOD!(R::Array{Float64, 2}, n::Int64)
     
     (p, m) = size(R)
     
-    Threads.@threads for j in 1:m
+    # Threads.@threads for j in 1:m
+    for j in 1:m
         for i in 1:p
             @inbounds R[i, j] = r2lod(R[i, j], n)
         end
