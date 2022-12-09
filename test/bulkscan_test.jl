@@ -90,6 +90,6 @@ end;
     eval(test_r2lod);
     eval(test_computeR_LMM1);
     eval(test_computeR_LMM2);
-#     eval(test_scan_multivar);
+    eval(test_scan_multivar);
 
 end;
