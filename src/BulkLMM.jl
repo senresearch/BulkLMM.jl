@@ -1,34 +1,35 @@
 module BulkLMM
 
-module FaSTLMM
+    # packages we need to work
+    using CSV, DelimitedFiles, DataFrames, Missings, LinearAlgebra, Statistics, Optim, Random, Distributions, LoopVectorization
 
-# packages we need to work
-using Optim
-using DelimitedFiles
-using Missings
-using LinearAlgebra
-using Distributed
-using Random
-using DataFrames
-using Statistics
-using Random
+    include("./util.jl");
+    include("./kinship.jl");
+    export calcKinship
 
-# code for (wls) weighted least squares
-include("wls.jl")
-export wls
+    include("./readData.jl");
+    export readBXDpheno
+    export readGenoProb_ExcludeComplements
 
-# code for rorateData and flmm
-include("lmm.jl")
-# sata type we are exporting
-export Flmm
-# functions we are exporting
-export rotateData, flmm
+    # code for (wls) weighted least squares
+    include("./wls.jl");
+    export wls
+    export LSEstimates
 
-include("scan.jl")
-export scan
+    # code for rorateData and flmm
+    include("./lmm.jl");
+    # data type we are exporting
+    export LMMEstimates
 
-include("util.jl")
+    include("./scan.jl");
+    # export scan
+    # export scan_perms
+    # export scan_perms_lite
+
+    include("./bulkscan.jl");
+    # export scan_lite_multivar
+
+    include("./transform_helpers.jl");
+    # export transform_rotation
 
 end # module
-
-end
