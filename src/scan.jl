@@ -167,20 +167,43 @@ function scan_alt(y::Array{Float64, 2}, g::Array{Float64, 2}, K::Array{Float64, 
     # fit null lmm
     out00 = fitlmm(y0, X00, lambda0, prior; reml = reml, method = method);
 
+    sqrtw = sqrt.(makeweights(out00.h2, lambda0))
+    # rescale by weights
+    copy_y0 = copy(y0);
+    copy_X0 = copy(X0);
+    rowMultiply!(y0, sqrtw)
+    rowMultiply!(X0, sqrtw)
+    rss0 = rss(y0, reshape(X0[:, 1], n, 1); method = method)[1];
+
+    y0 = copy_y0;
+    X0 = copy_X0;
+
     lod = zeros(p)
     X = zeros(n, 2)
     X[:, 1] = X0[:, 1]
+
     for i = 1:p
-        X[:, 2] = X0[:, i+1]
+        X[:, 1] = X0[:, 1];
+        X[:, 2] = X0[:, i+1];
         
         out11 = fitlmm(y0, X, lambda0, prior; reml = reml, method = method);
+        sqrtw_alt= sqrt.(makeweights(out11.h2, lambda0))
+        rowMultiply!(y0, sqrtw_alt);
+        rowMultiply!(X, sqrtw_alt);
+
+        rss1 = rss(y0, X; method = method)[1];
+        lod[i] = (-n/2)*(log10(rss1) .- log10(rss0))
+
+        y0 = copy_y0;
+        X0 = copy_X0;
 
         pve_list[i] = out11.h2;
 
-        lod[i] = (out11.ell - out00.ell)/log(10)
+        # lod[i] = (out11.ell - out00.ell)/log(10)
     end
 
     return (sigma2_e = out00.sigma2, h2_null = out00.h2, h2_each_marker = pve_list, lod = lod)
+
 
 end
 
@@ -314,9 +337,9 @@ function scan_perms_lite(y::Array{Float64,2}, g::Array{Float64,2}, K::Array{Floa
         r0perm = transform_permute(r0; nperms = nperms, rndseed = rndseed, original = original);
     end
 
-    norm_y = mapslices(x -> norm(x)/sqrt(n), r0perm, dims = 1) |> vec;
+    norm_y = mapslices(x -> norm(x), r0perm, dims = 1) |> vec;
 
-    norm_X = mapslices(x -> norm(x)/sqrt(n), X00, dims = 1) |> vec;
+    norm_X = mapslices(x -> norm(x), X00, dims = 1) |> vec;
 
 
     colDivide!(r0perm, norm_y);
