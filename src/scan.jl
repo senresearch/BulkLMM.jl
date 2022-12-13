@@ -167,12 +167,6 @@ function scan_alt(y::Array{Float64, 2}, g::Array{Float64, 2}, K::Array{Float64, 
     # fit null lmm
     out00 = fitlmm(y0, X00, lambda0, prior; reml = reml, method = method);
 
-    # Make weights based on estimated, if REML required
-    if reml
-        sqrtw_null = sqrt.(makeweights(out00.h2, lambda0));
-        wls_null = wls(y0, X00, sqrtw_null, prior; reml = false);
-    end
-
     lod = zeros(p);
     X = zeros(n, 2);
     X[:, 1] = X0[:, 1];
@@ -184,8 +178,9 @@ function scan_alt(y::Array{Float64, 2}, g::Array{Float64, 2}, K::Array{Float64, 
         out11 = fitlmm(y0, X, lambda0, prior; reml = reml, method = method);
        
         if reml
-            sqrtw_alt= sqrt.(makeweights(out11.h2, lambda0));
+            sqrtw_alt = sqrt.(makeweights(out11.h2, lambda0));
             wls_alt = wls(y0, X, sqrtw_alt, prior; reml = false);
+            wls_null = wls(y0, X00, sqrtw_alt, prior; reml = false);
         end
 
         pve_list[i] = out11.h2;
