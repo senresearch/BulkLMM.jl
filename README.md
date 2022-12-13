@@ -115,7 +115,7 @@ kinship = calcKinship(geno); # calculate K
 
 ### Single trait scanning:
 
-For example, to conduct genome-wide association mappings on the 1112-th trait, run the function `scan()` with inputs of the trait (as a 2D-array of one column), geno matrix, and the kinship matrix.
+For example, to conduct genome-wide association mappings on the 1112-th trait, ran the function `scan()` with inputs of the trait (as a 2D-array of one column), geno matrix, and the kinship matrix.
 
 
 ```julia
