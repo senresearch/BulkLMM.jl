@@ -199,7 +199,7 @@ To get LODs for multiple traits, for better runtime performance, first start *ju
 
 Then, run the function `scan_lite_multivar()` with the matrices of traits, genome markers, kinship. The fourth required input is the number of parallelized tasks and we recommend it to be the number of *julia* threads. 
 
-Here, we started a 16-threaded *julia* and run the following on a Linux server with the Intel(R) Xeon(R) Silver 4214 CPU @ 2.20GHz to get the LOD scores for all **~35k** BXD traits:
+Here, we started a 16-threaded *julia* and executed the program on a Linux server with the Intel(R) Xeon(R) Silver 4214 CPU @ 2.20GHz to get the LOD scores for all **~35k** BXD traits:
 
 
 ```julia
