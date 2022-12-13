@@ -165,41 +165,30 @@ function scan_alt(y::Array{Float64, 2}, g::Array{Float64, 2}, K::Array{Float64, 
 
     X00 = reshape(X0[:, 1], :, 1)
     # fit null lmm
-    out00 = fitlmm(y0, X00, lambda0, prior; reml = reml, method = method);
+    if reml == false
+        out00 = fitlmm(y0, X00, lambda0, prior; reml = reml, method = method);
+    end
 
-    sqrtw = sqrt.(makeweights(out00.h2, lambda0))
-    # rescale by weights
-    copy_y0 = copy(y0);
-    copy_X0 = copy(X0);
-    rowMultiply!(y0, sqrtw)
-    rowMultiply!(X0, sqrtw)
-    rss0 = rss(y0, reshape(X0[:, 1], n, 1); method = method)[1];
-
-    y0 = copy_y0;
-    X0 = copy_X0;
-
-    lod = zeros(p)
-    X = zeros(n, 2)
-    X[:, 1] = X0[:, 1]
+    lod = zeros(p);
+    X = zeros(n, 2);
+    X[:, 1] = X0[:, 1];
 
     for i = 1:p
         X[:, 1] = X0[:, 1];
         X[:, 2] = X0[:, i+1];
         
         out11 = fitlmm(y0, X, lambda0, prior; reml = reml, method = method);
-        sqrtw_alt= sqrt.(makeweights(out11.h2, lambda0))
-        rowMultiply!(y0, sqrtw_alt);
-        rowMultiply!(X, sqrtw_alt);
-
-        rss1 = rss(y0, X; method = method)[1];
-        lod[i] = (-n/2)*(log10(rss1) .- log10(rss0))
-
-        y0 = copy_y0;
-        X0 = copy_X0;
+       
+        if reml
+            sqrtw_alt = sqrt.(makeweights(out11.h2, lambda0));
+            wls_alt = wls(y0, X, sqrtw_alt, prior; reml = false);
+            wls_null = wls(y0, X00, sqrtw_alt, prior; reml = false);
+            lod[i] = (wls_alt.ell - wls_null.ell)/log(10);
+        else 
+            lod[i] = (out11.ell - out00.ell)/log(10);
+        end
 
         pve_list[i] = out11.h2;
-
-        # lod[i] = (out11.ell - out00.ell)/log(10)
     end
 
     return (sigma2_e = out00.sigma2, h2_null = out00.h2, h2_each_marker = pve_list, lod = lod)
