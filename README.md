@@ -135,7 +135,8 @@ The output structure `single_results` stores the model estimates about the varia
 
 
 ```julia
-(single_results.sigma2_e, single_results.h2_null) # VCs: environmental variance, heritability, genetic_variance/total_variance
+# VCs: environmental variance, heritability, genetic_variance/total_variance
+(single_results.sigma2_e, single_results.h2_null)
 ```
 
 
