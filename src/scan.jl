@@ -165,7 +165,9 @@ function scan_alt(y::Array{Float64, 2}, g::Array{Float64, 2}, K::Array{Float64, 
 
     X00 = reshape(X0[:, 1], :, 1)
     # fit null lmm
-    out00 = fitlmm(y0, X00, lambda0, prior; reml = reml, method = method);
+    if reml == false
+        out00 = fitlmm(y0, X00, lambda0, prior; reml = reml, method = method);
+    end
 
     lod = zeros(p);
     X = zeros(n, 2);
@@ -181,15 +183,12 @@ function scan_alt(y::Array{Float64, 2}, g::Array{Float64, 2}, K::Array{Float64, 
             sqrtw_alt = sqrt.(makeweights(out11.h2, lambda0));
             wls_alt = wls(y0, X, sqrtw_alt, prior; reml = false);
             wls_null = wls(y0, X00, sqrtw_alt, prior; reml = false);
+            lod[i] = (wls_alt.ell - wls_null.ell)/log(10);
+        else 
+            lod[i] = (out11.ell - out00.ell)/log(10);
         end
 
         pve_list[i] = out11.h2;
-
-        if reml
-            lod[i] = (wls_alt.ell - wls_null.ell)/log(10);
-        else
-            lod[i] = (out11.ell - out00.ell)/log(10);
-        end
     end
 
     return (sigma2_e = out00.sigma2, h2_null = out00.h2, h2_each_marker = pve_list, lod = lod)
