@@ -188,40 +188,8 @@ thrs = map(x -> quantile(max_lods, x), [0.05, 0.95]);
 ```
 
 Plot the LOD scores in comparison with [GEMMA](https://github.com/genetics-statistics/GEMMA) (needs to run GEMMA to generate outputs elsewhere), as well as the LOD rejection thresholds from permutation testing:
-
-
-```julia
-gemma_summary = readdlm("git/BulkLMM.jl/test/output/gemma_results.txt.assoc.txt", '\t'; header = false);
-gemma_results = p2lod.(gemma_summary[2:end, 10], 1);
-```
-
-
-```julia
-full_table_traits = readdlm("git/BulkLMM.jl/data/bxdData/BXDtraits.csv", ',');
-full_table_genos = readdlm("git/BulkLMM.jl/data/bxdData/BXDgeno_prob.csv", ',');
-```
-
-
-```julia
-trait_label = full_table_traits[1, 2:end][1112];
-geno_labels = full_table_genos[1, 2:2:end];
-```
-
-
-```julia
-Plots.plot(gemma_results[1:Int(floor(p*0.3))], label = "GEMMA", color = "purple", w = 1, 
-           xlabel = "marker place", ylabel = "LOD", title = "Single trait (trait $trait_label) LOD scores")
-Plots.plot!(single_results.lod[1:Int(floor(p*0.3))], label = "BulkLMM.jl", color = "blue", w = 1)
-Plots.hline!(thrs, color = "red", label = false, ls =:dashdot)
-```
-
-
-
-
     
-![svg](output_48_0.svg)
-    
-
+![svg](img/output_48_0.svg)
 
 
 ### Multiple traits scanning:
