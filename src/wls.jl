@@ -67,7 +67,7 @@ function wls(y::Array{Float64, 2}, X::Array{Float64, 2}, w::Array{Float64, 1}, p
     end
 
     if(reml)
-        sigma2_e = (rss0+prior[1]*prior[2])/(n+prior_df-p)
+        sigma2_e = (rss0+prior[1]*prior[2])/((n-p)+prior_df)
     else
         sigma2_e = (rss0+prior[1]*prior[2])/(n+prior_df)
     end
