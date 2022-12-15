@@ -1,85 +1,116 @@
 # BulkLMM.jl
 
-Welcome to the documentation of BulkLMM.jl! 
+Julia package for performing genome scane for multiple traits ("in
+bulk") using linear mixed models (LMMs). Suitable for eQTL mapping
+with thousands of traits and markers.  Also performs permutation
+testing for LMMs taking into account the relatedness of individuals.
+We use multi-threading and matrix operations to speed up computations.
 
-## What is BulkLMM.jl?
-`BulkLMM.jl` is a software toolkit that performs fast genome scans even on large-scale datasets, employing a Linear Mixed Modeling (LMM) approach for the correction of counfounding by genetic relatedness.
-`BulkLMM.jl` is implemented as a package in **Julia**, a high-level, high-performance programming language, in favor of both the computational speed and the ease of application for downstream analysis.
-
-## Installation:
-
-The package `BulkLMM.jl` can be installed by running
-
-```julia
-using Pkg
-Pkg.add("BulkLMM")
-```
-
-Or, to install from the **Julia** REPL, first press `]` to enter the Pkg mode and then use:
-
-```julia
-add BulkLMM
-```
-
-The most recent release of the package can be obtained by running 
-
-```julia
-using Pkg
-Pkg.add(url = "https://github.com/senresearch/BulkLMM.jl", rev="main")
-```
+The current implementation is for genome scans with one-degree of
+freedom tests without any background covariates.  Future releases will
+cover those scenarios.
 
 ## Linear Mixed Model (LMM)
 
-`BulkLMM.jl` provides a fast application of the standard univariate linear mixed model on GWAS, which is formulated as the following:
+We consider that case when a univariate trait of interest is measured
+in a population of related individuals with kinship matrix $K$.  Let
+the trait vector, $y$ follow the following linear model.
 
-For a single trait $y$ of $N$ observations, representation of the effect of a particular marker on trait $y$ can be modeled as such
+$$ y = X\beta + \epsilon,$$
 
-$$y = \beta_0 + G_{j}\beta_{j}+\sum_{k \neq j}G_{k}\beta{k} + \epsilon = X\beta + g + \epsilon$$
+where 
 
-and 
-$$y|X, K \sim Norm(X\beta, V) \text{  ,  } V = \sigma^2_g K+\sigma^2_e I$$
+$$V(\epsilon) = \sigma^2_g K+\sigma^2_e I.$$
 
-where $X$ is the design matrix for fixed effects including the baseline mean $\beta_0$ and each testing SNP $G_j$ (for generalization, $X$ can include covariates other than SNPs), and $g$ is the random component consisting of non-testing SNPs $G_{k \in \{1, 2, ..., p\} \backslash j}$. 
+where $X$ is a matrix of covariates which would include the intercept,
+candidate genetic markers of interest, and any background covariates.
+The variance components $\sigma^2_g$ and $\sigma^2_e$ denote the
+genetic and random error variance components respectively.
 
-The covariance matrix $V$ is a mixture  of the kinship matrix $K$ reflecting the genetic similarity between the measured $N$ subjects and the environmental noise; $\sigma^2_g$ and $\sigma^2_e$ denote the marginal genetic variance and environmental variance, respectively.
+### Single trait scan
 
-For scanning multiple traits, `BulkLMM.jl` simply perform calculation of a LMM independently for each trait, resorting to strategies of vectorized operations and multi-threaded processes to greatly accelerate the work.
+For a single trait and candidate marker, we use a likelihood ratio
+test to compare a model with and without the candidate genetic marker
+(and including the intercept and all background covariates).  This
+process is repeated for each marker to generate the genome scan.  The
+result is reported in LOD (log 10 of likelihood ratio) units.
 
-For more information about our methods, check out the [documentation of the package](link not created yet) in our next release in the near future!
+Users can specify if the variance components should be estimated using
+ML (maximum likelihood) or REML (restricted maximum likelihood).  The
+scans can be performed with the variance components estimated once
+under the null, or separately for each marker.  The latter approach is
+slower, but more accurate.
 
-## Example: application on BXD mouse strains data
+### Permutation tests for single trait
 
-We demonstrate basic usage of `BulkLMM.jl` through an example applying the package on the BXD mouse strains data.
+Under the null hypothesis that no individual genetic marker is
+associated with the trait, traits are correlated according if the
+kinship matrix is not identity, and the genetic variance component is
+non-zero.  Thus, a standard permutation test whene we shuffle the
+trait data randomly, is not appropriate.  Instead, we rotate the data
+using the eigendecomposition of the kinship matrix, which
+de-correlates the data, and then shuffle the data after rescaling them
+by their standard deviations.
 
-First, after successfully installed the package, load it to the current *Julia* session by
+### Scans for multiple traits
+
+Scans for multiple traits are performed by running univariate LMMs for
+each combination of trait and marker.  We are exploring algorithms for
+optimizing this process by judicious use of approximations.
+
+### Multi-threading
+
+This package uses multi-threading to speed up some operations.  You
+will have to start Julia with mutliple threads to take advantage of
+this.  You should use as many threads as your computer is capable of.
+Further speedups may be obtained by spreading (distributing) the
+computation across mutliple computers.
+
+## Example: application on BXD spleen expression data
+
+We demonstrate basic usage of `BulkLMM.jl` through an example applying
+the package on the BXD mouse strains data.
+
+First, after successfully installed the package, load it to the
+current *Julia* session by
 
 ```julia
-# using Pkg
-# Pkg.add("BulkLMM")
-
 using BulkLMM
-
 ```
 
-The BXD data are accessible through our published [github repo](https://github.com/senresearch/BulkLMM.jl) of the `BulkLMM.jl` package as .csv files under the `data/bxdData` directory. 
+The BXD data are accessible through our published [github
+repo](https://github.com/senresearch/BulkLMM.jl) of the `BulkLMM.jl`
+package as .csv files under the `data/bxdData` directory.
 
-The raw BXD traits `BXDtraits_with_missing.csv`contains missing values. After removing the missings, load the BXD traits data
+The raw BXD traits `BXDtraits_with_missing.csv`contains missing
+values. After removing the missings, load the BXD traits data
 
 ```julia
 pheno_file = "data/bxdData/BXDtraits.csv"
 pheno = readBXDpheno(pheno_file);
 ```
 
-Required data format for traits should be .csv or .txt files with values separated by `','`, with each column being the observations of $n$ BXD strains on a particular trait and each row being the observations on all $m$ traits of a particular mouse strain. 
+Required data format for traits should be .csv or .txt files with
+values separated by `','`, with each column being the observations of
+$n$ BXD strains on a particular trait and each row being the
+observations on all $m$ traits of a particular mouse strain.
 
-Also load the BXD genotypes data. The raw BXD genotypes file `BXDgeno_prob.csv` contains even columns that each contains the complement genotype probabilities of the column immediately preceded (odd columns). Calling the function `readBXDgeno` will read the BXD genotype file excluding the even columns.
+Also load the BXD genotypes data. The raw BXD genotypes file
+`BXDgeno_prob.csv` contains even columns that each contains the
+complement genotype probabilities of the column immediately preceded
+(odd columns). Calling the function `readBXDgeno` will read the BXD
+genotype file excluding the even columns.
 
 ```julia
 geno_file = "../data/bxdData/BXDgeno_prob.csv"
 geno = readBXDgeno(geno_file);
 ```
 
-Required data format for genotypes should be .csv or .txt files with values separated by `','`, with each column being the observations of genotype probabilities of $n$ BXD strains on a particular marker place and each row being the observations on all $p$ marker places of a particular mouse strain.
+Required data format for genotypes should be .csv or .txt files with
+values separated by `','`, with each column being the observations of
+genotype probabilities of $n$ BXD strains on a particular marker place
+and each row being the observations on all $p$ marker places of a
+particular mouse strain.
 
 For the BXD data, 
 
@@ -115,7 +146,9 @@ kinship = calcKinship(geno); # calculate K
 
 ### Single trait scanning:
 
-For example, to conduct genome-wide association mappings on the 1112-th trait, ran the function `scan()` with inputs of the trait (as a 2D-array of one column), geno matrix, and the kinship matrix.
+For example, to conduct genome-wide association mappings on the
+1112-th trait, ran the function `scan()` with inputs of the trait (as
+a 2D-array of one column), geno matrix, and the kinship matrix.
 
 
 ```julia
@@ -188,18 +221,31 @@ max_lods = vec(mapslices(x -> maximum(x), single_results_perms; dims = 1));
 thrs = map(x -> quantile(max_lods, x), [0.05, 0.95]);
 ```
 
-Plot the LOD scores in comparison with [GEMMA](https://github.com/genetics-statistics/GEMMA) (needs to run GEMMA to generate outputs elsewhere), as well as the LOD rejection thresholds from permutation testing:
+Plot the LOD scores in comparison with
+[GEMMA](https://github.com/genetics-statistics/GEMMA) (needs to run
+GEMMA to generate outputs elsewhere), as well as the LOD rejection
+thresholds from permutation testing:
     
 ![svg](img/output_48_0.svg)
 
 
 ### Multiple traits scanning:
 
-To get LODs for multiple traits, for better runtime performance, first start *julia* with multiple threads following [Instructions for starting Julia REPL with multi-threads](https://docs.julialang.org/en/v1/manual/multi-threading/) or switch to a multi-threaded *julia* kernel if using Jupyter notebooks. 
+To get LODs for multiple traits, for better runtime performance, first
+start *julia* with multiple threads following [Instructions for
+starting Julia REPL with
+multi-threads](https://docs.julialang.org/en/v1/manual/multi-threading/)
+or switch to a multi-threaded *julia* kernel if using Jupyter
+notebooks.
 
-Then, run the function `scan_lite_multivar()` with the matrices of traits, genome markers, kinship. The fourth required input is the number of parallelized tasks and we recommend it to be the number of *julia* threads. 
+Then, run the function `scan_lite_multivar()` with the matrices of
+traits, genome markers, kinship. The fourth required input is the
+number of parallelized tasks and we recommend it to be the number of
+*julia* threads.
 
-Here, we started a 16-threaded *julia* and executed the program on a Linux server with the Intel(R) Xeon(R) Silver 4214 CPU @ 2.20GHz to get the LOD scores for all **~35k** BXD traits:
+Here, we started a 16-threaded *julia* and executed the program on a
+Linux server with the Intel(R) Xeon(R) Silver 4214 CPU @ 2.20GHz to
+get the LOD scores for all **~35k** BXD traits:
 
 
 ```julia
@@ -216,12 +262,35 @@ The output `multiple_results_allTraits` is a matrix of LOD scores of dimension $
 size(multiple_results_allTraits)
 ```
 
-
-
-
     (7321, 35556)
 
-## For Questions:
-Feel free to let us know any suspected bugs in the current release by posting them to GitHub Issues or contacting authors directly. We also appreciate contributions from users including improving performance and adding new features.
 
-Check out RELEASE-NOTES.md to see what's new in each `BulkLMM.jl` release.
+## Installation:
+
+The package `BulkLMM.jl` can be installed by running
+
+```julia
+using Pkg
+Pkg.add("BulkLMM")
+```
+
+To install from the **Julia** REPL, first press `]` to enter the Pkg
+mode and then use:
+
+```julia
+add BulkLMM
+```
+
+The most recent release of the package can be obtained by running 
+
+```julia
+using Pkg
+Pkg.add(url = "https://github.com/senresearch/BulkLMM.jl", rev="main")
+```
+
+## Contact and feedback
+
+If you find any bugs, please post an issue on GitHub or contact the
+maintainers directly.
+
+Check out NEWS.md to see what's new in each `BulkLMM.jl` release.
