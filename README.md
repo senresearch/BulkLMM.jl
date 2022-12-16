@@ -66,8 +66,9 @@ The BXD data are accessible through our published [github repo](https://github.c
 The raw BXD traits `BXDtraits_with_missing.csv`contains missing values. After removing the missings, load the BXD traits data
 
 ```julia
-pheno_file = "data/bxdData/BXDtraits.csv"
-pheno = readBXDpheno(pheno_file);
+pheno_file = "data/bxdData/spleen-pheno-nomissing.csv";
+pheno = readdlm(pheno_file, ',', header = false);
+pheno_processed = pheno[2:end, 2:(end-1)].*1.0; # exclude the header, the first (transcript ID)and the last columns (sex)
 ```
 
 Required data format for traits should be .csv or .txt files with values separated by `','`, with each column being the observations of $n$ BXD strains on a particular trait and each row being the observations on all $m$ traits of a particular mouse strain. 
@@ -75,8 +76,9 @@ Required data format for traits should be .csv or .txt files with values separat
 Also load the BXD genotypes data. The raw BXD genotypes file `BXDgeno_prob.csv` contains even columns that each contains the complement genotype probabilities of the column immediately preceded (odd columns). Calling the function `readBXDgeno` will read the BXD genotype file excluding the even columns.
 
 ```julia
-geno_file = "../data/bxdData/BXDgeno_prob.csv"
-geno = readBXDgeno(geno_file);
+geno_file = "data/bxdData/spleen-bxd-genoprob.csv"
+geno = readdlm(geno_file, ',', header = false);
+geno_processed = geno[2:end, 1:2:end] .* 1.0;
 ```
 
 Required data format for genotypes should be .csv or .txt files with values separated by `','`, with each column being the observations of genotype probabilities of $n$ BXD strains on a particular marker place and each row being the observations on all $p$ marker places of a particular mouse strain.
@@ -85,7 +87,7 @@ For the BXD data,
 
 
 ```julia
-size(pheno) # (number of strains, number of traits)
+size(pheno_processed) # (number of strains, number of traits)
 ```
 
 
@@ -97,7 +99,7 @@ size(pheno) # (number of strains, number of traits)
 
 
 ```julia
-size(geno) # (number of strains, number of markers)
+size(geno_processed) # (number of strains, number of markers)
 ```
 
 
@@ -110,7 +112,7 @@ size(geno) # (number of strains, number of markers)
 Compute the kinship matrix $K$ from the genotype probabilities using the function `calcKinship` 
 
 ```julia
-kinship = calcKinship(geno); # calculate K
+kinship = calcKinship(geno_processed); # calculate K
 ```
 
 ### Single trait scanning:
@@ -120,12 +122,12 @@ For example, to conduct genome-wide association mappings on the 1112-th trait, r
 
 ```julia
 traitID = 1112;
-pheno_y = reshape(pheno[:, traitID], :, 1);
+pheno_y = reshape(pheno_processed[:, traitID], :, 1);
 ```
 
 
 ```julia
-@time single_results = scan(pheno_y, geno, kinship);
+@time single_results = scan(pheno_y, geno_processed, kinship);
 ```
 
       0.059480 seconds (80.86 k allocations: 47.266 MiB)
@@ -156,7 +158,7 @@ single_results.lod;
 
 
 ```julia
-@time single_results_perms = scan_perms_lite(pheno_y, geno, kinship; nperms = 1000, original = false);
+@time single_results_perms = scan_perms_lite(pheno_y, geno_processed, kinship; nperms = 1000, original = false);
 ```
 
       0.079464 seconds (94.02 k allocations: 207.022 MiB)
@@ -203,7 +205,7 @@ Here, we started a 16-threaded *julia* and executed the program on a Linux serve
 
 
 ```julia
-@time multiple_results_allTraits = scan_lite_multivar(pheno, geno, kinship, Threads.nthreads());
+@time multiple_results_allTraits = scan_lite_multivar(pheno_processed, geno_processed, kinship, Threads.nthreads());
 ```
 
      82.421037 seconds (2.86 G allocations: 710.821 GiB, 41.76% gc time)
