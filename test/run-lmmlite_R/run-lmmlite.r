@@ -21,11 +21,9 @@ getwd()
 
 
 
-pheno = read.csv("processed_bxdData/BXDpheno.csv")
-geno = read.csv("processed_bxdData/BXDgeno.csv")
-K = read.csv("processed_bxdData/BXDkinship.csv")
-
-
+pheno = read.csv("processed_bxdData/BXDpheno.csv", header = FALSE)
+geno = read.csv("processed_bxdData/BXDgeno.csv", header = FALSE)
+K = read.csv("processed_bxdData/BXDkinship.csv", header = FALSE)
 
 pheno_y = pheno[, 7919]
 K_mat = data.matrix(K)
@@ -41,8 +39,8 @@ n = nrow(geno_mat)
 p = ncol(geno_mat)
 
 
-## params_null = fitLMM(e_null$Kva, e_null$y, e_null$X, reml = T)
-params_null = fitLMM(e_null$Kva, e_null$y, e_null$X, reml = F)
+params_null = fitLMM(e_null$Kva, e_null$y, e_null$X, reml = T)
+# params_null = fitLMM(e_null$Kva, e_null$y, e_null$X, reml = F)
 est_hsq = params_null$hsq
 est_sigmasq = params_null$sigmasq
 
@@ -79,8 +77,8 @@ run_model = function(K_eVals, K_eVects, Gj, y, hsq){
   Gj_star1 = K_eVects %*% Gj
   
   # Get RSS:
-  # ml_soln = getMLsoln(hsq, K_eVals, y_star1, Gj_star1, reml = T)
-  ml_soln = getMLsoln(hsq, K_eVals, y_star1, Gj_star1, reml = F)
+  ml_soln = getMLsoln(hsq, K_eVals, y_star1, Gj_star1, reml = T)
+  # ml_soln = getMLsoln(hsq, K_eVals, y_star1, Gj_star1, reml = F)
   
   
   
@@ -106,8 +104,8 @@ list_Gj = construct_Gj(geno)
 ###
 
 # Compute the residual sum of squares for the null model (including just the intercept)
-# results_null = getMLsoln(est_hsq, e_null$Kva, e_null$y, e_null$X, reml = T) # to evaluate the null model results using REML
-results_null = getMLsoln(est_hsq, e_null$Kva, e_null$y, e_null$X, reml = F)
+results_null = getMLsoln(est_hsq, e_null$Kva, e_null$y, e_null$X, reml = T) # to evaluate the null model results using REML
+# results_null = getMLsoln(est_hsq, e_null$Kva, e_null$y, e_null$X, reml = F)
 
 
 list_RSS = rep(NA, p+1)
@@ -173,6 +171,6 @@ for(j in 1:p){
 rownames(results_lmmlite) = rownames
 kable(head(results_lmmlite))
 
-# write.csv(results_lmmlite, "output/result.lmmlite_REML.csv")
-write.csv(results_lmmlite, "output/result.lmmlite_ML.csv")
+write.csv(results_lmmlite, "output/result.lmmlite_REML.csv")
+# write.csv(results_lmmlite, "output/result.lmmlite_ML.csv")
 
