@@ -60,10 +60,16 @@ function wls(y::Array{Float64, 2}, X::Array{Float64, 2}, w::Array{Float64, 1}, p
     yyhat = XX*coef
     rss0 = sum((yy-yyhat).^2)
 
-    if(reml)
-        sigma2_e = (rss0+prior[1]*prior[2])/(n+prior[2]-p)
+    if prior[2] > 0.0
+        prior_df = prior[2]+2;
     else
-        sigma2_e = (rss0+prior[1]*prior[2])/(n+prior[2])
+        prior_df = prior[2];
+    end
+
+    if(reml)
+        sigma2_e = (rss0+prior[1]*prior[2])/((n-p)+prior_df)
+    else
+        sigma2_e = (rss0+prior[1]*prior[2])/(n+prior_df)
     end
 
     # see formulas (2) and (3) of Kang (2008)
