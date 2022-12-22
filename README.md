@@ -292,7 +292,6 @@ Pkg.add(url = "https://github.com/senresearch/BulkLMM.jl", rev="main")
 
 ## Contact and feedback
 
-<<<<<<< HEAD
 To visualize the multiple-trait scan results, we can use the ploting utility functions in `BulkLMM.jl` to plot the eQTL plot.
 
 For the following example, only plot the LOD scores that are above 5.0 by calling the function and specifying in the optional argument `thr = 5.0`:
@@ -315,10 +314,9 @@ ploteQTL(multiple_results_allTraits, gInfo, pInfo)
 ![svg](img/output_112_1.svg)
 
 ## For Questions:
-Feel free to let us know any suspected bugs in the current release by posting them to GitHub Issues or contacting authors directly. We also appreciate contributions from users including improving performance and adding new features.
-=======
+
 If you find any bugs, please post an issue on GitHub or contact the
 maintainers directly.
->>>>>>> 282c763cc13c850f5f7246085ce7a9f8f7fa87fd
+
 
 Check out NEWS.md to see what's new in each `BulkLMM.jl` release.
