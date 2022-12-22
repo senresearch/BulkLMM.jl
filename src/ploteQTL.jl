@@ -220,6 +220,6 @@ function ploteQTL(multiLODs::Array{Float64, 2}, pheno::Array{Any, 2}, gmap::Data
         lodc[i, 2] = maxLODs_allTraits[i][1];
     end
 
-    ploteQTL_fromMax(lodc, gmap, phenocovar; thr = thr)
+    ploteQTL_fromMax(lodc, pheno, gmap, phenocovar; thr = thr)
 
 end
