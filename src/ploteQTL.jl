@@ -144,13 +144,11 @@ function calcPositionOnChr!(finalInfo::DataFrame, chr_lengths::DataFrame)
     
 end
 
-function ploteQTL_fromMax(maxLODs::Array{Float64, 2}, gmap::DataFrame, phenocovar::DataFrame; 
+function ploteQTL_fromMax(maxLODs::Array{Float64, 2}, pheno::Array{Any, 2}, gmap::DataFrame, phenocovar::DataFrame; 
                           thr::Float64 = 5.0)
 
     pInfo = matchPhenoAndGenoInfos(phenocovar, gmap);
 
-    pheno_file = string(@__DIR__, "/../data/bxdData/spleen-pheno-nomissing.csv");
-    pheno = readdlm(pheno_file, ',', header = false);
     p_names = String.(SubString.(pheno[1, 2:(end-1)], 2, 9));
 
     filter_phenos = filterLODs_by_Chr(maxLODs, p_names, pInfo);
@@ -211,7 +209,7 @@ function ploteQTL_fromMax(maxLODs::Array{Float64, 2}, gmap::DataFrame, phenocova
 
 end
 
-function ploteQTL(multiLODs::Array{Float64, 2}, gmap::DataFrame, phenocovar::DataFrame;
+function ploteQTL(multiLODs::Array{Float64, 2}, pheno::Array{Any, 2}, gmap::DataFrame, phenocovar::DataFrame;
                   thr::Float64 = 5.0)
 
     maxLODs_allTraits = mapslices(x -> findmax(x), multiLODs; dims = 1);
