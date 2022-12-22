@@ -266,7 +266,7 @@ size(multiple_results_allTraits)
 
     (7321, 35556)
 
-To visualize the multiple-trait scan results, we can use the ploting utility functions in `BulkLMM.jl` to plot the eQTL plot.
+To visualize the multiple-trait scan results, we can use the ploting utility functions in `BulkLMM.jl` to generate the eQTL plot.
 
 For the following example, only plot the LOD scores that are above 5.0 by calling the function and specifying in the optional argument `thr = 5.0`:
 
