@@ -266,6 +266,27 @@ size(multiple_results_allTraits)
 
     (7321, 35556)
 
+To visualize the multiple-trait scan results, we can use the ploting utility functions in `BulkLMM.jl` to generate the eQTL plot.
+
+For the following example, only plot the LOD scores that are above 5.0 by calling the function and specifying in the optional argument `thr = 5.0`:
+
+Note: one will need to read in the `gmap.csv` and the `phenocovar.csv` under `data/bxdData/` directory as
+
+```julia
+gmap_file = "BulkLMM.jl/data/bxdData/gmap.csv";
+gInfo = CSV.read(gmap_file, DataFrame);
+phenocovar_file = "BulkLMM.jl/data/bxdData/phenocovar.csv";
+pInfo = CSV.read(phenocovar_file, DataFrame);
+```
+
+and then use 
+
+```julia
+ploteQTL(multiple_results_allTraits, gInfo, pInfo)
+```
+
+![svg](img/output_112_1.svg)
+
 
 ## Installation:
 
@@ -294,5 +315,6 @@ Pkg.add(url = "https://github.com/senresearch/BulkLMM.jl", rev="main")
 
 If you find any bugs, please post an issue on GitHub or contact the
 maintainers directly.
+
 
 Check out NEWS.md to see what's new in each `BulkLMM.jl` release.
