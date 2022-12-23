@@ -279,10 +279,10 @@ phenocovar_file = "BulkLMM.jl/data/bxdData/phenocovar.csv";
 pInfo = CSV.read(phenocovar_file, DataFrame);
 ```
 
-and then use 
+Also, in the input argument one will also need to supply the `pheno` input data in the argument.
 
 ```julia
-ploteQTL(multiple_results_allTraits, gInfo, pInfo)
+ploteQTL(multiple_results_allTraits, pheno, gInfo, pInfo)
 ```
 
 ![svg](img/output_112_1.svg)
