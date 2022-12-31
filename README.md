@@ -266,6 +266,32 @@ size(multiple_results_allTraits)
 
     (7321, 35556)
 
+To visualize the multiple-trait scan results, we can use the plotting utility function `plot_eQTL`to generate the eQTL plot. The function `plot_eQTL` does not belong to `BulkLMM.jl`; it will be part of the future package specialized for visualizations. However, we can easily have access to the plotting function by running the following commands:
+
+```julia
+using RecipesBase, Plots, Plots.PlotMeasures, ColorSchemes
+include(joinpath(pathof(Bulklmm),"../..", "plot_utils", "visuals_utils.jl"));
+```
+
+For the following example, we only plot the LOD scores that are above 5.0 by calling the function and specifying in the optional argument `thr = 5.0`:
+
+Note: one will need to read in the `gmap.csv` and the `phenocovar.csv` under `data/bxdData/` directory as
+
+```julia
+gmap_file = "BulkLMM.jl/data/bxdData/gmap.csv";
+gInfo = CSV.read(gmap_file, DataFrame);
+phenocovar_file = "BulkLMM.jl/data/bxdData/phenocovar.csv";
+pInfo = CSV.read(phenocovar_file, DataFrame);
+```
+
+Also, in the input argument one will also need to supply the `pheno` input data in the argument.
+
+```julia
+plot_eQTL(multiple_results_allTraits, pheno, gInfo, pInfo; thr = 5.0)
+```
+
+![svg](img/output_112_1.svg)
+
 
 ## Installation:
 
@@ -279,7 +305,7 @@ Pkg.add("BulkLMM")
 To install from the **Julia** REPL, first press `]` to enter the Pkg
 mode and then use:
 
-```julia
+```
 add BulkLMM
 ```
 
@@ -294,5 +320,6 @@ Pkg.add(url = "https://github.com/senresearch/BulkLMM.jl", rev="main")
 
 If you find any bugs, please post an issue on GitHub or contact the
 maintainers directly.
+
 
 Check out NEWS.md to see what's new in each `BulkLMM.jl` release.

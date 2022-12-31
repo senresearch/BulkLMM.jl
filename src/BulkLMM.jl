@@ -1,8 +1,10 @@
 module BulkLMM
 
-    # packages we need to work
-    using CSV, DelimitedFiles, DataFrames, Missings, LinearAlgebra, Statistics, Optim, Random, Distributions, LoopVectorization
-
+    # dependent packages 
+    using CSV, DelimitedFiles, DataFrames, Missings 
+    using LinearAlgebra, Statistics, Optim
+    using Random, Distributions, LoopVectorization
+    
     include("./util.jl");
     include("./kinship.jl");
     export calcKinship
@@ -22,12 +24,12 @@ module BulkLMM
     export LMMEstimates
 
     include("./scan.jl");
-    # export scan
+    export scan
     # export scan_perms
-    # export scan_perms_lite
+    export scan_perms_lite
 
     include("./bulkscan.jl");
-    # export scan_lite_multivar
+    export scan_lite_multivar
 
     include("./transform_helpers.jl");
     # export transform_rotation
