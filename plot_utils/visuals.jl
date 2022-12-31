@@ -8,20 +8,31 @@
 using DataFrames, CSV, DelimitedFiles
 using RecipesBase
 
+"""
 
-## Match pheno and geno info dataframes by common chromosomes:
-function matchPhenoAndGenoInfos(pInfo::DataFrame, gInfo::DataFrame;
-                                chrColname::String = "Chr", mbColname::String = "Mb")
-    
-    chrs_g = unique(gInfo[:, Symbol(chrColname)]);
-    chrs_p = unique(pInfo[:, Symbol(chrColname)]);
-    
-    common_chrs = chrs_p[findall(x->x in chrs_g, chrs_p)];
-    pInfo_common = filter(Symbol("Chr") => in(common_chrs), pInfo);
-    
-    return pInfo_common
-    
+matchPhenoAndGenoInfos(phenoInfo::DataFrame, genoInfo::DataFrame; 
+                         chrColname::String = "Chr") => DataFrame
+
+Returns the filtered `phenoInfo` dataframe according to the chromososomes list 
+in `genInfo`.
+
+## Arguments
+- `phenoInfo` is a dataframe containing the phenotype information.
+- `genoInfo`  is a dataframe containing the genotype information.
+- `chrColname` contains the name of the column containing the chromosome information in the dataframes.
+"""
+function matchPhenoAndGenoInfos(phenoInfo::DataFrame, genoInfo::DataFrame; chrColname::String = "Chr")
+
+    chrs_g = unique(genoInfo[:, Symbol(chrColname)]);
+    chrs_p = unique(phenoInfo[:, Symbol(chrColname)]);
+
+    inter_chrs = intersect(chrs_g, chrs_p)
+
+    pInfo_chr_filtered = filter(Symbol(chrColname) => in(inter_chrs), phenoInfo);
+
+    return pInfo_chr_filtered
 end
+
 
 function filterLODs_by_Chr(lodc::Array{Float64, 2}, p_names::Array{String, 1}, pInfo::DataFrame)
 
