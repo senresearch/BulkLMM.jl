@@ -1,6 +1,6 @@
 # BulkLMM.jl
 
-Julia package for performing genome scansfor multiple traits ("in
+Julia package for performing genome scans for multiple traits ("in
 bulk") using linear mixed models (LMMs). Suitable for eQTL mapping
 with thousands of traits and markers.  Also performs permutation
 testing for LMMs taking into account the relatedness of individuals.
