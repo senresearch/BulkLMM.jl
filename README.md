@@ -1,6 +1,6 @@
 # BulkLMM.jl
 
-Julia package for performing genome scans for multiple traits ("in
+Julia package for performing genome scane for multiple traits ("in
 bulk") using linear mixed models (LMMs). Suitable for eQTL mapping
 with thousands of traits and markers.  Also performs permutation
 testing for LMMs taking into account the relatedness of individuals.
@@ -76,7 +76,6 @@ current *Julia* session by
 
 ```julia
 using BulkLMM
-using CSV, DelimitedFiles, DataFrames, Statistics
 ```
 
 The BXD data are accessible through our published [github
@@ -87,8 +86,7 @@ The raw BXD traits `BXDtraits_with_missing.csv`contains missing
 values. After removing the missings, load the BXD traits data
 
 ```julia
-bulklmmdir = dirname(pathof(BulkLMM));
-pheno_file = joinpath(bulklmmdir,"..","data/bxdData/spleen-pheno-nomissing.csv");
+pheno_file = "data/bxdData/spleen-pheno-nomissing.csv";
 pheno = readdlm(pheno_file, ',', header = false);
 pheno_processed = pheno[2:end, 2:(end-1)].*1.0; # exclude the header, the first (transcript ID)and the last columns (sex)
 ```
@@ -105,7 +103,7 @@ complement genotype probabilities of the column immediately preceded
 genotype file excluding the even columns.
 
 ```julia
-geno_file = joinpath(bulklmmdir,"..","data/bxdData/spleen-bxd-genoprob.csv");
+geno_file = "data/bxdData/spleen-bxd-genoprob.csv"
 geno = readdlm(geno_file, ',', header = false);
 geno_processed = geno[2:end, 1:2:end] .* 1.0;
 ```
@@ -226,12 +224,11 @@ thrs = map(x -> quantile(max_lods, x), [0.05, 0.95]);
 ```
 
 Plot the LOD scores in comparison with
-[GEMMA](https://github.com/genetics-statistics/GEMMA) (one will need to run
+[GEMMA](https://github.com/genetics-statistics/GEMMA) (needs to run
 GEMMA to generate outputs elsewhere), as well as the LOD rejection
 thresholds from permutation testing:
     
-(for better visability, as an example here only the first 2000 LOD scores were plotted)
-![svg](img/output_97_0.svg)
+![svg](img/output_48_0.svg)
 
 
 ### Multiple traits scanning:
@@ -267,13 +264,13 @@ The output `multiple_results_allTraits` is a matrix of LOD scores of dimension $
 size(multiple_results_allTraits)
 ```
 
-    (7321, 35556)
+    (7321, 35554)
 
 To visualize the multiple-trait scan results, we can use the plotting utility function `plot_eQTL`to generate the eQTL plot. The function `plot_eQTL` does not belong to `BulkLMM.jl`; it will be part of the future package specialized for visualizations. However, we can easily have access to the plotting function by running the following commands:
 
 ```julia
 using RecipesBase, Plots, Plots.PlotMeasures, ColorSchemes
-include(joinpath(bulklmmdir, "..", "plot_utils", "visuals_utils.jl"));
+include(joinpath(dirname(pathof(Bulklmm)),"..", "plot_utils", "visuals_utils.jl"));
 ```
 
 For the following example, we only plot the LOD scores that are above 5.0 by calling the function and specifying in the optional argument `thr = 5.0`:
@@ -281,9 +278,9 @@ For the following example, we only plot the LOD scores that are above 5.0 by cal
 Note: one will need to read in the `gmap.csv` and the `phenocovar.csv` under `data/bxdData/` directory as
 
 ```julia
-gmap_file = joinpath(bulklmmdir,"..","data/bxdData/gmap.csv");
+gmap_file = "BulkLMM.jl/data/bxdData/gmap.csv";
 gInfo = CSV.read(gmap_file, DataFrame);
-phenocovar_file = joinpath(bulklmmdir,"..","data/bxdData/phenocovar.csv");
+phenocovar_file = "BulkLMM.jl/data/bxdData/phenocovar.csv";
 pInfo = CSV.read(phenocovar_file, DataFrame);
 ```
 
