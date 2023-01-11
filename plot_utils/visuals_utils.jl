@@ -171,7 +171,7 @@ Natural sort a string vector accounting for numeric sorting.
 """
 function get_eQTL_accMb(mlodmax::Matrix{Float64}, dfpInfo::DataFrame, dfgInfo::DataFrame; 
                         chrColname::String = "Chr", mbColname::String = "Mb", thr::Float64 = 5.0)
-    # match chromosomes in pheno dataframe accoding to chromosomes list in geno dataframe
+    # match chromosomes in pheno dataframe according to chromosomes list in geno dataframe
     dfpInfo_filtered = copy(dfpInfo) #match_chrs_pheno_to_geno(dfpInfo, dfgInfo)
 
     # prepare filtered pheno dataframe to compute accumulated mb distance for plotting
@@ -192,24 +192,28 @@ function get_eQTL_accMb(mlodmax::Matrix{Float64}, dfpInfo::DataFrame, dfgInfo::D
     # initiate steps vector
     steps = Array{Float64}(undef, length(vChrNames))
 
-    # compute accumulated mb distance
-    for i in 1:length(vChrNames)-1 
-        
-        # get maximum mb
-        phenotemp = filter(:phenocovar_chr => x-> x == vChrNames[i], dfpInfo_filtered)
-        genotemp = filter(:geno_chr => x-> x == vChrNames[i], gmap)
+    # if more than one chromosome
+    if length(vChrNames) > 1 
+        # compute accumulated mb distance
+        for i in 1:length(vChrNames)-1 
+            
+            # get temp matrix based on a chromosome name
+            phenotemp = filter(:phenocovar_chr => x-> x == vChrNames[i], dfpInfo_filtered)
+            genotemp = filter(:geno_chr => x-> x == vChrNames[i], gmap)
 
-        steps[i] = max(
-                    maximum(genotemp.acc_mb),
-                    maximum(phenotemp.acc_phenocovar_mb) 
-                   )
+            # get maximum distance for this chromosome
+            steps[i] = max(
+                        maximum(genotemp.acc_mb),
+                        maximum(phenotemp.acc_phenocovar_mb) 
+                    )
 
-        
-        nextchr_phenotemp = view(dfpInfo_filtered, dfpInfo_filtered.phenocovar_chr .== vChrNames[i+1], :)
-        nextchr_genotemp = view(gmap, gmap.geno_chr .== vChrNames[i+1], :) 
+            # calculate the accumulated distance for the next chromosome
+            nextchr_phenotemp = view(dfpInfo_filtered, dfpInfo_filtered.phenocovar_chr .== vChrNames[i+1], :)
+            nextchr_genotemp = view(gmap, gmap.geno_chr .== vChrNames[i+1], :) 
 
-        nextchr_phenotemp.acc_phenocovar_mb .= nextchr_phenotemp.phenocovar_mb .+ steps[i]
-        nextchr_genotemp.acc_mb .= nextchr_genotemp.geno_mb .+ steps[i]
+            nextchr_phenotemp.acc_phenocovar_mb .= nextchr_phenotemp.phenocovar_mb .+ steps[i]
+            nextchr_genotemp.acc_mb .= nextchr_genotemp.geno_mb .+ steps[i]
+        end
     end
 
     steps[end] = max(
@@ -238,9 +242,9 @@ function plot_eQTL(multiLODs::Array{Float64, 2}, pheno::Array{Any, 2}, gmap::Dat
 
     maxLODs_allTraits = mapslices(x -> findmax(x), multiLODs; dims = 1);
     maxLODs_allTraits = reduce(vcat, vec(maxLODs_allTraits));
-    lodc = Array{Float64, 2}(undef, size(multiLODs, 1), 2);
+    lodc = Array{Float64, 2}(undef, size(multiLODs, 2), 2);
 
-    for i in 1:size(multiLODs, 1)
+    for i in 1:size(multiLODs, 2)
         lodc[i, 1] = maxLODs_allTraits[i][2];
         lodc[i, 2] = maxLODs_allTraits[i][1];
     end
@@ -250,9 +254,9 @@ function plot_eQTL(multiLODs::Array{Float64, 2}, pheno::Array{Any, 2}, gmap::Dat
                                 phenocovar,
                                 gmap;
                                 thr = thr,
-                                kwargs
+                                kwargs...
                               )
 
-    eQTLplot(x, y, z, mysteps, mychr, kwargs)
+    eQTLplot(x, y, z, mysteps, mychr, kwargs...)
 
 end
