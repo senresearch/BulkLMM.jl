@@ -1,6 +1,6 @@
 # BulkLMM.jl
 
-Julia package for performing genome scane for multiple traits ("in
+Julia package for performing genome scans for multiple traits ("in
 bulk") using linear mixed models (LMMs). Suitable for eQTL mapping
 with thousands of traits and markers.  Also performs permutation
 testing for LMMs taking into account the relatedness of individuals.
@@ -226,11 +226,12 @@ thrs = map(x -> quantile(max_lods, x), [0.05, 0.95]);
 ```
 
 Plot the LOD scores in comparison with
-[GEMMA](https://github.com/genetics-statistics/GEMMA) (needs to run
+[GEMMA](https://github.com/genetics-statistics/GEMMA) (one will need to run
 GEMMA to generate outputs elsewhere), as well as the LOD rejection
 thresholds from permutation testing:
     
-![svg](img/output_48_0.svg)
+(for better visability, as an example here only the first 2000 LOD scores were plotted)
+![svg](img/output_97_0.svg)
 
 
 ### Multiple traits scanning:
