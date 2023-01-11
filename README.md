@@ -270,7 +270,7 @@ To visualize the multiple-trait scan results, we can use the plotting utility fu
 
 ```julia
 using RecipesBase, Plots, Plots.PlotMeasures, ColorSchemes
-include(joinpath(pathof(Bulklmm),"../..", "plot_utils", "visuals_utils.jl"));
+include(joinpath(dirname(pathof(Bulklmm)),"..", "plot_utils", "visuals_utils.jl"));
 ```
 
 For the following example, we only plot the LOD scores that are above 5.0 by calling the function and specifying in the optional argument `thr = 5.0`:
