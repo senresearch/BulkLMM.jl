@@ -316,10 +316,12 @@ using Pkg
 Pkg.add(url = "https://github.com/senresearch/BulkLMM.jl", rev="main")
 ```
 
-## Contact and feedback
+## Contact, contribution and feedback
 
 If you find any bugs, please post an issue on GitHub or contact the
-maintainers directly.
+maintainer ([Zifan Yu](https://github.com/learningMalanya)) directly.
+You may also fork the repository and send us a pull request with any
+contributions you wish to make.
 
 
 Check out NEWS.md to see what's new in each `BulkLMM.jl` release.
