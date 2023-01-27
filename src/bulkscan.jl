@@ -83,7 +83,7 @@ Will modify input matrix R; uses a multi-threaded loop.
 """
 function tR2LOD!(R::Array{Float64, 2}, n::Int64)
     
-    (p, m) = size(R);
+    m = size(R, 2);
     
     Threads.@threads for j in 1:m
 
