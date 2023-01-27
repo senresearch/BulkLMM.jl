@@ -87,7 +87,7 @@ function tR2LOD!(R::Array{Float64, 2}, n::Int64)
     
     Threads.@threads for j in 1:m
 
-        @inbounds R[:, j] = r2lod.(R[:, j], n)
+        @inbounds R[:, j] .= @views r2lod.(R[:, j], n)
 
     end
     
@@ -118,6 +118,7 @@ Calculates the LOD scores for one trait, using the LiteQTL approach.
 
 Assumes the heritabilities only differ by traits but remain the same across all markers for the same trait;
     hence, VC is estimated once based on the null model and used for all markers scans for that trait.
+    (VC: variance components)
 
 
 """
