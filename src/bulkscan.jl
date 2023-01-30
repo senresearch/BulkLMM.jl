@@ -22,7 +22,7 @@ Calculates the LOD scores for all pairs of traits and markers, by a (multi-threa
 # Notes:
 
 """
-function scan_lite_multivar(Y::Array{Float64, 2}, G::Array{Float64, 2}, K::Array{Float64, 2}, nb::Int64; 
+function bulkscan_trunk(Y::Array{Float64, 2}, G::Array{Float64, 2}, K::Array{Float64, 2}, nb::Int64; 
                    nt_blas::Int64 = 1, prior_variance = 1.0, prior_sample_size = 0.0,
                    reml::Bool = false)
 
@@ -50,7 +50,7 @@ function scan_lite_multivar(Y::Array{Float64, 2}, G::Array{Float64, 2}, K::Array
         @simd for i = 1:len
             j = i+(t-1)*len;
 
-            @inbounds lods_currBlock[:, i] = scan_lite_univar(Y0[:, j], X0_intercept, X0_covar, lambda0; 
+            @inbounds lods_currBlock[:, i] = univar_liteqtl(Y0[:, j], X0_intercept, X0_covar, lambda0; 
                                                               prior_variance = prior_variance, prior_sample_size = prior_sample_size,
                                                               reml = reml);
         end
@@ -73,7 +73,7 @@ function scan_lite_multivar(Y::Array{Float64, 2}, G::Array{Float64, 2}, K::Array
 
         j = m-rem+i;
 
-        lods_remBlock[:, i] = scan_lite_univar(Y0[:, j], X0_intercept, X0_covar, lambda0;
+        lods_remBlock[:, i] = univar_liteqtl(Y0[:, j], X0_intercept, X0_covar, lambda0;
                    reml = reml);
 
     end

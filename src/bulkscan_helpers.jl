@@ -125,7 +125,7 @@ Assumes the heritabilities only differ by traits but remain the same across all 
 
 
 """
-function scan_lite_univar(y0_j::Array{Float64, 1}, X0_intercept::Array{Float64, 2}, 
+function univar_liteqtl(y0_j::Array{Float64, 1}, X0_intercept::Array{Float64, 2}, 
     X0_covar::Array{Float64, 2}, lambda0::Array{Float64, 1}; prior_variance = 0.0, prior_sample_size = 0.0,
     reml::Bool = false)
 
@@ -142,7 +142,7 @@ function scan_lite_univar(y0_j::Array{Float64, 1}, X0_intercept::Array{Float64, 
     wX0_covar = rowMultiply(X0_covar, sqrtw);
 
     R = computeR_LMM(wy0, wX0_covar, wX0_intercept);
-    tR2LOD!(R, n);
+    threaded_map!(r2lod, R, n; dims = 2);
 
     return R; # results will be p-by-1, i.e. all LOD scores for the j-th trait and p markers
 
