@@ -9,6 +9,12 @@ mutable struct LSEstimates
     ell::Float64
 end
 
+struct LSEstimates_multivar
+    B::Array{Float64, 2}
+    Sigma2::Array{Float64, 2}
+    Ell::Array{Float64, 2}
+end
+
 
 """
 wls: Weighted least squares estimation
@@ -86,9 +92,88 @@ function wls(y::Array{Float64, 2}, X::Array{Float64, 2}, w::Array{Float64, 1}, p
         ll = missing;
     end
 
-    return LSEstimates(coef, sigma2_e, ll)
+    return LSEstimates(coef, sigma2_e, ll);
 
 end
+
+"""
+wls_multivar: Multivariate weighted least-square estimation
+
+"""
+function wls_multivar(Y::Array{Float64, 2}, X::Array{Float64, 2}, w::Array{Float64, 1}, prior::Array{Float64, 1};
+             reml::Bool = false, loglik::Bool = true, method::String = "qr")
+
+    (n, p) = size(X); # get number of observations and the number of markers from geno dimensions      
+
+    n = size(Y, 1); # get number of observations       
+
+    # check if weights are positive
+    if(any(w .<= .0))
+        error("Some weights are not positive.")
+    end
+
+    # square root of the weights
+    sqrtw = sqrt.(w)
+
+    # logdetXtX = logdet(X' * X); constant term that does not depend on the parameters (weights); is not needed
+
+    # scale by weights
+    YY = rowMultiply(Y, sqrtw)
+    XX = rowMultiply(X, sqrtw)
+
+    # least squares solution
+    # faster but numerically less stable
+    if(method == "cholesky")
+        fct = cholesky(XX'XX)
+        coef = fct\(XX'YY)
+        logdetXXtXX = logdet(fct)
+    end
+
+    # slower but numerically more stable
+    if(method == "qr")
+        fct = qr(XX)
+        coef = fct\YY # will be a matrix with each column be the fitted coefficients for one response variable
+
+        # logdetXXtXX = 2*logdet(fct.R) # need 2 for logdet(X'X)
+        # logdetXXtXX = logdet(fct.R' * fct.R);
+        logdetXXtXX = 2*logabsdet(fct.R)[1];
+    end
+
+    YYhat = XX*coef
+    rss0 = mapslices(x -> sum(x.^2), YY-YYhat; dims = 1)
+
+    if prior[2] > 0.0
+        prior_df = prior[2]+2;
+    else
+        prior_df = prior[2];
+    end
+
+    if(reml)
+        sigma2_e = (rss0.+prior[1]*prior[2])./((n-p)+prior_df)
+    else
+        sigma2_e = (rss0.+prior[1]*prior[2])./(n+prior_df)
+    end
+
+    
+    # see formulas (2) and (3) of Kang (2008)
+    if(loglik)
+
+        ll = -0.5 * ((n+prior[2])*log.(sigma2_e) .- sum(log.(w)) .+ (rss0.+prior[1]*prior[2])./sigma2_e)
+        
+        if(reml)
+            # ell = ell + 0.5 * (p*log(2pi*sigma2) + logdetXtX - logdetXXtXX) # full log-likelihood including the constant terms;
+            ll = ll + 0.5 * (p*log(sigma2_e) - logdetXXtXX)
+        end
+        
+    else
+        ll = missing;
+    end
+    
+
+    return LSEstimates_multivar(coef, sigma2_e, ll);
+    
+end
+
 
 """
 rss: residual sum of squares
@@ -102,7 +187,6 @@ the function returns the residual sum of squares of each column. The
 return values is a (row) vector of length equal to the number of columns of y.
 
 """
-
 function rss(y::Array{Float64, 2}, X::Array{Float64, 2}; method = "qr")
 
     r = resid(y, X; method = method)
