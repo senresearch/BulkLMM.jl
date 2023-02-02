@@ -35,14 +35,27 @@ A list of output values are returned:
     Output data structure might need some revisions.
 
 """
+
 function scan(y::Array{Float64,2}, g::Array{Float64,2}, K::Array{Float64,2};
               prior_variance::Float64 = 0.0, prior_sample_size::Float64 = 0.0, addIntercept::Bool = true,
               reml::Bool = false, assumption::String = "null", method::String = "qr")
 
     if(assumption == "null")
-        return scan_null(y, g, K, [prior_variance, prior_sample_size], addIntercept; reml = reml, method = method)
+    return scan_null(y, g, K, [prior_variance, prior_sample_size], addIntercept; reml = reml, method = method)
     elseif(assumption == "alt")
-        return scan_alt(y, g, K, [prior_variance, prior_sample_size], addIntercept; reml = reml, method = method)
+    return scan_alt(y, g, K, [prior_variance, prior_sample_size], addIntercept; reml = reml, method = method)
+    end
+
+end
+
+function scan(y::Array{Float64,2}, g::Array{Float64,2}, covar::Array{Float64, 2}, K::Array{Float64,2};
+              prior_variance::Float64 = 0.0, prior_sample_size::Float64 = 0.0, addIntercept::Bool = true,
+              reml::Bool = false, assumption::String = "null", method::String = "qr")
+
+    if(assumption == "null")
+        return scan_null(y, g, covar, K, [prior_variance, prior_sample_size], addIntercept; reml = reml, method = method)
+    elseif(assumption == "alt")
+        return scan_alt(y, g, covar, K, [prior_variance, prior_sample_size], addIntercept; reml = reml, method = method)
     end
 
 end
@@ -61,6 +74,7 @@ assuming the variance components are the same for all markers.
 
 - y = 1d array of floats consisting of the N observations for a certain quantitative trait (dimension: N*1)
 - g = 2d array of floats consisting of all p gene markers (dimension: N*p)
+- covar = 2d array of floats consisting of all covariates to adjust for (optional)
 - K = 2d array of floats consisting of the genetic relatedness of the N observations (dimension:N*N)
 
 # Keyword arguments
@@ -83,17 +97,26 @@ A list of output values are returned:
     as `null` (default).
 
 """
-function scan_null(y::Array{Float64, 2}, g::Array{Float64, 2}, K::Array{Float64, 2}, prior::Array{Float64, 1}, addIntercept::Bool;
+function scan_null(y::Array{Float64, 2}, g::Array{Float64, 2}, K::Array{Float64, 2}, 
+                   prior::Array{Float64, 1}, addIntercept::Bool;
                    reml::Bool = false, method::String = "qr")
 
     # number of markers
     (n, p) = size(g)
 
+    # num_of_covar = isnothing(covar) ? 1 : (size(covar, 2)+1);
+    num_of_covar = 1;
+
     # rotate data
     (y0, X0, lambda0) = transform_rotation(y, g, K; addIntercept = addIntercept)
+    X0_covar = X0[:, 1:num_of_covar];
+
+    if size(X0_covar, 2) == 1
+        X0_covar = reshape(X0_covar, :, 1);
+    end
 
     # fit null lmm
-    out00 = fitlmm(y0, reshape(X0[:, 1], :, 1), lambda0, prior; reml = reml, method = method)
+    out00 = fitlmm(y0, X0_covar, lambda0, prior; reml = reml, method = method)
     # weights proportional to the variances
     sqrtw = sqrt.(makeweights(out00.h2, lambda0))
     # rescale by weights
@@ -101,12 +124,54 @@ function scan_null(y::Array{Float64, 2}, g::Array{Float64, 2}, K::Array{Float64,
     rowMultiply!(X0, sqrtw)
 
     # perform genome scan
-    rss0 = rss(y0, reshape(X0[:, 1], n, 1); method = method)[1]
+    rss0 = rss(y0, X0_covar; method = method)[1]
     lod = zeros(p)
-    X = zeros(n, 2)
-    X[:, 1] = X0[:, 1]
+
+    X = X0[:, 1:(num_of_covar+1)]
     for i = 1:p
-        X[:, 2] = X0[:, i+1]
+        X[:, (num_of_covar+1)] = X0[:, num_of_covar+i]
+        rss1 = rss(y0, X; method = method)[1]
+        lod[i] = (-n/2)*(log10(rss1) .- log10(rss0))
+        # lrt = (rss0 - rss1)/out00.sigma2
+        # lod[i] = lrt/(2*log(10))
+    end
+
+    return (sigma2_e = out00.sigma2, h2_null = out00.h2, lod = lod)
+
+end
+
+function scan_null(y::Array{Float64, 2}, g::Array{Float64, 2}, covar, K::Array{Float64, 2}, 
+                   prior::Array{Float64, 1}, addIntercept::Bool;
+                   reml::Bool = false, method::String = "qr")
+
+    # number of markers
+    (n, p) = size(g)
+
+    num_of_covar = isnothing(covar) ? 1 : (size(covar, 2)+1);
+
+    # rotate data
+    (y0, X0, lambda0) = transform_rotation(y, [covar g], K; addIntercept = addIntercept)
+    X0_covar = X0[:, 1:num_of_covar];
+
+    if size(X0_covar, 2) == 1
+        X0_covar = reshape(X0_covar, :, 1);
+    end
+
+    # fit null lmm
+    out00 = fitlmm(y0, X0_covar, lambda0, prior; reml = reml, method = method)
+    # weights proportional to the variances
+    sqrtw = sqrt.(makeweights(out00.h2, lambda0))
+    # rescale by weights
+    rowMultiply!(y0, sqrtw)
+    rowMultiply!(X0, sqrtw)
+
+    # perform genome scan
+    rss0 = rss(y0, X0_covar; method = method)[1]
+    lod = zeros(p)
+
+    X = X0[:, 1:(num_of_covar+1)]
+    for i = 1:p
+        X[:, (num_of_covar+1)] = X0[:, num_of_covar+i]
         rss1 = rss(y0, X; method = method)[1]
         lod[i] = (-n/2)*(log10(rss1) .- log10(rss0))
         # lrt = (rss0 - rss1)/out00.sigma2
@@ -152,30 +217,87 @@ A list of output values are returned:
     field is passed as `alt`.
 
 """
-function scan_alt(y::Array{Float64, 2}, g::Array{Float64, 2}, K::Array{Float64, 2}, prior::Array{Float64, 1}, addIntercept::Bool;
+function scan_alt(y::Array{Float64, 2}, g::Array{Float64, 2}, K::Array{Float64, 2}, 
+                  prior::Array{Float64, 1}, addIntercept::Bool;
+                  reml::Bool = false, method::String = "qr")
+
+    # number of markers
+    (n, p) = size(g)
+
+    # num_of_covar = isnothing(covar) ? 1 : (size(covar, 2)+1);
+    num_of_covar = 1;
+
+    # rotate data
+    (y0, X0, lambda0) = transform_rotation(y, g, K; addIntercept = addIntercept)
+    X0_covar = X0[:, 1:num_of_covar];
+
+    if size(X0_covar, 2) == 1
+        X0_covar = reshape(X0_covar, :, 1);
+    end
+
+    pve_list = Array{Float64, 1}(undef, p);
+
+    # fit null lmm
+    if reml == false
+        out00 = fitlmm(y0, X0_covar, lambda0, prior; reml = reml, method = method);
+    end
+
+    lod = zeros(p);
+
+    X = X0[:, 1:(num_of_covar+1)]
+
+    for i = 1:p
+        X[:, (num_of_covar+1)] = X0[:, num_of_covar+i]
+
+        out11 = fitlmm(y0, X, lambda0, prior; reml = reml, method = method);
+
+        if reml
+            sqrtw_alt = sqrt.(makeweights(out11.h2, lambda0));
+            wls_alt = wls(y0, X, sqrtw_alt, prior; reml = false);
+            wls_null = wls(y0, X00, sqrtw_alt, prior; reml = false);
+            lod[i] = (wls_alt.ell - wls_null.ell)/log(10);
+        else 
+            lod[i] = (out11.ell - out00.ell)/log(10);
+        end
+
+        pve_list[i] = out11.h2;
+    end
+
+    return (sigma2_e = out00.sigma2, h2_null = out00.h2, h2_each_marker = pve_list, lod = lod)
+
+
+end
+
+function scan_alt(y::Array{Float64, 2}, g::Array{Float64, 2}, covar, K::Array{Float64, 2}, 
+                 prior::Array{Float64, 1}, addIntercept::Bool;
                  reml::Bool = false, method::String = "qr")
 
     # number of markers
     (n, p) = size(g)
 
+    num_of_covar = isnothing(covar) ? 1 : (size(covar, 2)+1);
+
     # rotate data
-    (y0, X0, lambda0) = transform_rotation(y, g, K; addIntercept = addIntercept)
+    (y0, X0, lambda0) = transform_rotation(y, [covar g], K; addIntercept = addIntercept)
+    X0_covar = X0[:, 1:num_of_covar];
+
+    if size(X0_covar, 2) == 1
+        X0_covar = reshape(X0_covar, :, 1);
+    end
 
     pve_list = Array{Float64, 1}(undef, p);
 
-    X00 = reshape(X0[:, 1], :, 1)
     # fit null lmm
     if reml == false
-        out00 = fitlmm(y0, X00, lambda0, prior; reml = reml, method = method);
+        out00 = fitlmm(y0, X0_covar, lambda0, prior; reml = reml, method = method);
     end
 
     lod = zeros(p);
-    X = zeros(n, 2);
-    X[:, 1] = X0[:, 1];
+
+    X = X0[:, 1:(num_of_covar+1)]
 
     for i = 1:p
-        X[:, 1] = X0[:, 1];
-        X[:, 2] = X0[:, i+1];
+        X[:, (num_of_covar+1)] = X0[:, num_of_covar+i]
         
         out11 = fitlmm(y0, X, lambda0, prior; reml = reml, method = method);
        

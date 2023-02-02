@@ -172,7 +172,8 @@ Inputs data are assumed to be rotated; the shortcut works for only testing 1-df 
 
 """
 function weighted_liteqtl(Y0::Array{Float64, 2}, X0::Array{Float64, 2}, 
-    lambda0::Array{Float64, 1}, hsq::Float64; dims::Int64 = 2)
+                          lambda0::Array{Float64, 1}, hsq::Float64;
+                          num_of_covar::Int64 = 1, dims::Int64 = 2)
 
     n = size(Y0, 1)
 
@@ -182,8 +183,13 @@ function weighted_liteqtl(Y0::Array{Float64, 2}, X0::Array{Float64, 2},
     wY0 = rowMultiply(Y0, sqrtw);
     wX0 = rowMultiply(X0, sqrtw);
 
-    wX0_intercept = reshape(wX0[:, 1], :, 1);
-    wX0_covar = wX0[:, 2:end];
+    if num_of_covar == 1
+        wX0_intercept = reshape(wX0[:, 1], :, 1);
+    else
+        wX0_intercept = wX0[:, 1:num_of_covar];
+    end
+
+    wX0_covar = wX0[:, (num_of_covar+1):end];
 
     # Perform the LiteQTL approach for fast calculations of LOD scores
     LOD = computeR_LMM(wY0, wX0_covar, wX0_intercept);
@@ -250,6 +256,51 @@ function gridscan_by_bin(pheno::Array{Float64, 2}, geno::Array{Float64, 2}, kins
 
     for t in 1:nbins
         results[t] = weighted_liteqtl(Y0[:, blocking_idxs[t]], X0, lambda0, h2_taken[t]);
+    end
+
+    return Results_by_bin(blocking_idxs, results)
+    
+end
+
+function gridscan_by_bin(pheno::Array{Float64, 2}, geno::Array{Float64, 2}, 
+                         covar::Array{Float64, 2}, kinship::Array{Float64, 2}, 
+                         grid::Array{Float64, 1})
+
+    m = size(pheno, 2);
+
+    Y_std = colStandardize(pheno);
+    (Y0, X0, lambda0) = transform_rotation(Y_std, [covar geno], kinship; addIntercept = true);
+
+    prior = [1.0, 0.1];
+
+    num_of_covar = size(covar, 2)+1; # `+1` for the intercept column
+    X0_intercept = X0[:, 1:num_of_covar];
+
+    # 
+    weights_each_h2 = map(x -> makeweights(x, lambda0), grid); # make weights evaluated on each h2 in grid
+    ell_results = map(x -> wls_multivar(Y0, X0_intercept, x, prior).Ell, weights_each_h2);
+    ell_results = reduce(vcat, ell_results);
+
+
+    optim_h2 = find_optim_h2(grid, ell_results)
+
+
+    idxs_sets = Dict{Int64, Float64}();
+    for i in 1:m
+       idxs_sets[i] = optim_h2[i];
+    end
+
+    h2_taken = unique(values(idxs_sets));
+    nbins = length(h2_taken);
+
+    blocking_idxs = distribute_traits_by_h2(idxs_sets, h2_taken, m, nbins);
+    results = Array{Array{Float64, 2}, 1}(undef, nbins);
+
+    ## Threads.@threads for t in 1:nbins
+
+    for t in 1:nbins
+        results[t] = weighted_liteqtl(Y0[:, blocking_idxs[t]], X0, lambda0, h2_taken[t]; 
+                                      num_of_covar = num_of_covar);
     end
 
     return Results_by_bin(blocking_idxs, results)

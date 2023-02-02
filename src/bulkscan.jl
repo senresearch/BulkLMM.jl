@@ -101,6 +101,19 @@ function bulkscan_grid(Y::Array{Float64, 2}, G::Array{Float64, 2}, K::Array{Floa
 
 end
 
+function bulkscan_grid(Y::Array{Float64, 2}, G::Array{Float64, 2}, Covar::Array{Float64, 2}, 
+                       K::Array{Float64, 2}, grid_list::Array{Float64, 1})
+
+    m = size(Y, 2);
+    p = size(G, 2);
+
+    results_by_bin = gridscan_by_bin(Y, G, Covar, K, grid_list);
+    LOD_grid = reorder_results(results_by_bin.idxs_by_bin, results_by_bin.LODs_by_bin, m, p);
+
+    return LOD_grid
+
+end
+
 ###### Given the heritability (hsq), compute all LOD scores with performing LiteQTL once.
 
 ## Note: approximated method for scan_alt()
