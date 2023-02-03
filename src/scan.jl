@@ -1,5 +1,6 @@
 ###########################################################
-# genome scan function; no covariates, two genotype groups
+# Genome scan functions for a single trait plus permutation testing:
+# allow modeling additional covariates, two genotype groups
 ###########################################################
 
 """
@@ -140,7 +141,7 @@ function scan_null(y::Array{Float64, 2}, g::Array{Float64, 2}, K::Array{Float64,
 
 end
 
-function scan_null(y::Array{Float64, 2}, g::Array{Float64, 2}, covar, K::Array{Float64, 2}, 
+function scan_null(y::Array{Float64, 2}, g::Array{Float64, 2}, covar::Array{Float64, 2}, K::Array{Float64, 2}, 
                    prior::Array{Float64, 1}, addIntercept::Bool;
                    reml::Bool = false, method::String = "qr")
 
@@ -268,9 +269,9 @@ function scan_alt(y::Array{Float64, 2}, g::Array{Float64, 2}, K::Array{Float64, 
 
 end
 
-function scan_alt(y::Array{Float64, 2}, g::Array{Float64, 2}, covar, K::Array{Float64, 2}, 
-                 prior::Array{Float64, 1}, addIntercept::Bool;
-                 reml::Bool = false, method::String = "qr")
+function scan_alt(y::Array{Float64, 2}, g::Array{Float64, 2}, covar::Array{Float64, 2}, K::Array{Float64, 2}, 
+                  prior::Array{Float64, 1}, addIntercept::Bool;
+                  reml::Bool = false, method::String = "qr")
 
     # number of markers
     (n, p) = size(g)

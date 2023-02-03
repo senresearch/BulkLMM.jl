@@ -1,11 +1,16 @@
+###########################################################
+# Genome scan functions for multiple traits:
+# allow modeling additional covariates, two genotype groups
+###########################################################
 
-
-
-### Trunking methods:
-
-## Threaded-process of trunks of traits:
+###########################################################
+## (1) Trunking methods:
+## idea is to use multithreaded processes to run genome scans sequentially
+## on traits that are inside a block that is a subset of total number of traits;
+## results should be exact as given by running scan_null() on each trait.
+###########################################################
 """
-scan_lite_multivar(Y, G, K, nb; reml = true)
+bulkscan_trunk(Y, G, K, nb; reml = true)
 
 Calculates the LOD scores for all pairs of traits and markers, by a (multi-threaded) loop over blocks of traits and the LiteQTL-type of approach
 
@@ -82,13 +87,80 @@ function bulkscan_trunk(Y::Array{Float64, 2}, G::Array{Float64, 2}, K::Array{Flo
 
     return LODs_all
 
-end 
+end
+### Modeling covariates version
+function bulkscan_trunk(Y::Array{Float64, 2}, G::Array{Float64, 2}, 
+                        Covar::Array{Float64, 2}, K::Array{Float64, 2}, nb::Int64; 
+    nt_blas::Int64 = 1, prior_variance = 1.0, prior_sample_size = 0.0,
+    reml::Bool = false)
 
-## (Approximating method) Grid method for approximating the exact h2, then bin the traits sharing the same h2 estimate and process as 
-## a matrix:
 
-## Note: approximated method for scan_null()
+    m = size(Y, 2);
+    p = size(G, 2);
+    num_of_covar = size(Covar, 2)+1;
 
+    BLAS.set_num_threads(nt_blas);
+
+    # rotate data
+    (Y0, X0, lambda0) = transform_rotation(Y, [Covar G], K);
+
+
+    X0_intercept = X0[:, 1:num_of_covar];
+    X0_covar = X0[:, (num_of_covar+1):end];
+
+    # distribute the `m` traits equally to every block
+    (len, rem) = divrem(m, nb);
+
+    results = Array{Array{Float64, 2}, 1}(undef, nb);
+
+    Threads.@threads for t = 1:nb # so the N blocks will share the (nthreads - N) BLAS threads
+
+    lods_currBlock = Array{Float64, 2}(undef, p, len);
+
+    # process every trait in the block by a @simd loop 
+    @simd for i = 1:len
+        j = i+(t-1)*len;
+
+        @inbounds lods_currBlock[:, i] = univar_liteqtl(Y0[:, j], X0_intercept, X0_covar, lambda0; 
+                                                        prior_variance = prior_variance, prior_sample_size = prior_sample_size,
+                                                        reml = reml);
+    end
+
+    results[t] = lods_currBlock;
+
+    end
+
+    LODs_all = reduce(hcat, results);
+
+    # if no remainder as the result of blocking, no remaining traits need to be scanned
+    if rem == 0
+    return LODs_all
+    end
+
+    # else, process up the remaining traits
+    lods_remBlock = Array{Float64, 2}(undef, p, rem);
+
+    for i in 1:rem
+
+    j = m-rem+i;
+
+    lods_remBlock[:, i] = univar_liteqtl(Y0[:, j], X0_intercept, X0_covar, lambda0;
+        reml = reml);
+
+    end
+
+    LODs_all = hcat(LODs_all, lods_remBlock);
+
+    return LODs_all
+
+end
+
+###########################################################
+## (2) Grid approximation methods:
+## idea is to approximate the exact MLE/REML estimate of h2 using 
+## a discrete grid of h2; results should be viewed as an approximation 
+## of scan_null() results for each trait.
+###########################################################
 function bulkscan_grid(Y::Array{Float64, 2}, G::Array{Float64, 2}, K::Array{Float64, 2}, grid_list::Array{Float64, 1})
 
     m = size(Y, 2);
@@ -114,10 +186,12 @@ function bulkscan_grid(Y::Array{Float64, 2}, G::Array{Float64, 2}, Covar::Array{
 
 end
 
-###### Given the heritability (hsq), compute all LOD scores with performing LiteQTL once.
-
-## Note: approximated method for scan_alt()
-
+###########################################################
+## (2) Grid + element-wise maximization approximation methods:
+## idea is to approximate the exact MLE/REML estimate of h2 (independently for each marker)
+## using a discrete grid of h2; results should be viewed as an approximation 
+## of scan_alt() results for each trait.
+###########################################################
 """
 bulkscan_max(Y, G, K, hsq_list)
 
@@ -150,6 +224,26 @@ function bulkscan_max(Y::Array{Float64, 2}, G::Array{Float64, 2}, K::Array{Float
     for hsq in hsq_list[2:end]
 
         currL = weighted_liteqtl(Y0, X0, lambda0, hsq);
+        tmax!(maxL, currL);
+
+    end
+
+    return maxL
+
+end
+
+function bulkscan_max(Y::Array{Float64, 2}, G::Array{Float64, 2}, 
+                      Covar::Array{Float64, 2}, K::Array{Float64, 2}, hsq_list::Array{Float64, 1})
+
+    (Y0, X0, lambda0) = transform_rotation(Y, [Covar G], K);
+
+    num_of_covar = size(Covar, 2)+1;
+
+    maxL = weighted_liteqtl(Y0, X0, lambda0, hsq_list[1]; num_of_covar = num_of_covar);
+
+    for hsq in hsq_list[2:end]
+
+        currL = weighted_liteqtl(Y0, X0, lambda0, hsq; num_of_covar = num_of_covar);
         tmax!(maxL, currL);
 
     end
