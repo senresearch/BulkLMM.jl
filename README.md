@@ -267,7 +267,7 @@ The output `multiple_results_allTraits` is a matrix of LOD scores of dimension $
 size(multiple_results_allTraits)
 ```
 
-    (7321, 35556)
+    (7321, 35554)
 
 To visualize the multiple-trait scan results, we can use the plotting utility function `plot_eQTL`to generate the eQTL plot. The function `plot_eQTL` does not belong to `BulkLMM.jl`; it will be part of the future package specialized for visualizations. However, we can easily have access to the plotting function by running the following commands:
 
@@ -319,10 +319,12 @@ using Pkg
 Pkg.add(url = "https://github.com/senresearch/BulkLMM.jl", rev="main")
 ```
 
-## Contact and feedback
+## Contact, contribution and feedback
 
 If you find any bugs, please post an issue on GitHub or contact the
-maintainers directly.
+maintainer ([Zifan Yu](https://github.com/learningMalanya)) directly.
+You may also fork the repository and send us a pull request with any
+contributions you wish to make.
 
 
 Check out NEWS.md to see what's new in each `BulkLMM.jl` release.
