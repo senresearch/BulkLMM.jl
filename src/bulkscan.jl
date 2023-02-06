@@ -4,13 +4,13 @@
 ###########################################################
 
 ###########################################################
-## (1) Trunking methods:
+## (1) Chunk methods:
 ## idea is to use multithreaded processes to run genome scans sequentially
 ## on traits that are inside a block that is a subset of total number of traits;
 ## results should be exact as given by running scan_null() on each trait.
 ###########################################################
 """
-bulkscan_trunk(Y, G, K, nb; reml = true)
+bulkscan_null(Y, G, K, nb; reml = true)
 
 Calculates the LOD scores for all pairs of traits and markers, by a (multi-threaded) loop over blocks of traits and the LiteQTL-type of approach
 
@@ -187,7 +187,7 @@ function bulkscan_grid(Y::Array{Float64, 2}, G::Array{Float64, 2}, Covar::Array{
 end
 
 ###########################################################
-## (2) Grid + element-wise maximization approximation methods:
+## (3) Grid + element-wise maximization approximation methods:
 ## idea is to approximate the exact MLE/REML estimate of h2 (independently for each marker)
 ## using a discrete grid of h2; results should be viewed as an approximation 
 ## of scan_alt() results for each trait.
@@ -201,7 +201,7 @@ Calculates LOD scores for all pairs of traits and markers for each heritability 
 # Arguments
 - Y = 2d Array of Float; traits 
 - G = 2d Array of Float; genotype probabilities
-- K = 2d Array of Floatl kinship matrix
+- K = 2d Array of Float; kinship matrix
 - hsq_list = 1d array of Float; the list of heritabilities requested to choose from
 
 # Value

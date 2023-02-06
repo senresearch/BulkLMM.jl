@@ -125,8 +125,9 @@ Assumes the heritabilities only differ by traits but remain the same across all 
 
 
 """
-function univar_liteqtl(y0_j::Array{Float64, 1}, X0_intercept::Array{Float64, 2}, 
-    X0_covar::Array{Float64, 2}, lambda0::Array{Float64, 1}; prior_variance = 0.0, prior_sample_size = 0.0,
+function univar_liteqtl(y0_j::AbstractArray{Float64, 1}, X0_intercept::AbstractArray{Float64, 2}, 
+    X0_covar::AbstractArray{Float64, 2}, lambda0::AbstractArray{Float64, 1}; 
+    prior_variance = 0.0, prior_sample_size = 0.0,
     reml::Bool = false)
 
     n = size(y0_j, 1);

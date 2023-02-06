@@ -42,10 +42,15 @@ function scan(y::Array{Float64,2}, g::Array{Float64,2}, K::Array{Float64,2};
               reml::Bool = false, assumption::String = "null", method::String = "qr")
 
     if(assumption == "null")
-    return scan_null(y, g, K, [prior_variance, prior_sample_size], addIntercept; reml = reml, method = method)
+        return scan_null(y, g, K, [prior_variance, prior_sample_size], addIntercept; reml = reml, method = method)
     elseif(assumption == "alt")
-    return scan_alt(y, g, K, [prior_variance, prior_sample_size], addIntercept; reml = reml, method = method)
+        return scan_alt(y, g, K, [prior_variance, prior_sample_size], addIntercept; reml = reml, method = method)
     end
+
+    # n = size(y, 1);
+    # return scan(y, g, ones(n, 1), K; addIntercept = false, ...);
+
+
 
 end
 
