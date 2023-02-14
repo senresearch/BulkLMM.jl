@@ -29,7 +29,7 @@ module BulkLMM
     export scan_perms_lite
 
     include("./bulkscan.jl");
-    export scan_lite_multivar
+    export bulkscan_trunk, bulkscan_grid, bulkscan_max
 
     include("./transform_helpers.jl");
     # export transform_rotation

@@ -61,7 +61,7 @@ test_scan_multivar = quote
     stand_pheno = BulkLMM.colStandardize(pheno[:, 705:1112]);
     stand_geno = BulkLMM.colStandardize(geno);
 
-    test_multivar = BulkLMM.scan_lite_multivar(stand_pheno, stand_geno, kinship, 4;
+    test_multivar = BulkLMM.bulkscan_trunk(stand_pheno, stand_geno, kinship, 4;
                                                prior_variance = 1.0, 
                                                prior_sample_size = 0.1);
 
