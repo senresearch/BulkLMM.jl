@@ -27,7 +27,8 @@ Calculates the LOD scores for all pairs of traits and markers, by a (multi-threa
 # Notes:
 
 """
-function bulkscan_null(Y::Array{Float64, 2}, G::Array{Float64, 2}, K::Array{Float64, 2}, nb::Int64; 
+function bulkscan_null(Y::Array{Float64, 2}, G::Array{Float64, 2}, K::Array{Float64, 2};
+                   nb::Int64 = Threads.nthreads(), 
                    nt_blas::Int64 = 1, prior_variance = 1.0, prior_sample_size = 0.0,
                    reml::Bool = false)
 
