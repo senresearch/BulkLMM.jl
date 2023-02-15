@@ -54,31 +54,55 @@ test_computeR_LMM2 = quote
 end;
 
 ##########################################################################################################
-## TEST: scan_lite_multivar
+## TEST: bulkscan_null
 ##########################################################################################################
 
-test_scan_multivar = quote
+test_bulkscan_null = quote
     stand_pheno = BulkLMM.colStandardize(pheno[:, 705:1112]);
     stand_geno = BulkLMM.colStandardize(geno);
 
-    test_multivar = BulkLMM.bulkscan_trunk(stand_pheno, stand_geno, kinship, 4;
+    test_bulkscan_null = BulkLMM.bulkscan_null(stand_pheno, stand_geno, kinship, 4;
                                                prior_variance = 1.0, 
                                                prior_sample_size = 0.1);
 
     y_705 = reshape(pheno[:, 705], :, 1);
     test_null_705 = BulkLMM.scan(y_705, geno, kinship; 
-                            prior_variance = var(y_705), prior_sample_size = 0.1).lod;
+                            prior_variance = var(y_705), prior_sample_size = 0.1);
 
     y_1112 = reshape(pheno[:, 1112], :, 1);
     test_null_1112 = BulkLMM.scan(y_1112, geno, kinship; 
-                            prior_variance = var(y_1112), prior_sample_size = 0.1).lod;
+                            prior_variance = var(y_1112), prior_sample_size = 0.1);
 
-    @test sum((test_null_705 .- test_multivar[:, 1]).^2) <= 1e-7;
-    @test sum((test_null_1112 .- test_multivar[:, end]).^2) <= 1e-7;
+    @test sum((test_null_705.lod .- test_bulkscan_null[:, 1]).^2) <= 1e-7;
+    @test sum((test_null_1112.lod .- test_bulkscan_null[:, end]).^2) <= 1e-7;
 
 end;
 
+##########################################################################################################
+## TEST: bulkscan_null_grid
+##########################################################################################################
 
+test_bulkscan_null_grid = quote
+    stand_pheno = BulkLMM.colStandardize(pheno[:, 705:1112]);
+    stand_geno = BulkLMM.colStandardize(geno);
+
+    y_705 = reshape(pheno[:, 705], :, 1);
+    test_null_705 = BulkLMM.scan(y_705, geno, kinship; 
+                                 prior_variance = var(y_705), prior_sample_size = 0.1);
+
+    y_1112 = reshape(pheno[:, 1112], :, 1);
+    test_null_1112 = BulkLMM.scan(y_1112, geno, kinship; 
+                                  prior_variance = var(y_1112), prior_sample_size = 0.1);
+
+    grid_list = vcat(collect(0.0:0.05:0.95), 
+                     test_null_705.h2_null, test_null_1112.h2_null);
+
+    test_bulkscan_null_grid = BulkLMM.bulkscan_null_grid(stand_pheno, stand_geno, kinship, grid_list);
+
+    @test sum((test_null_705.lod .- test_bulkscan_null_grid[:, 1]).^2) <= 1e-7;
+    @test sum((test_null_1112.lod .- test_bulkscan_null_grid[:, end]).^2) <= 1e-7;
+
+end;
 
 
 
@@ -90,6 +114,8 @@ end;
     eval(test_r2lod);
     eval(test_computeR_LMM1);
     eval(test_computeR_LMM2);
-    eval(test_scan_multivar);
+    eval(test_bulkscan_null);
+    eval(test_bulkscan_null_grid);
+    # eval(test_bulkscan_alt_grid); # test cases for grid approximation of 
 
 end;
