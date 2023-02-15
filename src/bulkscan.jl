@@ -90,9 +90,10 @@ function bulkscan_null(Y::Array{Float64, 2}, G::Array{Float64, 2}, K::Array{Floa
 end
 ### Modeling covariates version
 function bulkscan_null(Y::Array{Float64, 2}, G::Array{Float64, 2}, 
-                        Covar::Array{Float64, 2}, K::Array{Float64, 2}, nb::Int64; 
-    nt_blas::Int64 = 1, prior_variance = 1.0, prior_sample_size = 0.0,
-    reml::Bool = false)
+                       Covar::Array{Float64, 2}, K::Array{Float64, 2};
+                       nb::Int64 = Threads.nthreads,
+                       nt_blas::Int64 = 1, prior_variance = 1.0, prior_sample_size = 0.0,
+                       reml::Bool = false)
 
 
     m = size(Y, 2);

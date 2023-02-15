@@ -61,7 +61,8 @@ test_bulkscan_null = quote
     stand_pheno = BulkLMM.colStandardize(pheno[:, 705:1112]);
     stand_geno = BulkLMM.colStandardize(geno);
 
-    test_bulkscan_null = BulkLMM.bulkscan_null(stand_pheno, stand_geno, kinship, 4;
+    test_bulkscan_null = BulkLMM.bulkscan_null(stand_pheno, stand_geno, kinship;
+                                               nb = 4, 
                                                prior_variance = 1.0, 
                                                prior_sample_size = 0.1);
 
