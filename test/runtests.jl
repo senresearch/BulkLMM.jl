@@ -19,5 +19,8 @@ include("testHelpers.jl");
     include("lmm_test.jl");
     include("transform_helpers_test.jl");
     include("scan_test_lmmlite.jl");
+    # for now, only tested consistency of algorithms for adding covariates features,
+    # may perform additional tests with other's implementations, e.g. GEMMA, R/qtl...
+    include("scan_covar_test.jl");
     include("bulkscan_test.jl");
 end;

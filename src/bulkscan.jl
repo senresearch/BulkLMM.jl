@@ -27,7 +27,7 @@ Calculates the LOD scores for all pairs of traits and markers, by a (multi-threa
 # Notes:
 
 """
-function bulkscan_trunk(Y::Array{Float64, 2}, G::Array{Float64, 2}, K::Array{Float64, 2}, nb::Int64; 
+function bulkscan_null(Y::Array{Float64, 2}, G::Array{Float64, 2}, K::Array{Float64, 2}, nb::Int64; 
                    nt_blas::Int64 = 1, prior_variance = 1.0, prior_sample_size = 0.0,
                    reml::Bool = false)
 
@@ -89,7 +89,7 @@ function bulkscan_trunk(Y::Array{Float64, 2}, G::Array{Float64, 2}, K::Array{Flo
 
 end
 ### Modeling covariates version
-function bulkscan_trunk(Y::Array{Float64, 2}, G::Array{Float64, 2}, 
+function bulkscan_null(Y::Array{Float64, 2}, G::Array{Float64, 2}, 
                         Covar::Array{Float64, 2}, K::Array{Float64, 2}, nb::Int64; 
     nt_blas::Int64 = 1, prior_variance = 1.0, prior_sample_size = 0.0,
     reml::Bool = false)
@@ -161,7 +161,7 @@ end
 ## a discrete grid of h2; results should be viewed as an approximation 
 ## of scan_null() results for each trait.
 ###########################################################
-function bulkscan_grid(Y::Array{Float64, 2}, G::Array{Float64, 2}, K::Array{Float64, 2}, grid_list::Array{Float64, 1})
+function bulkscan_null_grid(Y::Array{Float64, 2}, G::Array{Float64, 2}, K::Array{Float64, 2}, grid_list::Array{Float64, 1})
 
     m = size(Y, 2);
     p = size(G, 2);
@@ -173,7 +173,7 @@ function bulkscan_grid(Y::Array{Float64, 2}, G::Array{Float64, 2}, K::Array{Floa
 
 end
 
-function bulkscan_grid(Y::Array{Float64, 2}, G::Array{Float64, 2}, Covar::Array{Float64, 2}, 
+function bulkscan_null_grid(Y::Array{Float64, 2}, G::Array{Float64, 2}, Covar::Array{Float64, 2}, 
                        K::Array{Float64, 2}, grid_list::Array{Float64, 1})
 
     m = size(Y, 2);
@@ -193,7 +193,7 @@ end
 ## of scan_alt() results for each trait.
 ###########################################################
 """
-bulkscan_max(Y, G, K, hsq_list)
+bulkscan_alt_grid(Y, G, K, hsq_list)
 
 Calculates LOD scores for all pairs of traits and markers for each heritability in the supplied list, and returns the 
     maximal LOD scores for each pair among all calculated ones
@@ -215,7 +215,7 @@ Maximal LOD scores are taken independently for each pair of trait and marker; wh
     this is a shortcut of doing the exact scan_alt() independently for each trait and each marker.
 
 """
-function bulkscan_max(Y::Array{Float64, 2}, G::Array{Float64, 2}, K::Array{Float64, 2}, hsq_list::Array{Float64, 1})
+function bulkscan_alt_grid(Y::Array{Float64, 2}, G::Array{Float64, 2}, K::Array{Float64, 2}, hsq_list::Array{Float64, 1})
 
     (Y0, X0, lambda0) = transform_rotation(Y, G, K);
 
@@ -232,7 +232,7 @@ function bulkscan_max(Y::Array{Float64, 2}, G::Array{Float64, 2}, K::Array{Float
 
 end
 
-function bulkscan_max(Y::Array{Float64, 2}, G::Array{Float64, 2}, 
+function bulkscan_alt_grid(Y::Array{Float64, 2}, G::Array{Float64, 2}, 
                       Covar::Array{Float64, 2}, K::Array{Float64, 2}, hsq_list::Array{Float64, 1})
 
     (Y0, X0, lambda0) = transform_rotation(Y, [Covar G], K);

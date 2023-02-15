@@ -98,7 +98,7 @@ function threaded_map!(f::Function, M::Array{Float64, 2}, args...; dims::Int64 =
 end
 
 """
-scan_lite_univar(y0_j, X0_intercept, X0_covar, lambda0; reml = true)
+univar_liteqtl(y0_j, X0_intercept, X0_covar, lambda0; reml = true)
 
 Calculates the LOD scores for one trait, using the LiteQTL approach.
 
@@ -308,7 +308,9 @@ function gridscan_by_bin(pheno::Array{Float64, 2}, geno::Array{Float64, 2},
     
 end
 
-function reorder_results(blocking_idxs::Array{Array{Bool, 1}, 1}, lods_by_block::Array{Array{Float64, 2}, 1}, m::Int64, p::Int64)
+function reorder_results(blocking_idxs::Array{Array{Bool, 1}, 1}, 
+                         lods_by_block::Array{Array{Float64, 2}, 1}, 
+                         m::Int64, p::Int64)
     
     LOD = Array{Float64, 2}(undef, p, m);
     
