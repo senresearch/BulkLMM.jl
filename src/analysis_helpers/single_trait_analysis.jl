@@ -13,7 +13,7 @@ end
 ###       the thresholds correspond to.
 ### Outputs:
 ###     - An object containing the quantiles of maximal LOD scores among all maximal 
-###       LOD scores for all permutations and the corresponding probabilities.
+###       LOD scores for all permutations and the corresponding probabilities . 
 
 function get_thresholds(nperms_results::Array{Float64, 2}, probs::Array{Float64, 1})
 
