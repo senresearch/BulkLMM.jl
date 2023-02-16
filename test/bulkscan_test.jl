@@ -100,8 +100,8 @@ test_bulkscan_null_grid = quote
 
     test_bulkscan_null_grid = BulkLMM.bulkscan_null_grid(stand_pheno, stand_geno, kinship, grid_list);
 
-    @test sum((test_null_705.lod .- test_bulkscan_null_grid[:, 1]).^2) <= 1e-7;
-    @test sum((test_null_1112.lod .- test_bulkscan_null_grid[:, end]).^2) <= 1e-7;
+    @test sum((test_null_705.lod .- test_bulkscan_null_grid[3][:, 1]).^2) <= 1e-7;
+    @test sum((test_null_1112.lod .- test_bulkscan_null_grid[3][:, end]).^2) <= 1e-7;
 
 end;
 
