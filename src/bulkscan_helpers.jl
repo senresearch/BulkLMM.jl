@@ -1,6 +1,7 @@
 struct Results_by_bin
     idxs_by_bin::Array{Array{Bool, 1}, 1}
     LODs_by_bin::Array{Array{Float64, 2}, 1}
+    h2_taken::Array{Float64, 1};
 end
 
 """
@@ -259,7 +260,7 @@ function gridscan_by_bin(pheno::Array{Float64, 2}, geno::Array{Float64, 2}, kins
         results[t] = weighted_liteqtl(Y0[:, blocking_idxs[t]], X0, lambda0, h2_taken[t]);
     end
 
-    return Results_by_bin(blocking_idxs, results)
+    return Results_by_bin(blocking_idxs, results, h2_taken)
     
 end
 
@@ -304,7 +305,7 @@ function gridscan_by_bin(pheno::Array{Float64, 2}, geno::Array{Float64, 2},
                                       num_of_covar = num_of_covar);
     end
 
-    return Results_by_bin(blocking_idxs, results)
+    return Results_by_bin(blocking_idxs, results, h2_taken)
     
 end
 

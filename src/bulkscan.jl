@@ -171,7 +171,7 @@ function bulkscan_null_grid(Y::Array{Float64, 2}, G::Array{Float64, 2}, K::Array
     results_by_bin = gridscan_by_bin(Y, G, K, grid_list);
     LOD_grid = reorder_results(results_by_bin.idxs_by_bin, results_by_bin.LODs_by_bin, m, p);
 
-    return LOD_grid
+    return (results_by_bin.idxs_by_bin, results_by_bin.h2_taken, LOD_grid)
 
 end
 
@@ -184,7 +184,7 @@ function bulkscan_null_grid(Y::Array{Float64, 2}, G::Array{Float64, 2}, Covar::A
     results_by_bin = gridscan_by_bin(Y, G, Covar, K, grid_list);
     LOD_grid = reorder_results(results_by_bin.idxs_by_bin, results_by_bin.LODs_by_bin, m, p);
 
-    return LOD_grid
+    return (results_by_bin.idxs_by_bin, results_by_bin.h2_taken, LOD_grid)
 
 end
 
