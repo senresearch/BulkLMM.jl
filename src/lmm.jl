@@ -69,14 +69,9 @@ function fitlmm(y::Array{Float64, 2}, X::Array{Float64, 2}, lambda::Array{Float6
     minimum_LL = Optim.minimum(opt);
 
     lb_LL = logLik0(lb);
-    ub_LL = logLik0(ub);
     
-    if (min(lb_LL, ub_LL) < minimum_LL)
-        if lb_LL < ub_LL;
-            h2 = lb;
-        else
-            h2 = ub;
-        end
+    if lb_LL < minimum_LL
+        h2 = lb
     else
         h2 = opt.minimizer;
     end
