@@ -63,8 +63,24 @@ function fitlmm(y::Array{Float64, 2}, X::Array{Float64, 2}, lambda::Array{Float6
     end
     ## avoid the use of global variable in inner function;
 
-    opt = optimize(logLik0, max(h20-d, 0.0), min(h20+d, 1.0))
-    h2 = opt.minimizer
+    lb = max(h20-d, 0.0);
+    ub = min(h20+d, 1.0);
+    opt = optimize(logLik0, lb, ub);
+    minimum_LL = Optim.minimum(opt);
+
+    lb_LL = logLik0(lb);
+    ub_LL = logLik(ub);
+    
+    if (min(lb_LL, ub_LL) < minimum_LL)
+        if lb_LL < ub_LL;
+            h2 = lb;
+        else
+            h2 = ub;
+        end
+    else
+        h2 = opt.minimizer;
+    end
+
     est = wls(y, X, makeweights(h2, lambda), prior; reml = reml, loglik = loglik, method = method)
     return LMMEstimates(est.b, est.sigma2, h2, est.ell)
 end
