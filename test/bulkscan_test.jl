@@ -74,8 +74,8 @@ test_bulkscan_null = quote
     test_null_1112 = BulkLMM.scan(y_1112, geno, kinship; 
                             prior_variance = var(y_1112), prior_sample_size = 0.1);
 
-    @test sum((test_null_705.lod .- test_bulkscan_null[:, 1]).^2) <= 1e-7;
-    @test sum((test_null_1112.lod .- test_bulkscan_null[:, end]).^2) <= 1e-7;
+    @test sum((test_null_705.lod .- test_bulkscan_null.L[:, 1]).^2) <= 1e-7;
+    @test sum((test_null_1112.lod .- test_bulkscan_null.L[:, end]).^2) <= 1e-7;
 
 end;
 
@@ -100,8 +100,8 @@ test_bulkscan_null_grid = quote
 
     test_bulkscan_null_grid = BulkLMM.bulkscan_null_grid(stand_pheno, stand_geno, kinship, grid_list);
 
-    @test sum((test_null_705.lod .- test_bulkscan_null_grid[3][:, 1]).^2) <= 1e-7;
-    @test sum((test_null_1112.lod .- test_bulkscan_null_grid[3][:, end]).^2) <= 1e-7;
+    @test sum((test_null_705.lod .- test_bulkscan_null_grid.L[:, 1]).^2) <= 1e-7;
+    @test sum((test_null_1112.lod .- test_bulkscan_null_grid.L[:, end]).^2) <= 1e-7;
 
 end;
 

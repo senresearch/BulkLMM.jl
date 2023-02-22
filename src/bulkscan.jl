@@ -47,6 +47,7 @@ function bulkscan_null(Y::Array{Float64, 2}, G::Array{Float64, 2}, K::Array{Floa
     (len, rem) = divrem(m, nb);
 
     results = Array{Array{Float64, 2}, 1}(undef, nb);
+    h2_null_list = zeros(m);
 
     Threads.@threads for t = 1:nb # so the N blocks will share the (nthreads - N) BLAS threads
 
@@ -56,9 +57,11 @@ function bulkscan_null(Y::Array{Float64, 2}, G::Array{Float64, 2}, K::Array{Floa
         @simd for i = 1:len
             j = i+(t-1)*len;
 
-            @inbounds lods_currBlock[:, i] = univar_liteqtl(Y0[:, j], X0_intercept, X0_covar, lambda0; 
-                                                              prior_variance = prior_variance, prior_sample_size = prior_sample_size,
-                                                              reml = reml);
+            outputs = univar_liteqtl(Y0[:, j], X0_intercept, X0_covar, lambda0; 
+                                     prior_variance = prior_variance, prior_sample_size = prior_sample_size,
+                                     reml = reml);
+            @inbounds lods_currBlock[:, i] = outputs.R;
+            @inbounds h2_null_list[j] = outputs.h2 
         end
 
         results[t] = lods_currBlock;
@@ -79,14 +82,18 @@ function bulkscan_null(Y::Array{Float64, 2}, G::Array{Float64, 2}, K::Array{Floa
 
         j = m-rem+i;
 
-        lods_remBlock[:, i] = univar_liteqtl(Y0[:, j], X0_intercept, X0_covar, lambda0;
-                   reml = reml);
+        outputs = univar_liteqtl(Y0[:, j], X0_intercept, X0_covar, lambda0;
+                                 prior_variance = prior_variance, prior_sample_size = prior_sample_size,
+                                 reml = reml);
+        
+        lods_remBlock[:, i] = outputs.R;
+        h2_null_list[j] = outputs.h2;
 
     end
 
     LODs_all = hcat(LODs_all, lods_remBlock);
 
-    return LODs_all
+    return (L = LODs_all, h2_null_list = h2_null_list)
 
 end
 ### Modeling covariates version
@@ -114,6 +121,7 @@ function bulkscan_null(Y::Array{Float64, 2}, G::Array{Float64, 2},
     (len, rem) = divrem(m, nb);
 
     results = Array{Array{Float64, 2}, 1}(undef, nb);
+    h2_null_list = zeros(m);
 
     Threads.@threads for t = 1:nb # so the N blocks will share the (nthreads - N) BLAS threads
 
@@ -123,12 +131,15 @@ function bulkscan_null(Y::Array{Float64, 2}, G::Array{Float64, 2},
     @simd for i = 1:len
         j = i+(t-1)*len;
 
-        @inbounds lods_currBlock[:, i] = univar_liteqtl(Y0[:, j], X0_intercept, X0_covar, lambda0; 
-                                                        prior_variance = prior_variance, prior_sample_size = prior_sample_size,
-                                                        reml = reml);
+        outputs = univar_liteqtl(Y0[:, j], X0_intercept, X0_covar, lambda0; 
+                                 prior_variance = prior_variance, prior_sample_size = prior_sample_size,
+                                 reml = reml);
+
+        @inbounds lods_currBlock[:, i] = outputs.R;
+        @inbounds h2_null_list[j] = outputs.h2
     end
 
-    results[t] = lods_currBlock;
+        results[t] = lods_currBlock;
 
     end
 
@@ -136,7 +147,7 @@ function bulkscan_null(Y::Array{Float64, 2}, G::Array{Float64, 2},
 
     # if no remainder as the result of blocking, no remaining traits need to be scanned
     if rem == 0
-    return LODs_all
+        return LODs_all
     end
 
     # else, process up the remaining traits
@@ -144,17 +155,20 @@ function bulkscan_null(Y::Array{Float64, 2}, G::Array{Float64, 2},
 
     for i in 1:rem
 
-    j = m-rem+i;
+        j = m-rem+i;
 
-    lods_remBlock[:, i] = univar_liteqtl(Y0[:, j], X0_intercept, X0_covar, lambda0;
-        reml = reml);
+        outputs = univar_liteqtl(Y0[:, j], X0_intercept, X0_covar, lambda0;
+                                 prior_variance = prior_variance, prior_sample_size = prior_sample_size,
+                                 reml = reml);
+        
+        lods_remBlock[:, i] = outputs.R;
+        h2_null_list[j] = outputs.h2;
 
     end
 
     LODs_all = hcat(LODs_all, lods_remBlock);
 
-    return LODs_all
-
+    return (L = LODs_all, h2_null_list = h2_null_list)
 end
 
 ###########################################################
@@ -171,7 +185,10 @@ function bulkscan_null_grid(Y::Array{Float64, 2}, G::Array{Float64, 2}, K::Array
     results_by_bin = gridscan_by_bin(Y, G, K, grid_list);
     LOD_grid = reorder_results(results_by_bin.idxs_by_bin, results_by_bin.LODs_by_bin, m, p);
 
-    return (results_by_bin.idxs_by_bin, results_by_bin.h2_taken, LOD_grid)
+    est_h2_per_y = get_h2_distribution(results_by_bin.h2_taken, results_by_bin.idxs_by_bin);
+
+
+    return (L = LOD_grid, h2_null_list = est_h2_per_y)
 
 end
 
@@ -184,8 +201,23 @@ function bulkscan_null_grid(Y::Array{Float64, 2}, G::Array{Float64, 2}, Covar::A
     results_by_bin = gridscan_by_bin(Y, G, Covar, K, grid_list);
     LOD_grid = reorder_results(results_by_bin.idxs_by_bin, results_by_bin.LODs_by_bin, m, p);
 
-    return (results_by_bin.idxs_by_bin, results_by_bin.h2_taken, LOD_grid)
+    est_h2_per_y = get_h2_distribution(results_by_bin.h2_taken, results_by_bin.idxs_by_bin);
 
+
+    return (L = LOD_grid, h2_null_list = est_h2_per_y)
+
+end
+
+function get_h2_distribution(h2_list::Array{Float64, 1}, idxs_by_bin::Vector{Vector{Bool}})
+
+    h2_distr = zeros(size(idxs_by_bin[1], 1));
+    
+    for i in 1:length(h2_list)
+        h2_distr[idxs_by_bin[i]] .= h2_list[i]
+    end
+    
+    return h2_distr;
+    
 end
 
 ###########################################################

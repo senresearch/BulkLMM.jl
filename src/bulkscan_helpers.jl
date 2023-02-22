@@ -146,7 +146,7 @@ function univar_liteqtl(y0_j::AbstractArray{Float64, 1}, X0_intercept::AbstractA
     R = computeR_LMM(wy0, wX0_covar, wX0_intercept);
     threaded_map!(r2lod, R, n; dims = 2);
 
-    return R; # results will be p-by-1, i.e. all LOD scores for the j-th trait and p markers
+    return (R = R, h2 = vc.h2); # results will be p-by-1, i.e. all LOD scores for the j-th trait and p markers
 
 end
 
