@@ -10,7 +10,7 @@ pseudo_covar = pheno[:, 1:3];
 ## multiple trait null_grid algorithm function bulkscan_null_grid()
 test_scan_covar = scan(pheno_y, geno, pseudo_covar, kinship);
 test_grid_covar = bulkscan_null_grid(pheno, geno, pseudo_covar, kinship, 
-                                     vcat(collect(0.0:0.05:0.95), test_scan_covar.h2_null))[3];
+                                     vcat(collect(0.0:0.05:0.95), test_scan_covar.h2_null)).L;
 
 tol = 1e-8;    
 
