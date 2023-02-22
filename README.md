@@ -189,17 +189,17 @@ The output structure `single_results` stores the model estimates about the varia
 single_results.lod; 
 ```
 
-`BulkLMM.jl` supports permutation testing for a single trait GWAS. Simply run the function `scan_perms_lite()` with the number of permutations required as the input `nperms`: 
+`BulkLMM.jl` supports permutation testing for a single trait GWAS. Simply run the function `scan()` and input the optional keyword argument `permutation_test = true` with the number of permutations passed to the keyword argument `nperms = # of permutations`. For example, to ask the package to do a permutation testing of 1000 permutations, do 
 
 
 ```julia
-@time single_results_perms = scan_perms_lite(pheno_y, geno_processed, kinship; nperms = 1000, original = false);
+@time single_results_perms = scan(pheno_y, geno_processed, kinship; permutation_test = true, nperms = 1000, original = false);
 ```
 
       0.079464 seconds (94.02 k allocations: 207.022 MiB)
 
 
-(use the input `original = false` to suppress the default of computations of LOD scores on the original trait)
+(use the input `original = false` to suppress the default of performing genome scans on the original trait)
 
 The output `single_results_perms` is a matrix of LOD scores of dimension `p * nperms`, with each column being the LOD scores of the $p$ markers on a permuted copy and each row being the marker-specific LOD scores on all permuted copies.
 
