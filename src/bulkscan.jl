@@ -72,7 +72,7 @@ function bulkscan_null(Y::Array{Float64, 2}, G::Array{Float64, 2}, K::Array{Floa
 
     # if no remainder as the result of blocking, no remaining traits need to be scanned
     if rem == 0
-        return LODs_all
+        return (L = LODs_all, h2_null_list = h2_null_list)
     end
         
     # else, process up the remaining traits
@@ -147,7 +147,7 @@ function bulkscan_null(Y::Array{Float64, 2}, G::Array{Float64, 2},
 
     # if no remainder as the result of blocking, no remaining traits need to be scanned
     if rem == 0
-        return LODs_all
+        return (L = LODs_all, h2_null_list = h2_null_list)
     end
 
     # else, process up the remaining traits
