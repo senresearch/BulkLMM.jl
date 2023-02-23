@@ -1,6 +1,7 @@
 struct Results_by_bin
     idxs_by_bin::Array{Array{Bool, 1}, 1}
     LODs_by_bin::Array{Array{Float64, 2}, 1}
+    h2_taken::Array{Float64, 1};
 end
 
 """
@@ -145,7 +146,7 @@ function univar_liteqtl(y0_j::AbstractArray{Float64, 1}, X0_intercept::AbstractA
     R = computeR_LMM(wy0, wX0_covar, wX0_intercept);
     threaded_map!(r2lod, R, n; dims = 2);
 
-    return R; # results will be p-by-1, i.e. all LOD scores for the j-th trait and p markers
+    return (R = R, h2 = vc.h2); # results will be p-by-1, i.e. all LOD scores for the j-th trait and p markers
 
 end
 
@@ -259,7 +260,7 @@ function gridscan_by_bin(pheno::Array{Float64, 2}, geno::Array{Float64, 2}, kins
         results[t] = weighted_liteqtl(Y0[:, blocking_idxs[t]], X0, lambda0, h2_taken[t]);
     end
 
-    return Results_by_bin(blocking_idxs, results)
+    return Results_by_bin(blocking_idxs, results, h2_taken)
     
 end
 
@@ -304,7 +305,7 @@ function gridscan_by_bin(pheno::Array{Float64, 2}, geno::Array{Float64, 2},
                                       num_of_covar = num_of_covar);
     end
 
-    return Results_by_bin(blocking_idxs, results)
+    return Results_by_bin(blocking_idxs, results, h2_taken)
     
 end
 
