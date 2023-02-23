@@ -20,6 +20,9 @@ module BulkLMM
     export LSEstimates
     export LSEstimates_multivar # multivariate version of WLS results
 
+    # code for applying the Brent's method on multiple subintervals for estimating the required parameter 
+    include("./gridbrent.jl");
+
     # code for rorateData and flmm
     include("./lmm.jl");
     # data type we are exporting
