@@ -38,7 +38,7 @@ A list of output values are returned:
 """
 function scan(y::Array{Float64,2}, g::Array{Float64,2}, K::Array{Float64,2};
               prior_variance::Float64 = 0.0, prior_sample_size::Float64 = 0.0, addIntercept::Bool = true,
-              reml::Bool = false, assumption::String = "null", method::String = "qr", 
+              reml::Bool = false, assumption::String = "null", method::String = "qr", optim_interval::Int64 = 1,
               permutation_test::Bool = false, nperms::Int64 = 1024, rndseed::Int64 = 0, original::Bool = true)
 
     if addIntercept == false
@@ -48,32 +48,32 @@ function scan(y::Array{Float64,2}, g::Array{Float64,2}, K::Array{Float64,2};
     n = size(y, 1);
     return scan(y, g, ones(n, 1), K; addIntercept = false,
                 prior_variance = prior_variance, prior_sample_size = prior_sample_size,
-                reml = reml, assumption = assumption, method = method, 
+                reml = reml, assumption = assumption, method = method, optim_interval = optim_interval,
                 permutation_test = permutation_test, nperms = nperms, rndseed = rndseed, original = original);
 
 end
 
 function scan(y::Array{Float64,2}, g::Array{Float64,2}, covar::Array{Float64, 2}, K::Array{Float64,2};
               prior_variance::Float64 = 0.0, prior_sample_size::Float64 = 0.0, addIntercept::Bool = true,
-              reml::Bool = false, assumption::String = "null", method::String = "qr", 
+              reml::Bool = false, assumption::String = "null", method::String = "qr", optim_interval::Int64 = 1,
               permutation_test::Bool = false, nperms::Int64 = 1024, rndseed::Int64 = 0, original::Bool = true)
 
 
     if assumption == "null"
         if permutation_test == true
             return scan_perms_lite(y, g, covar, K; prior_variance = prior_variance, prior_sample_size = prior_sample_size,
-                                   addIntercept = addIntercept, reml = reml, method = method, 
+                                   addIntercept = addIntercept, reml = reml, method = method, optim_interval = optim_interval,
                                    nperms = nperms, rndseed = rndseed, original = original);
         else
             return scan_null(y, g, covar, K, [prior_variance, prior_sample_size], addIntercept; 
-                             reml = reml, method = method); 
+                             reml = reml, method = method, optim_interval = optim_interval); 
         end
     elseif assumption == "alt"
         if permutation_test == true
             error("Permutation test option currently is not supported for the alternative assumption.");
         else
             return scan_alt(y, g, covar, K, [prior_variance, prior_sample_size], addIntercept; 
-                            reml = reml, method = method)
+                            reml = reml, method = method, optim_interval = optim_interval)
     
         end
     end
@@ -118,7 +118,7 @@ A list of output values are returned:
 """
 function scan_null(y::Array{Float64, 2}, g::Array{Float64, 2}, covar::Array{Float64, 2}, K::Array{Float64, 2}, 
                    prior::Array{Float64, 1}, addIntercept::Bool;
-                   reml::Bool = false, method::String = "qr")
+                   reml::Bool = false, method::String = "qr", optim_interval::Int64 = 1)
 
     # number of markers
     (n, p) = size(g)
@@ -134,7 +134,7 @@ function scan_null(y::Array{Float64, 2}, g::Array{Float64, 2}, covar::Array{Floa
     end
 
     # fit null lmm
-    out00 = fitlmm(y0, X0_covar, lambda0, prior; reml = reml, method = method)
+    out00 = fitlmm(y0, X0_covar, lambda0, prior; reml = reml, method = method, optim_interval = optim_interval)
     # weights proportional to the variances
     sqrtw = sqrt.(makeweights(out00.h2, lambda0))
     # rescale by weights
@@ -196,7 +196,7 @@ A list of output values are returned:
 """
 function scan_alt(y::Array{Float64, 2}, g::Array{Float64, 2}, covar::Array{Float64, 2}, K::Array{Float64, 2}, 
                   prior::Array{Float64, 1}, addIntercept::Bool;
-                  reml::Bool = false, method::String = "qr")
+                  reml::Bool = false, method::String = "qr", optim_interval::Int64 = 1)
 
     # number of markers
     (n, p) = size(g)
@@ -214,7 +214,7 @@ function scan_alt(y::Array{Float64, 2}, g::Array{Float64, 2}, covar::Array{Float
     pve_list = Array{Float64, 1}(undef, p);
 
     # fit null lmm
-    out00 = fitlmm(y0, X0_covar, lambda0, prior; reml = reml, method = method);
+    out00 = fitlmm(y0, X0_covar, lambda0, prior; reml = reml, method = method, optim_interval = optim_interval);
 
     lod = zeros(p);
 
@@ -223,12 +223,12 @@ function scan_alt(y::Array{Float64, 2}, g::Array{Float64, 2}, covar::Array{Float
     for i = 1:p
         X[:, (num_of_covar+1)] = X0[:, num_of_covar+i]
         
-        out11 = fitlmm(y0, X, lambda0, prior; reml = reml, method = method);
+        out11 = fitlmm(y0, X, lambda0, prior; reml = reml, method = method, optim_interval = optim_interval);
        
         if reml
             sqrtw_alt = sqrt.(makeweights(out11.h2, lambda0));
             wls_alt = wls(y0, X, sqrtw_alt, prior; reml = false);
-            wls_null = wls(y0, X00, sqrtw_alt, prior; reml = false);
+            wls_null = wls(y0, X0_covar, sqrtw_alt, prior; reml = false);
             lod[i] = (wls_alt.ell - wls_null.ell)/log(10);
         else 
             lod[i] = (out11.ell - out00.ell)/log(10);
@@ -276,7 +276,7 @@ are estimated from the null model and assumed to be the same across markers.
 function scan_perms(y::Array{Float64,2}, g::Array{Float64,2}, K::Array{Float64,2};
               prior_variance::Float64 = 1.0, prior_sample_size::Float64 = 0.0, addIntercept::Bool = true, method::String = "qr",
               nperms::Int64 = 1024, rndseed::Int64 = 0, 
-              reml::Bool = false, original::Bool = true)
+              reml::Bool = false, original::Bool = true, optim_interval::Int64 = 1)
 
     # check the number of traits as this function only works for permutation testing of univariate trait
     if(size(y, 2) != 1)
@@ -294,7 +294,7 @@ function scan_perms(y::Array{Float64,2}, g::Array{Float64,2}, K::Array{Float64,2
     # fit lmm
     (y0, X0, lambda0) = transform_rotation(y, g, K; addIntercept = addIntercept); # rotation of data
     (r0, X00) = transform_reweight(y0, X0, lambda0; prior_a = prior_variance, prior_b = prior_sample_size, 
-                                                    reml = reml, method = method); # reweighting and taking residuals
+                                                    reml = reml, method = method, optim_interval = optim_interval); # reweighting and taking residuals
 
     # If no permutation testing is required, move forward to process the single original vector
     if nperms == 0
@@ -338,7 +338,7 @@ end
 
 function scan_perms_lite(y::Array{Float64,2}, g::Array{Float64,2}, covar::Array{Float64, 2}, K::Array{Float64,2};
                          prior_variance::Float64 = 1.0, prior_sample_size::Float64 = 0.0, 
-                         addIntercept::Bool = true, method::String = "qr",
+                         addIntercept::Bool = true, method::String = "qr", optim_interval::Int64 = 1,
                          nperms::Int64 = 1024, rndseed::Int64 = 0, 
                          reml::Bool = false, original::Bool = true)
 
@@ -364,7 +364,8 @@ function scan_perms_lite(y::Array{Float64,2}, g::Array{Float64,2}, covar::Array{
     (y0, X0, lambda0) = transform_rotation(y, [covar g], K; addIntercept = addIntercept); # rotation of data
     (r0, X00) = transform_reweight(y0, X0, lambda0; 
                                    prior_a = prior_variance, 
-                                   prior_b = prior_sample_size, reml = reml, method = method); # reweighting and taking residuals
+                                   prior_b = prior_sample_size, 
+                                   reml = reml, method = method, optim_interval = optim_interval); # reweighting and taking residuals
 
     # If no permutation testing is required, move forward to process the single original vector
     if nperms == 0

@@ -33,12 +33,12 @@ end
 
 # Takes the rotated data, evaluates the VC estimators (only based on the intercept model) for weights calculation, and finally re-weights the input data.
 function transform_reweight(y0::Array{Float64, 2}, X0::Array{Float64, 2}, lambda0::Array{Float64, 1};
-                    prior_a::Float64 = 0.0, prior_b::Float64 = 0.0, method::String = "qr",
+                    prior_a::Float64 = 0.0, prior_b::Float64 = 0.0, method::String = "qr", optim_interval::Int64 = 1,
                     reml::Bool = false)
 
         ## Note: estimate once the variance components from the null model and use for all marker scans
         # fit lmm
-        vc = fitlmm(y0, reshape(X0[:, 1], :, 1), lambda0, [prior_a, prior_b]; reml = reml, method = method);
+        vc = fitlmm(y0, reshape(X0[:, 1], :, 1), lambda0, [prior_a, prior_b]; reml = reml, method = method, optim_interval = optim_interval);
         # println(vc) # vc.b is estimated through weighted least square
         r0 = y0 - X0[:, 1]*vc.b
 

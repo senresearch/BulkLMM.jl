@@ -30,7 +30,7 @@ Calculates the LOD scores for all pairs of traits and markers, by a (multi-threa
 function bulkscan_null(Y::Array{Float64, 2}, G::Array{Float64, 2}, K::Array{Float64, 2};
                    nb::Int64 = Threads.nthreads(), 
                    nt_blas::Int64 = 1, prior_variance = 1.0, prior_sample_size = 0.0,
-                   reml::Bool = false)
+                   reml::Bool = false, optim_interval::Int64 = 1)
 
 
     m = size(Y, 2);
@@ -59,7 +59,7 @@ function bulkscan_null(Y::Array{Float64, 2}, G::Array{Float64, 2}, K::Array{Floa
 
             outputs = univar_liteqtl(Y0[:, j], X0_intercept, X0_covar, lambda0; 
                                      prior_variance = prior_variance, prior_sample_size = prior_sample_size,
-                                     reml = reml);
+                                     reml = reml, optim_interval = optim_interval);
             @inbounds lods_currBlock[:, i] = outputs.R;
             @inbounds h2_null_list[j] = outputs.h2 
         end
@@ -84,7 +84,7 @@ function bulkscan_null(Y::Array{Float64, 2}, G::Array{Float64, 2}, K::Array{Floa
 
         outputs = univar_liteqtl(Y0[:, j], X0_intercept, X0_covar, lambda0;
                                  prior_variance = prior_variance, prior_sample_size = prior_sample_size,
-                                 reml = reml);
+                                 reml = reml, optim_interval = optim_interval);
         
         lods_remBlock[:, i] = outputs.R;
         h2_null_list[j] = outputs.h2;
@@ -101,7 +101,7 @@ function bulkscan_null(Y::Array{Float64, 2}, G::Array{Float64, 2},
                        Covar::Array{Float64, 2}, K::Array{Float64, 2};
                        nb::Int64 = Threads.nthreads,
                        nt_blas::Int64 = 1, prior_variance = 1.0, prior_sample_size = 0.0,
-                       reml::Bool = false)
+                       reml::Bool = false, optim_interval::Int64 = 1)
 
 
     m = size(Y, 2);
@@ -133,7 +133,7 @@ function bulkscan_null(Y::Array{Float64, 2}, G::Array{Float64, 2},
 
         outputs = univar_liteqtl(Y0[:, j], X0_intercept, X0_covar, lambda0; 
                                  prior_variance = prior_variance, prior_sample_size = prior_sample_size,
-                                 reml = reml);
+                                 reml = reml, optim_interval = optim_interval);
 
         @inbounds lods_currBlock[:, i] = outputs.R;
         @inbounds h2_null_list[j] = outputs.h2
@@ -159,7 +159,7 @@ function bulkscan_null(Y::Array{Float64, 2}, G::Array{Float64, 2},
 
         outputs = univar_liteqtl(Y0[:, j], X0_intercept, X0_covar, lambda0;
                                  prior_variance = prior_variance, prior_sample_size = prior_sample_size,
-                                 reml = reml);
+                                 reml = reml, optim_interval = optim_interval);
         
         lods_remBlock[:, i] = outputs.R;
         h2_null_list[j] = outputs.h2;

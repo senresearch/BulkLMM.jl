@@ -126,7 +126,7 @@ size(pheno_processed) # (number of strains, number of traits)
 
 
 
-    (79, 35556)
+    (79, 35554)
 
 
 
@@ -231,7 +231,7 @@ GEMMA to generate outputs elsewhere), as well as the LOD rejection
 thresholds from permutation testing:
     
 (for better visability, as an example here only the first 2000 LOD scores were plotted)
-![svg](img/output_97_0.svg)
+![svg](img/output_41_0.svg)
 
 
 ### Multiple traits scanning:
@@ -243,7 +243,7 @@ multi-threads](https://docs.julialang.org/en/v1/manual/multi-threading/)
 or switch to a multi-threaded *julia* kernel if using Jupyter
 notebooks.
 
-Then, run the function `scan_lite_multivar()` with the matrices of
+Then, run the function `bulkscan_null()` with the matrices of
 traits, genome markers, kinship. The fourth required input is the
 number of parallelized tasks and we recommend it to be the number of
 *julia* threads.
@@ -254,7 +254,7 @@ get the LOD scores for all **~35k** BXD traits:
 
 
 ```julia
-@time multiple_results_allTraits = scan_lite_multivar(pheno_processed, geno_processed, kinship, Threads.nthreads());
+@time multiple_results_allTraits = bulkscan_null(pheno_processed, geno_processed, kinship; nb = Threads.nthreads()).L;
 ```
 
      82.421037 seconds (2.86 G allocations: 710.821 GiB, 41.76% gc time)
