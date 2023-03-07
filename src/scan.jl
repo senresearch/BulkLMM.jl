@@ -58,7 +58,6 @@ function scan(y::Array{Float64,2}, g::Array{Float64,2}, K::Array{Float64,2};
                 permutation_test = permutation_test, nperms = nperms, rndseed = rndseed, original = original,
                 plot_loglik = plot_loglik, markerID = markerID, h2_grid = h2_grid,
                 x_lims = x_lims, y_lims = y_lims)
-
 end
 
 function scan(y::Array{Float64,2}, g::Array{Float64,2}, covar::Array{Float64, 2}, K::Array{Float64,2};
