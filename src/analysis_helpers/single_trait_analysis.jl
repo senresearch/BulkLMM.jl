@@ -1,7 +1,7 @@
 ## Helper functions for conducting genome-wide assoication analysis of a single trait
 
 struct LODthresholds
-    probs::Array{Float64, 1};
+    thr_probs::Array{Float64, 1};
     thrs::Array{Float64, 1}
 end
 
@@ -15,12 +15,12 @@ end
 ###     - An object containing the quantiles of maximal LOD scores among all maximal 
 ###       LOD scores for all permutations and the corresponding probabilities . 
 
-function get_thresholds(nperms_results::Array{Float64, 2}, probs::Array{Float64, 1})
+function get_thresholds(nperms_results::Array{Float64, 2}, thr_probs::Array{Float64, 1})
 
     max_lods_each_perm = vec(mapslices(x -> maximum(x), nperms_results; dims = 1));
-    thrs = map(x -> quantile(max_lods_each_perm, x), probs);
+    thrs = map(x -> quantile(max_lods_each_perm, x), thr_probs);
 
-    return LODthresholds(probs, thrs);
+    return LODthresholds(thr_probs, thrs);
 
 end
 
