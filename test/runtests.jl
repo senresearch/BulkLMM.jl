@@ -23,4 +23,6 @@ include("testHelpers.jl");
     # may perform additional tests with other's implementations, e.g. GEMMA, R/qtl...
     include("scan_covar_test.jl");
     include("bulkscan_test.jl");
+
+    include("analysis_helpers_test.jl");
 end;
