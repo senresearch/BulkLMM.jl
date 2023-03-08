@@ -41,4 +41,7 @@ module BulkLMM
     include("./transform_helpers.jl");
     # export transform_rotation
 
+    include("./analysis_helpers/single_trait_analysis.jl");
+    export LODthresholds, get_thresholds, getLL, plotLL
+
 end # module
