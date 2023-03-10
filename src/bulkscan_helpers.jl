@@ -224,69 +224,50 @@ function distribute_traits_by_h2(idxs_sets::Dict{Int64, Float64}, h2_taken::Arra
 end
 
 function gridscan_by_bin(pheno::Array{Float64, 2}, geno::Array{Float64, 2}, kinship::Array{Float64, 2}, 
-    grid::Array{Float64, 1})
+                         grid::Array{Float64, 1};
+                         prior_variance::Float64 = 1.0, prior_sample_size::Float64 = 0.0,
+                         reml::Bool = false)
 
-    m = size(pheno, 2);
-
-    Y_std = colStandardize(pheno);
-    (Y0, X0, lambda0) = transform_rotation(Y_std, geno, kinship; addIntercept = true);
-
-    prior = [1.0, 0.1];
-
-    X0_intercept = reshape(X0[:, 1], :, 1);
-
-    # 
-    weights_each_h2 = map(x -> makeweights(x, lambda0), grid); # make weights evaluated on each h2 in grid
-    ell_results = map(x -> wls_multivar(Y0, X0_intercept, x, prior).Ell, weights_each_h2);
-    ell_results = reduce(vcat, ell_results);
-
-
-    optim_h2 = find_optim_h2(grid, ell_results)
-
-
-    idxs_sets = Dict{Int64, Float64}();
-    for i in 1:m
-       idxs_sets[i] = optim_h2[i];
-    end
-
-    h2_taken = unique(values(idxs_sets));
-    nbins = length(h2_taken);
-
-    blocking_idxs = distribute_traits_by_h2(idxs_sets, h2_taken, m, nbins);
-    results = Array{Array{Float64, 2}, 1}(undef, nbins);
-
-    ## Threads.@threads for t in 1:nbins
-
-    for t in 1:nbins
-        results[t] = weighted_liteqtl(Y0[:, blocking_idxs[t]], X0, lambda0, h2_taken[t]);
-    end
-
-    return Results_by_bin(blocking_idxs, results, h2_taken)
+    n = size(pheno, 1);
+    intercept = ones(n, 1);
     
+    return gridscan_by_bin(pheno, geno, intercept, kinship, grid; 
+                           addIntercept = false, 
+                           prior_variance = prior_variance, prior_sample_size = prior_sample_size,
+                           reml = reml);
+
 end
 
 function gridscan_by_bin(pheno::Array{Float64, 2}, geno::Array{Float64, 2}, 
                          covar::Array{Float64, 2}, kinship::Array{Float64, 2}, 
-                         grid::Array{Float64, 1})
+                         grid::Array{Float64, 1}; 
+                         addIntercept::Bool = true, 
+                         prior_variance = 1.0, prior_sample_size = 0.0,
+                         reml::Bool = false
+                         )
 
     m = size(pheno, 2);
 
     Y_std = colStandardize(pheno);
-    (Y0, X0, lambda0) = transform_rotation(Y_std, [covar geno], kinship; addIntercept = true);
 
-    prior = [1.0, 0.1];
+    (Y0, X0, lambda0) = transform_rotation(Y_std, [covar geno], kinship; addIntercept = addIntercept);
 
-    num_of_covar = size(covar, 2)+1; # `+1` for the intercept column
+    prior = [prior_variance, prior_sample_size];
+
+
+    if addIntercept == true
+        num_of_covar = size(covar, 2)+1; # `+1` for the intercept column
+    else
+        num_of_covar = size(covar, 2);
+    end
+
     X0_intercept = X0[:, 1:num_of_covar];
 
-    # 
     weights_each_h2 = map(x -> makeweights(x, lambda0), grid); # make weights evaluated on each h2 in grid
-    ell_results = map(x -> wls_multivar(Y0, X0_intercept, x, prior).Ell, weights_each_h2);
+    ell_results = map(x -> wls_multivar(Y0, X0_intercept, x, prior; reml = reml).Ell, weights_each_h2);
     ell_results = reduce(vcat, ell_results);
 
-
     optim_h2 = find_optim_h2(grid, ell_results)
-
 
     idxs_sets = Dict{Int64, Float64}();
     for i in 1:m
