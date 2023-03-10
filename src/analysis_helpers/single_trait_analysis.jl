@@ -28,21 +28,28 @@ end
 ## Inputs: data after rotation, a given h2 to evaluate loglik on
 ##         (optional) prior for regularization loglik near the upper boundary pt.
 ## Outputs: the logliks (null, alt mean model) under the given h2
-function getLL(y0::Array{Float64, 2}, X0::Array{Float64, 2}, lambda0::Array{Float64, 1}, 
+function getLL(y0::Array{Float64, 2}, X0::Array{Float64, 2}, lambda0::Array{Float64, 1},
+               num_of_covar::Int64, 
                markerID::Int64, h2::Float64; prior::Array{Float64, 1} = [0.0, 0.0])
     
     n = size(y0, 1);
     w = makeweights(h2, lambda0);
 
-    X0_inter = reshape(X0[:, 1], :, 1);
-    X_design = zeros(n, 2);
-    X_design[:, 1] = X0[:, 1];
-    X_design[:, 2] = X0[:, markerID+1];
+    if num_of_covar == 1
+        X0_covar = reshape(X0[:, 1], :, 1);
+    else
+        X0_covar = X0[:, 1:num_of_covar];
+    end
+
+    X_design = zeros(n, num_of_covar+1);
+    X_design[:, 1:num_of_covar] = X0_covar;
+    X_design[:, num_of_covar+1] = X0[:, markerID+num_of_covar];
     
-    return (ll_null = wls(y0, X0_inter, w, prior).ell, ll_markerID = wls(y0, X_design, w, prior).ell)
+    return (ll_null = wls(y0, X0_covar, w, prior).ell, ll_markerID = wls(y0, X_design, w, prior).ell)
 end
 
-function plotLL(y::Array{Float64, 2}, G::Array{Float64, 2}, K::Array{Float64, 2}, 
+function plotLL(y::Array{Float64, 2}, G::Array{Float64, 2}, covar::Array{Float64, 2}, 
+                K::Array{Float64, 2}, 
                 h2_grid::Array{Float64, 1}, markerID::Int64;
                 x_lims::Array{Float64, 1}, y_lims::Array{Float64, 1})
 
@@ -51,11 +58,12 @@ function plotLL(y::Array{Float64, 2}, G::Array{Float64, 2}, K::Array{Float64, 2}
     ell_alt = zeros(length(h2_grid));
 
 
-    (y0, X0, lambda0) = transform_rotation(y, G, K; addIntercept = true);
+    num_of_covar = size(covar, 2);
+    (y0, X0, lambda0) = transform_rotation(y, [covar G], K; addIntercept = false);
 
     for k in 1:length(h2_grid)
         curr_h2 = h2_grid[k];
-        output = getLL(y0, X0, lambda0, markerID, curr_h2; prior = prior);
+        output = getLL(y0, X0, lambda0, num_of_covar, markerID, curr_h2; prior = prior);
         ell_null[k] = output.ll_null;
         ell_alt[k] = output.ll_markerID;
     end
