@@ -33,7 +33,7 @@ function wls(y::Array{Float64, 2}, X::Array{Float64, 2}, w::Array{Float64, 1}, p
 
     # check if weights are positive
     if(any(w .<= .0))
-        error("Some weights are not positive.")
+        @warn "Some weights are not positive."
     end
 
     # square root of the weights
