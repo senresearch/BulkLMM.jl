@@ -51,7 +51,7 @@ end
 function plotLL(y::Array{Float64, 2}, G::Array{Float64, 2}, covar::Array{Float64, 2}, 
                 K::Array{Float64, 2}, 
                 h2_grid::Array{Float64, 1}, markerID::Int64;
-                x_lims::Array{Float64, 1}, y_lims::Array{Float64, 1};
+                x_lims::Array{Float64, 1}, y_lims::Array{Float64, 1},
                 prior::Array{Float64, 1} = [0.0, 0.0])
 
 
