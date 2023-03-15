@@ -237,8 +237,9 @@ end
 
 
 
-function plot_eQTL(multiLODs::Array{Float64, 2}, pheno::Array{Any, 2}, gmap::DataFrame, phenocovar::DataFrame;
-                thr::Float64 = 5.0, kwargs...)
+function plot_eQTL(multiLODs::Array{Float64, 2}, 
+                   gmap::DataFrame, phenocovar::DataFrame;
+                   thr::Float64 = 5.0, kwargs...)
 
     maxLODs_allTraits = mapslices(x -> findmax(x), multiLODs; dims = 1);
     maxLODs_allTraits = reduce(vcat, vec(maxLODs_allTraits));
