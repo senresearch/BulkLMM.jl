@@ -1,18 +1,18 @@
 # BulkLMM.jl
 
-Julia package for performing genome scans for multiple traits ("in
-bulk") using linear mixed models (LMMs). Suitable for eQTL mapping
-with thousands of traits and markers.  Also performs permutation
+BulkLMM is a Julia package for performing genome scans for multiple traits (in
+"Bulk" sizes) using linear mixed models (LMMs). It is suitable for eQTL mapping
+with thousands of traits and markers. BulkLMM also performs permutation
 testing for LMMs taking into account the relatedness of individuals.
 We use multi-threading and matrix operations to speed up computations.
 
 The current implementation is for genome scans with one-degree of
-freedom tests without any background covariates.  Future releases will
-cover those scenarios.
+freedom tests with choices of adding additional covariates. Future releases will
+cover the scenario of more-than-one degrees of freedom tests.
 
 ## Linear Mixed Model (LMM)
 
-We consider that case when a univariate trait of interest is measured
+We consider the case when a univariate trait of interest is measured
 in a population of related individuals with kinship matrix $K$.  Let
 the trait vector, $y$ follow the following linear model.
 
@@ -23,7 +23,7 @@ where
 $$V(\epsilon) = \sigma^2_g K+\sigma^2_e I.$$
 
 where $X$ is a matrix of covariates which would include the intercept,
-candidate genetic markers of interest, and any background covariates.
+candidate genetic markers of interest, and (optionally) any background covariates.
 The variance components $\sigma^2_g$ and $\sigma^2_e$ denote the
 genetic and random error variance components respectively.
 
@@ -46,9 +46,9 @@ slower, but more accurate.
 Under the null hypothesis that no individual genetic marker is
 associated with the trait, traits are correlated according if the
 kinship matrix is not identity, and the genetic variance component is
-non-zero.  Thus, a standard permutation test whene we shuffle the
+non-zero.  Thus, a standard permutation test where we shuffle the
 trait data randomly, is not appropriate.  Instead, we rotate the data
-using the eigendecomposition of the kinship matrix, which
+using the eigen decomposition of the kinship matrix, which
 de-correlates the data, and then shuffle the data after rescaling them
 by their standard deviations.
 
