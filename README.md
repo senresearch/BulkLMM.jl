@@ -225,14 +225,67 @@ max_lods = vec(mapslices(x -> maximum(x), single_results_perms; dims = 1));
 thrs = map(x -> quantile(max_lods, x), [0.05, 0.95]);
 ```
 
-Plot the LOD scores in comparison with
-[GEMMA](https://github.com/genetics-statistics/GEMMA) (one will need to run
-GEMMA to generate outputs elsewhere), as well as the LOD rejection
-thresholds from permutation testing:
-    
-(for better visability, as an example here only the first 2000 LOD scores were plotted)
+Plot the BulkLMM LOD scores of the 1112-th trait and compare with the results from running
+[GEMMA](https://github.com/genetics-statistics/GEMMA):
+
+Note: to get results from GEMMA, one would need to run GEMMA on a Linux machine with input files of the same trait (here the 1112-th trait, X10339113), genetic markers and the kinship matrix, and finally convert the LRT p-values into corresponding LOD scores. Alternatively, you may simply load the results we obtained by following the procedures mentioned above. The resulting LOD scores from GEMMA are a .txt file in `data/bxdData/GEMMA_BXDTrait1112/gemma_lod_1112.txt`.
+
 ![svg](img/output_41_0.svg)
 
+For reproducing this figure, we need to do the following steps:
+
+First, read in the `gmap.csv` and the `phenocovar.csv` under `data/bxdData/` directory as
+
+```julia
+gmap_file = joinpath(bulklmmdir,"..","data/bxdData/gmap.csv");
+gInfo = CSV.read(gmap_file, DataFrame);
+phenocovar_file = joinpath(bulklmmdir,"..","data/bxdData/phenocovar.csv");
+pInfo = CSV.read(phenocovar_file, DataFrame);
+```
+
+We would need to use some utility functions for plotting in the package named `BigRiverPlots.jl`, which will be released soon. 
+
+After downloading the package, run
+```julia
+using BigRiverPlots
+
+# Get information for the genetic markers about which chromosome each was measured at
+Chr_bxd = string.(gInfo[:, :Chr]);
+Chr_bxd = reshape(Chr_bxd, :, 1);
+
+# Get information for the genetic markers about where (in Mb length) on the chromosome each was measured at
+Pos_bxd = gInfo[:, :Mb];
+Pos_bxd = reshape(Pos_bxd, :, 1);
+
+Lod_bxd = single_results.lod[1:end, :]; # load the BulkLMM LOD scores results
+gemma_results_path = joinpath(bulklmmdir,"..","data/bxdData/GEMMA_BXDTrait1112/gemma_lod_1112.txt")
+Lod_gemma = readdlm(gemma_results_path, '\t'); # load gemma LOD scores results available in the package
+
+traitName = pInfo[traitID, 1] # get the trait name of the 1112-th trait
+
+```
+
+Then, to use the functions in the package `BigRiverPlots.jl`, run
+
+```julia
+vecSteps_bxd = BigriverPlots.get_chromosome_steps(Pos_bxd, Chr_bxd)
+
+# get unique chr id
+v_chr_names_bxd = unique(Chr_bxd)
+
+# generate new distances coordinates
+
+x_bxd, y_bxd = BigriverPlots.get_qtl_coord(Pos_bxd, Chr_bxd, Lod_bxd);
+x_bxd_gemma, y_bxd_gemma = BigriverPlots.get_qtl_coord(Pos_bxd, Chr_bxd, Lod_gemma);
+
+qtlplot(x_bxd, y_bxd, vecSteps_bxd, v_chr_names_bxd;
+        label = "BulkLMM.jl",
+        xlabel = "Locus (Chromosome)", ylims = (0.0, 6.5),
+        title = "Single trait $traitName LOD scores") # plot BulkLMM LODs
+plot!(x_bxd, y_bxd_gemma, color = :purple, label = "GEMMA", legend = true) # plot GEMMA LODs
+
+hline!([thrs], color = "red", linestyle=:dash, label = "") # plot thresholds...
+```
 
 ### Multiple traits scanning:
 
@@ -269,7 +322,8 @@ size(multiple_results_allTraits)
 
     (7321, 35554)
 
-To visualize the multiple-trait scan results, we can use the plotting utility function `plot_eQTL`to generate the eQTL plot. The function `plot_eQTL` does not belong to `BulkLMM.jl`; it will be part of the future package specialized for visualizations. However, we can easily have access to the plotting function by running the following commands:
+To visualize the multiple-trait scan results, we can use the plotting utility function `plot_eQTL`to generate the eQTL plot.
+The functions for plotting utilities will be available in the package `BigRiverPlots.jl` in the future. For now, we can easily have access to the plotting function in the script `plot_utils/visuals_utils.jl`, by running the following commands:
 
 ```julia
 using RecipesBase, Plots, Plots.PlotMeasures, ColorSchemes
@@ -277,17 +331,6 @@ include(joinpath(bulklmmdir, "..", "plot_utils", "visuals_utils.jl"));
 ```
 
 For the following example, we only plot the LOD scores that are above 5.0 by calling the function and specifying in the optional argument `thr = 5.0`:
-
-Note: one will need to read in the `gmap.csv` and the `phenocovar.csv` under `data/bxdData/` directory as
-
-```julia
-gmap_file = joinpath(bulklmmdir,"..","data/bxdData/gmap.csv");
-gInfo = CSV.read(gmap_file, DataFrame);
-phenocovar_file = joinpath(bulklmmdir,"..","data/bxdData/phenocovar.csv");
-pInfo = CSV.read(phenocovar_file, DataFrame);
-```
-
-Also, in the input argument one will also need to supply the `pheno` input data in the argument.
 
 ```julia
 plot_eQTL(multiple_results_allTraits, pheno, gInfo, pInfo; thr = 5.0)
