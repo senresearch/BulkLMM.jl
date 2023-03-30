@@ -98,7 +98,9 @@ function scan(y::Array{Float64,2}, g::Array{Float64,2}, covar::Array{Float64, 2}
 
     if plot_loglik == true
         println("Loglik plot: ")
-        p = plotLL(y, g, K, h2_grid, markerID; x_lims = x_lims, y_lims = y_lims)
+        p = plotLL(y, g, covar, K, h2_grid, markerID; 
+                   x_lims = x_lims, y_lims = y_lims,
+                   prior = [prior_variance, prior_sample_size])
         # plot(p)
         display(p)
         return results

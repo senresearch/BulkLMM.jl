@@ -15,7 +15,7 @@ prior = [1.0, 0.1];
 tol = 1e-6;
 
 test_getLL = quote 
-    ll_results = BulkLMM.getLL(y0, X0, lambda0, markerID, test_h2; prior = prior);
+    ll_results = BulkLMM.getLL(y0, X0, lambda0, 1, markerID, test_h2; prior = prior);
 
     w_test = BulkLMM.makeweights(test_h2, lambda0);
 

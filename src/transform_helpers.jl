@@ -22,7 +22,8 @@ function transform_rotation(y::Array{Float64, 2}, g::Array{Float64, 2}, K::Array
 
     # return an error if there are any negative eigenvalues
     if any(EF.values .< -1e-7)
-        throw(error("Negative eigenvalues exist. The kinship matrix supplied may not be SPD."));
+        # throw(error("Negative eigenvalues exist. The kinship matrix supplied may not be SPD."));
+        @warn "Negative eigenvalues exist. The kinship matrix supplied may not be SPD."
     end
 
     # rotate data so errors are uncorrelated
