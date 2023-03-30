@@ -268,15 +268,15 @@ traitName = pInfo[traitID, 1] # get the trait name of the 1112-th trait
 Then, to use the functions in the package `BigRiverPlots.jl`, run
 
 ```julia
-vecSteps_bxd = BigriverPlots.get_chromosome_steps(Pos_bxd, Chr_bxd)
+vecSteps_bxd = BigRiverPlots.get_chromosome_steps(Pos_bxd, Chr_bxd)
 
 # get unique chr id
 v_chr_names_bxd = unique(Chr_bxd)
 
 # generate new distances coordinates
 
-x_bxd, y_bxd = BigriverPlots.get_qtl_coord(Pos_bxd, Chr_bxd, Lod_bxd);
-x_bxd_gemma, y_bxd_gemma = BigriverPlots.get_qtl_coord(Pos_bxd, Chr_bxd, Lod_gemma);
+x_bxd, y_bxd = BigRiverPlots.get_qtl_coord(Pos_bxd, Chr_bxd, Lod_bxd);
+x_bxd_gemma, y_bxd_gemma = BigRiverPlots.get_qtl_coord(Pos_bxd, Chr_bxd, Lod_gemma);
 
 qtlplot(x_bxd, y_bxd, vecSteps_bxd, v_chr_names_bxd;
         label = "BulkLMM.jl",
