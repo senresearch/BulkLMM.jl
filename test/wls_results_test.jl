@@ -23,19 +23,23 @@ end
 N = 100; # number of observations
 p = 1; # 1-df test
 beta = [1.0, 0.5]; # true effects plus intercept
+beta2 = [0.5, 0.5]; # true effects plus intercept of the second dependent variable
 prior = [0.0, 0.0]; # default setting not using prior correction
 
 # Construct means
 group = repeat([0.0, 1.0], inner = Int64(N/2));
 mu = beta[1] .+ group .* beta[2];
+mu2 = beta2[1] .+ group .* beta2[2];
 
 # Construct heteroscedestic errors
 vars = rand(Uniform(0, 0.1), 100);
 errors_dist = generateErrors(vars);
 errors = rand(errors_dist, 1);
+errors2 = rand(errors_dist, 1);
 
 # Finally, construct heteroscedestic dependent variables
 y = mu .+ errors;
+y2 = mu2 .+ errors2;
 
 X = hcat(repeat([1.0], inner = N), group) # design matrix
 weights = 1.0 ./ sqrt.(vars); # construct weights by standard deviations
@@ -55,21 +59,21 @@ function ls(y::Array{Float64, 2}, X::Array{Float64, 2};
     rss0 = sum((y-yhat).^2)
 
     if reml 
-    sigma2 = rss0/(n-p)
+        sigma2 = rss0/(n-p)
     else
-    sigma2 = rss0/n
+        sigma2 = rss0/n
     end
 
     if loglik 
-    if reml
-        logdetSigma = (n-p)*log(sigma2)
-    else
-        logdetSigma = n*log(sigma2)
-    end
+        if reml
+            logdetSigma = (n-p)*log(sigma2)
+        else
+            logdetSigma = n*log(sigma2)
+        end
 
-    ell = -0.5 * ( logdetSigma + rss0/sigma2 )
+        ell = -0.5 * ( logdetSigma + rss0/sigma2 )
     else
-    ell = missing
+        ell = missing
     end
 
     return LSEstimates(b, sigma2, ell)
@@ -83,6 +87,7 @@ end
 
 # Get results from wls implementation
 result_wls = BulkLMM.wls(y, X, weights, prior; reml = false, loglik = true, method = "cholesky");
+result_wls_multivar = BulkLMM.wls_multivar([y y2], X, weights, prior; reml = false, loglik = true, method = "cholesky");
 
 # Get weighted LS results by manually weighting and then perform OLS:
 W = weights .* (1.0*Matrix(I, N, N));
@@ -99,11 +104,13 @@ function biasSquared(est::AbstractArray{Float64, 2}, truth::AbstractArray{Float6
     
 end
 
-tol = 1e-2;
-truth = reshape([1.0 0.5], 2, 1);
+tol = 0.1;
+true_b = reshape([1.0 0.5], 2, 1);
+true_B = [beta beta2];
 
 @testset "simple test WLS" begin
     @test biasSquared(result_wls.b, result_ls.b) <= tol^4
-    @test biasSquared(result_wls.b, truth) <= tol
-    @test biasSquared(result_ls.b, truth) <= tol
+    @test biasSquared(result_wls.b, true_b) <= tol
+    @test biasSquared(result_ls.b, true_b) <= tol
+    @test biasSquared(result_wls_multivar.B, true_B) <= tol
 end;

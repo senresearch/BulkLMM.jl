@@ -1,7 +1,7 @@
 ###########################################################
-# genome scan function; no covariates, two genotype groups
+# Genome scan functions for a single trait plus permutation testing:
+# allow modeling additional covariates, two genotype groups
 ###########################################################
-
 """
     scan(y, g, K, reml, method)
 
@@ -36,13 +36,76 @@ A list of output values are returned:
 
 """
 function scan(y::Array{Float64,2}, g::Array{Float64,2}, K::Array{Float64,2};
+              # regularization options:
               prior_variance::Float64 = 0.0, prior_sample_size::Float64 = 0.0, addIntercept::Bool = true,
-              reml::Bool = false, assumption::String = "null", method::String = "qr")
+              # vc estimation options:
+              reml::Bool = false, assumption::String = "null", method::String = "qr", optim_interval::Int64 = 1,
+              # permutation testing options:
+              permutation_test::Bool = false, nperms::Int64 = 1024, rndseed::Int64 = 0, original::Bool = true,
+              # option for inspecting h2 estimation process:
+              plot_loglik::Bool = false, markerID::Int = 0, h2_grid::Array{Float64, 1} = Array{Float64, 1}(undef, 1),
+              x_lims::Array{Float64, 1} = [0.0, 1.0], y_lims::Array{Float64, 1} = [-100.0, 100.0]
+              )
 
-    if(assumption == "null")
-        return scan_null(y, g, K, [prior_variance, prior_sample_size], addIntercept; reml = reml, method = method)
-    elseif(assumption == "alt")
-        return scan_alt(y, g, K, [prior_variance, prior_sample_size], addIntercept; reml = reml, method = method)
+    if addIntercept == false
+        error("Intercept has to be added when no other covariate is given.")
+    end
+
+    n = size(y, 1);
+    return scan(y, g, ones(n, 1), K; addIntercept = false,
+                prior_variance = prior_variance, prior_sample_size = prior_sample_size,
+                reml = reml, assumption = assumption, method = method, optim_interval = optim_interval,
+                permutation_test = permutation_test, nperms = nperms, rndseed = rndseed, original = original,
+                plot_loglik = plot_loglik, markerID = markerID, h2_grid = h2_grid,
+                x_lims = x_lims, y_lims = y_lims)
+end
+
+function scan(y::Array{Float64,2}, g::Array{Float64,2}, covar::Array{Float64, 2}, K::Array{Float64,2};
+              # regularization options:
+              prior_variance::Float64 = 0.0, prior_sample_size::Float64 = 0.0, addIntercept::Bool = true,
+              # vc estimation options:
+              reml::Bool = false, assumption::String = "null", method::String = "qr", optim_interval::Int64 = 1,
+              # permutation testing options:
+              permutation_test::Bool = false, nperms::Int64 = 1024, rndseed::Int64 = 0, original::Bool = true,
+              # option for inspecting h2 estimation process:
+              plot_loglik::Bool = false, markerID::Int = 0, h2_grid::Array{Float64, 1} = Array{Float64, 1}(undef, 1),
+              x_lims::Array{Float64, 1} = [0.0, 1.0], y_lims::Array{Float64, 1} = [-100.0, 100.0]
+              )
+
+
+    if assumption == "null"
+        if permutation_test == true
+            results = scan_perms_lite(y, g, covar, K; prior_variance = prior_variance, prior_sample_size = prior_sample_size,
+                                      addIntercept = addIntercept, reml = reml, method = method, optim_interval = optim_interval,
+                                      nperms = nperms, rndseed = rndseed, original = original);
+        else
+            results = scan_null(y, g, covar, K, [prior_variance, prior_sample_size], addIntercept; 
+                                reml = reml, method = method, optim_interval = optim_interval);
+        end 
+    elseif assumption == "alt"
+        if permutation_test == true
+            error("Permutation test option currently is not supported for the alternative assumption.");
+        else
+            results = scan_alt(y, g, covar, K, [prior_variance, prior_sample_size], addIntercept; 
+                               reml = reml, method = method, optim_interval = optim_interval)
+        end
+
+    else
+        error("Assumption keyword is not supported. Please enter null or alt.")
+    end
+
+    # return results
+
+    if plot_loglik == true
+        println("Loglik plot: ")
+        p = plotLL(y, g, covar, K, h2_grid, markerID; 
+                   x_lims = x_lims, y_lims = y_lims,
+                   prior = [prior_variance, prior_sample_size])
+        # plot(p)
+        display(p)
+        return results
+    else
+        return results
     end
 
 end
@@ -61,6 +124,7 @@ assuming the variance components are the same for all markers.
 
 - y = 1d array of floats consisting of the N observations for a certain quantitative trait (dimension: N*1)
 - g = 2d array of floats consisting of all p gene markers (dimension: N*p)
+- covar = 2d array of floats consisting of all covariates to adjust for (optional)
 - K = 2d array of floats consisting of the genetic relatedness of the N observations (dimension:N*N)
 
 # Keyword arguments
@@ -83,30 +147,39 @@ A list of output values are returned:
     as `null` (default).
 
 """
-function scan_null(y::Array{Float64, 2}, g::Array{Float64, 2}, K::Array{Float64, 2}, prior::Array{Float64, 1}, addIntercept::Bool;
-                   reml::Bool = false, method::String = "qr")
+function scan_null(y::Array{Float64, 2}, g::Array{Float64, 2}, covar::Array{Float64, 2}, K::Array{Float64, 2}, 
+                   prior::Array{Float64, 1}, addIntercept::Bool;
+                   reml::Bool = false, method::String = "qr", optim_interval::Int64 = 1)
 
     # number of markers
     (n, p) = size(g)
 
+    num_of_covar = addIntercept ? (size(covar, 2)+1) : size(covar, 2);
+
     # rotate data
-    (y0, X0, lambda0) = transform_rotation(y, g, K; addIntercept = addIntercept)
+    (y0, X0, lambda0) = transform_rotation(y, [covar g], K; addIntercept = addIntercept)
+    X0_covar = X0[:, 1:num_of_covar];
+
+    if size(X0_covar, 2) == 1
+        X0_covar = reshape(X0_covar, :, 1);
+    end
 
     # fit null lmm
-    out00 = fitlmm(y0, reshape(X0[:, 1], :, 1), lambda0, prior; reml = reml, method = method)
+    out00 = fitlmm(y0, X0_covar, lambda0, prior; reml = reml, method = method, optim_interval = optim_interval)
     # weights proportional to the variances
     sqrtw = sqrt.(makeweights(out00.h2, lambda0))
     # rescale by weights
     rowMultiply!(y0, sqrtw)
     rowMultiply!(X0, sqrtw)
+    rowMultiply!(X0_covar, sqrtw);
 
     # perform genome scan
-    rss0 = rss(y0, reshape(X0[:, 1], n, 1); method = method)[1]
+    rss0 = rss(y0, X0_covar; method = method)[1]
     lod = zeros(p)
-    X = zeros(n, 2)
-    X[:, 1] = X0[:, 1]
+
+    X = X0[:, 1:(num_of_covar+1)]
     for i = 1:p
-        X[:, 2] = X0[:, i+1]
+        X[:, (num_of_covar+1)] = X0[:, num_of_covar+i]
         rss1 = rss(y0, X; method = method)[1]
         lod[i] = (-n/2)*(log10(rss1) .- log10(rss0))
         # lrt = (rss0 - rss1)/out00.sigma2
@@ -152,37 +225,41 @@ A list of output values are returned:
     field is passed as `alt`.
 
 """
-function scan_alt(y::Array{Float64, 2}, g::Array{Float64, 2}, K::Array{Float64, 2}, prior::Array{Float64, 1}, addIntercept::Bool;
-                 reml::Bool = false, method::String = "qr")
+function scan_alt(y::Array{Float64, 2}, g::Array{Float64, 2}, covar::Array{Float64, 2}, K::Array{Float64, 2}, 
+                  prior::Array{Float64, 1}, addIntercept::Bool;
+                  reml::Bool = false, method::String = "qr", optim_interval::Int64 = 1)
 
     # number of markers
     (n, p) = size(g)
 
+    num_of_covar = addIntercept ? (size(covar, 2)+1) : size(covar, 2);
+
     # rotate data
-    (y0, X0, lambda0) = transform_rotation(y, g, K; addIntercept = addIntercept)
+    (y0, X0, lambda0) = transform_rotation(y, [covar g], K; addIntercept = addIntercept)
+    X0_covar = X0[:, 1:num_of_covar];
+
+    if size(X0_covar, 2) == 1
+        X0_covar = reshape(X0_covar, :, 1);
+    end
 
     pve_list = Array{Float64, 1}(undef, p);
 
-    X00 = reshape(X0[:, 1], :, 1)
     # fit null lmm
-    if reml == false
-        out00 = fitlmm(y0, X00, lambda0, prior; reml = reml, method = method);
-    end
+    out00 = fitlmm(y0, X0_covar, lambda0, prior; reml = reml, method = method, optim_interval = optim_interval);
 
     lod = zeros(p);
-    X = zeros(n, 2);
-    X[:, 1] = X0[:, 1];
+
+    X = X0[:, 1:(num_of_covar+1)]
 
     for i = 1:p
-        X[:, 1] = X0[:, 1];
-        X[:, 2] = X0[:, i+1];
+        X[:, (num_of_covar+1)] = X0[:, num_of_covar+i]
         
-        out11 = fitlmm(y0, X, lambda0, prior; reml = reml, method = method);
+        out11 = fitlmm(y0, X, lambda0, prior; reml = reml, method = method, optim_interval = optim_interval);
        
         if reml
             sqrtw_alt = sqrt.(makeweights(out11.h2, lambda0));
             wls_alt = wls(y0, X, sqrtw_alt, prior; reml = false);
-            wls_null = wls(y0, X00, sqrtw_alt, prior; reml = false);
+            wls_null = wls(y0, X0_covar, sqrtw_alt, prior; reml = false);
             lod[i] = (wls_alt.ell - wls_null.ell)/log(10);
         else 
             lod[i] = (out11.ell - out00.ell)/log(10);
@@ -191,7 +268,7 @@ function scan_alt(y::Array{Float64, 2}, g::Array{Float64, 2}, K::Array{Float64, 
         pve_list[i] = out11.h2;
     end
 
-    return (sigma2_e = out00.sigma2, h2_null = out00.h2, h2_each_marker = pve_list, lod = lod)
+    return (sigma2_e = out00.sigma2, h2_null = out00.h2, h2_each_marker = pve_list, lod = lod);
 
 
 end
@@ -230,15 +307,15 @@ are estimated from the null model and assumed to be the same across markers.
 function scan_perms(y::Array{Float64,2}, g::Array{Float64,2}, K::Array{Float64,2};
               prior_variance::Float64 = 1.0, prior_sample_size::Float64 = 0.0, addIntercept::Bool = true, method::String = "qr",
               nperms::Int64 = 1024, rndseed::Int64 = 0, 
-              reml::Bool = false, original::Bool = true)
+              reml::Bool = false, original::Bool = true, optim_interval::Int64 = 1)
 
     # check the number of traits as this function only works for permutation testing of univariate trait
     if(size(y, 2) != 1)
         error("Can only handle one trait.")
     end
 
-    sy = colStandardize(y);
-    sg = colStandardize(g);
+    # sy = colStandardize(y);
+    # sg = colStandardize(g);
 
     # n - the sample size
     # p - the number of markers
@@ -246,9 +323,9 @@ function scan_perms(y::Array{Float64,2}, g::Array{Float64,2}, K::Array{Float64,2
 
     ## Note: estimate once the variance components from the null model and use for all marker scans
     # fit lmm
-    (y0, X0, lambda0) = transform_rotation(sy, sg, K; addIntercept = addIntercept); # rotation of data
+    (y0, X0, lambda0) = transform_rotation(y, g, K; addIntercept = addIntercept); # rotation of data
     (r0, X00) = transform_reweight(y0, X0, lambda0; prior_a = prior_variance, prior_b = prior_sample_size, 
-                                                    reml = reml, method = method); # reweighting and taking residuals
+                                                    reml = reml, method = method, optim_interval = optim_interval); # reweighting and taking residuals
 
     # If no permutation testing is required, move forward to process the single original vector
     if nperms == 0
@@ -290,19 +367,23 @@ function scan_perms(y::Array{Float64,2}, g::Array{Float64,2}, K::Array{Float64,2
 end
 
 
-function scan_perms_lite(y::Array{Float64,2}, g::Array{Float64,2}, K::Array{Float64,2};
-    prior_variance::Float64 = 1.0, prior_sample_size::Float64 = 0.0, addIntercept::Bool = true, method::String = "qr",
-    nperms::Int64 = 1024, rndseed::Int64 = 0, 
-    reml::Bool = false, original::Bool = true)
+function scan_perms_lite(y::Array{Float64,2}, g::Array{Float64,2}, covar::Array{Float64, 2}, K::Array{Float64,2};
+                         prior_variance::Float64 = 1.0, prior_sample_size::Float64 = 0.0, 
+                         addIntercept::Bool = true, method::String = "qr", optim_interval::Int64 = 1,
+                         nperms::Int64 = 1024, rndseed::Int64 = 0, 
+                         reml::Bool = false, original::Bool = true)
 
 
     # check the number of traits as this function only works for permutation testing of univariate trait
-    if(size(y, 2) != 1)
+    if size(y, 2) != 1
         error("Can only handle one trait.")
     end
 
-    sy = colStandardize(y);
-    sg = colStandardize(g);
+    ## Issue: when covar is passed with a vector that is proportional to the column of ones, standard deviation will be 0
+    ## it is recommended that the user to standardize the input matrices and then use the prior_variance of 1.
+    # sy = colStandardize(y);
+    # sg = colStandardize(g);
+    # scovar = colStandardize(covar);
 
 
     # n - the sample size
@@ -311,8 +392,11 @@ function scan_perms_lite(y::Array{Float64,2}, g::Array{Float64,2}, K::Array{Floa
 
     ## Note: estimate once the variance components from the null model and use for all marker scans
     # fit lmm
-    (y0, X0, lambda0) = transform_rotation(sy, sg, K; addIntercept = addIntercept); # rotation of data
-    (r0, X00) = transform_reweight(y0, X0, lambda0; prior_a = prior_variance, prior_b = prior_sample_size, reml = reml, method = method); # reweighting and taking residuals
+    (y0, X0, lambda0) = transform_rotation(y, [covar g], K; addIntercept = addIntercept); # rotation of data
+    (r0, X00) = transform_reweight(y0, X0, lambda0; 
+                                   prior_a = prior_variance, 
+                                   prior_b = prior_sample_size, 
+                                   reml = reml, method = method, optim_interval = optim_interval); # reweighting and taking residuals
 
     # If no permutation testing is required, move forward to process the single original vector
     if nperms == 0
@@ -335,7 +419,7 @@ function scan_perms_lite(y::Array{Float64,2}, g::Array{Float64,2}, K::Array{Floa
     colDivide!(X00, norm_X);
 
     lods = X00' * r0perm
-    tR2LOD!(lods, n);
+    threaded_map!(r2lod, lods, n);
 
     return lods
 

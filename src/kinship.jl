@@ -32,7 +32,6 @@ function calcKinship(geno::Matrix{Float64})
                 p1 = geno[i,:]
                 p2 = geno[j,:]
                 d[i,j] = d[j,i] = sum( p1 .* p2 + (1 .- p1) .* (1 .- p2) ) / ncomplete
-
             end
         end
     end
