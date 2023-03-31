@@ -1,4 +1,4 @@
-Version 0.0.2 (March 09, 2023)
+Version 1.0.0 (March 09, 2023)
 
 - Renamed the scan functions: now use `scan()` for performing single-trait scans, and use `bulkscan_...()` for performing multiple-trait scans.
 
@@ -68,4 +68,4 @@ Version 0.0.2 (March 09, 2023)
     ```
 
 
-Version 0.0.1
+Version 0.1.0
