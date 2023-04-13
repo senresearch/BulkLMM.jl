@@ -36,6 +36,8 @@ A list of output values are returned:
 
 """
 function scan(y::Array{Float64,2}, g::Array{Float64,2}, K::Array{Float64,2};
+              # weighted environmental variances:
+              weights::Array{Float64, 1} = ones(1), weighted_envir::Bool = false,
               # regularization options:
               prior_variance::Float64 = 0.0, prior_sample_size::Float64 = 0.0, addIntercept::Bool = true,
               # vc estimation options:
@@ -52,7 +54,9 @@ function scan(y::Array{Float64,2}, g::Array{Float64,2}, K::Array{Float64,2};
     end
 
     n = size(y, 1);
-    return scan(y, g, ones(n, 1), K; addIntercept = false,
+    return scan(y, g, ones(n, 1), K; 
+                weights = weights, weighted_envir = weighted_envir,
+                addIntercept = false,
                 prior_variance = prior_variance, prior_sample_size = prior_sample_size,
                 reml = reml, assumption = assumption, method = method, optim_interval = optim_interval,
                 permutation_test = permutation_test, nperms = nperms, rndseed = rndseed, original = original,
@@ -61,6 +65,8 @@ function scan(y::Array{Float64,2}, g::Array{Float64,2}, K::Array{Float64,2};
 end
 
 function scan(y::Array{Float64,2}, g::Array{Float64,2}, covar::Array{Float64, 2}, K::Array{Float64,2};
+              # weighted environmental variances:
+              weights::Array{Float64, 1} = ones(1), weighted_envir::Bool = false,
               # regularization options:
               prior_variance::Float64 = 0.0, prior_sample_size::Float64 = 0.0, addIntercept::Bool = true,
               # vc estimation options:
@@ -72,21 +78,50 @@ function scan(y::Array{Float64,2}, g::Array{Float64,2}, covar::Array{Float64, 2}
               x_lims::Array{Float64, 1} = [0.0, 1.0], y_lims::Array{Float64, 1} = [-100.0, 100.0]
               )
 
+    n = size(y, 1);
+
+    if weighted_envir == true
+        inv_weights = map(x -> 1/sqrt(x), weights);
+        IW = diagm(inv_weights);
+        y_st = IW*y;
+        g_st = IW*g;
+        
+        if addIntercept == true
+            covar_st = IW*[ones(n) covar];
+        else
+            covar_st = IW*covar;
+        end
+        K_st = IW*K*IW;
+
+        return scan(y_st, g_st, covar_st, K_st; 
+                    weighted_envir = false,
+                    addIntercept = false,
+                    prior_variance = prior_variance, prior_sample_size = prior_sample_size,
+                    reml = reml, assumption = assumption, method = method, optim_interval = optim_interval,
+                    permutation_test = permutation_test, nperms = nperms, rndseed = rndseed, original = original,
+                    plot_loglik = plot_loglik, markerID = markerID, h2_grid = h2_grid,
+                    x_lims = x_lims, y_lims = y_lims)
+    else
+        y_st = y;
+        g_st = g;
+        covar_st = covar;
+        K_st = K;
+    end
 
     if assumption == "null"
         if permutation_test == true
-            results = scan_perms_lite(y, g, covar, K; prior_variance = prior_variance, prior_sample_size = prior_sample_size,
+            results = scan_perms_lite(y_st, g_st, covar_st, K_st; prior_variance = prior_variance, prior_sample_size = prior_sample_size,
                                       addIntercept = addIntercept, reml = reml, method = method, optim_interval = optim_interval,
                                       nperms = nperms, rndseed = rndseed, original = original);
         else
-            results = scan_null(y, g, covar, K, [prior_variance, prior_sample_size], addIntercept; 
+            results = scan_null(y_st, g_st, covar_st, K_st, [prior_variance, prior_sample_size], addIntercept; 
                                 reml = reml, method = method, optim_interval = optim_interval);
         end 
     elseif assumption == "alt"
         if permutation_test == true
             error("Permutation test option currently is not supported for the alternative assumption.");
         else
-            results = scan_alt(y, g, covar, K, [prior_variance, prior_sample_size], addIntercept; 
+            results = scan_alt(y_st, g_st, covar_st, K_st, [prior_variance, prior_sample_size], addIntercept; 
                                reml = reml, method = method, optim_interval = optim_interval)
         end
 
@@ -98,7 +133,7 @@ function scan(y::Array{Float64,2}, g::Array{Float64,2}, covar::Array{Float64, 2}
 
     if plot_loglik == true
         println("Loglik plot: ")
-        p = plotLL(y, g, covar, K, h2_grid, markerID; 
+        p = plotLL(y_st, g_st, covar_st, K_st, h2_grid, markerID; 
                    x_lims = x_lims, y_lims = y_lims,
                    prior = [prior_variance, prior_sample_size])
         # plot(p)
