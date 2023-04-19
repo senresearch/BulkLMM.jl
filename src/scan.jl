@@ -37,7 +37,7 @@ A list of output values are returned:
 """
 function scan(y::Array{Float64,2}, g::Array{Float64,2}, K::Array{Float64,2};
               # weighted environmental variances:
-              weights::Array{Float64, 1} = ones(1), weighted_envir::Bool = false,
+              weights::Union{Missing, Array{Float64, 1}} = missing,
               # regularization options:
               prior_variance::Float64 = 0.0, prior_sample_size::Float64 = 0.0, addIntercept::Bool = true,
               # vc estimation options:
@@ -55,7 +55,7 @@ function scan(y::Array{Float64,2}, g::Array{Float64,2}, K::Array{Float64,2};
 
     n = size(y, 1);
     return scan(y, g, ones(n, 1), K; 
-                weights = weights, weighted_envir = weighted_envir,
+                weights = weights,
                 addIntercept = false,
                 prior_variance = prior_variance, prior_sample_size = prior_sample_size,
                 reml = reml, assumption = assumption, method = method, optim_interval = optim_interval,
@@ -66,7 +66,7 @@ end
 
 function scan(y::Array{Float64,2}, g::Array{Float64,2}, covar::Array{Float64, 2}, K::Array{Float64,2};
               # weighted environmental variances:
-              weights::Array{Float64, 1} = ones(1), weighted_envir::Bool = false,
+              weights::Union{Missing, Array{Float64, 1}} = missing,
               # regularization options:
               prior_variance::Float64 = 0.0, prior_sample_size::Float64 = 0.0, addIntercept::Bool = true,
               # vc estimation options:
@@ -80,21 +80,20 @@ function scan(y::Array{Float64,2}, g::Array{Float64,2}, covar::Array{Float64, 2}
 
     n = size(y, 1);
 
-    if weighted_envir == true
-        inv_weights = map(x -> 1/sqrt(x), weights);
-        IW = diagm(inv_weights);
-        y_st = IW*y;
-        g_st = IW*g;
+    if !ismissing(weights)
+        # inv_weights = map(x -> 1/sqrt(x), weights);
+        W = diagm(weights);
+        y_st = W*y;
+        g_st = W*g;
         
         if addIntercept == true
-            covar_st = IW*[ones(n) covar];
+            covar_st = W*[ones(n) covar];
         else
-            covar_st = IW*covar;
+            covar_st = W*covar;
         end
-        K_st = IW*K*IW;
+        K_st = W*K*W;
 
-        return scan(y_st, g_st, covar_st, K_st; 
-                    weighted_envir = false,
+        return scan(y_st, g_st, covar_st, K_st;
                     addIntercept = false,
                     prior_variance = prior_variance, prior_sample_size = prior_sample_size,
                     reml = reml, assumption = assumption, method = method, optim_interval = optim_interval,
