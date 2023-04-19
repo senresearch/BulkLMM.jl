@@ -14,11 +14,13 @@
 
     Suppose the first strain has four samples, the second strain has two samples, and the third strain has only one sample. Then, one can call the function on the strain means with additional input of `weights` $= [\sqrt{4}, \sqrt{2}, \sqrt{1}]$:
 
-    `lod = scan(y, G, K; weights = weights, ...).lod`
+    ```julia
+    lod = scan(y, G, K; weights = weights, ...).lod
 
-    `L = bulkscan_null(Y, G, K; weights = weights, ...).L` # LOD scores for every input trait
+    L = bulkscan_null(Y, G, K; weights = weights, ...).L # LOD scores for every input trait
 
-    `L = bulkscan_null_grid(Y, G, K, grid; weights = weights, ...).L` # LOD scores for every input trait
+    L = bulkscan_null_grid(Y, G, K, grid; weights = weights, ...).L # LOD scores for every input trait
+    ```
 
     where $y$ contains the `number of strains` strain means of the expression trait of interest and $Y$ contains the strain means of multiple expression traits of interest.
 
