@@ -3,16 +3,16 @@
 
     By our assumption of the linear mixed models, 
         $$y_i = X_0 \beta_0 + g_j \beta_{ij}+\epsilon_{ij}$$
-        and
+    and
         $$\epsilon_{ij} \sim N(0, \sigma^2_g K + \sigma^2_e V)$$
 
-        where in the usual case $W = I$. 
+    where in the usual case $W = I$. 
 
     However, there are cases where this may not be true. For example, when we take $y$ as the strain means by taking averages of the expression trait measurements of individual samples by strain for each strain, where the number of samples may not be all equal for all the strains, we may want $V$ to be the diagonal matrix with the diagonal inversely-proportional to the sample size of each strain.
 
     The new version of BulkLMM enables this feature, in all of our scan functions. To use, simply call the desired function with an additional input `weights` as a vector of the diagonal elements of the matrix $V^{-1/2}$, such as:
 
-    Suppose the first strain has four samples, the second strain has two samples, and the third strain has only one sample. Then, one can call the function on the strain means with additional input of `weights = [\sqrt{4}, \sqrt{2}, \sqrt{1}]`:
+    Suppose the first strain has four samples, the second strain has two samples, and the third strain has only one sample. Then, one can call the function on the strain means with additional input of `weights` $= [\sqrt{4}, \sqrt{2}, \sqrt{1}]$:
 
     `lod = scan(y, G, K; weights = weights, ...).lod`
 
