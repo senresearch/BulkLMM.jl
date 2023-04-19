@@ -30,6 +30,7 @@ Calculates the LOD scores for all pairs of traits and markers, by a (multi-threa
 function bulkscan_null(Y::Array{Float64, 2}, G::Array{Float64, 2}, K::Array{Float64, 2};
                        nb::Int64 = Threads.nthreads(), 
                        nt_blas::Int64 = 1, 
+                       weights::Union{Missing, Array{Float64, 1}} = missing,
                        prior_variance::Float64 = 1.0, prior_sample_size::Float64 = 0.0,
                        reml::Bool = false, optim_interval::Int64 = 1)
 
@@ -42,6 +43,7 @@ function bulkscan_null(Y::Array{Float64, 2}, G::Array{Float64, 2}, K::Array{Floa
                          nb = nb, nt_blas = nt_blas, 
                          # key step: avoid adding the intercept twice
                          addIntercept = false, 
+                         weights = weights,
                          prior_variance = prior_variance, prior_sample_size = prior_sample_size,
                          reml = reml, optim_interval = optim_interval);
 
@@ -51,6 +53,7 @@ function bulkscan_null(Y::Array{Float64, 2}, G::Array{Float64, 2},
                        Covar::Array{Float64, 2}, K::Array{Float64, 2};
                        nb::Int64 = Threads.nthreads, nt_blas::Int64 = 1, 
                        addIntercept::Bool = true, 
+                       weights::Union{Missing, Array{Float64, 1}} = missing,
                        prior_variance::Float64 = 1.0, prior_sample_size::Float64 = 0.0,
                        reml::Bool = false, optim_interval::Int64 = 1)
 
@@ -64,10 +67,31 @@ function bulkscan_null(Y::Array{Float64, 2}, G::Array{Float64, 2},
         num_of_covar = size(Covar, 2)
     end
 
+    if !ismissing(weights)
+        W = diagm(weights);
+        Y_st = W*Y;
+        G_st = W*G;
+
+        if addIntercept == true
+            Covar_st = W*[ones(size(Y, 1)) Covar];
+        else
+            Covar_st = W*Covar
+        end
+
+        addIntercept = false;
+        K_st = W*K*W;
+
+    else
+        Y_st = Y;
+        G_st = G;
+        Covar_st = Covar;
+        K_st = K;
+    end
+
     BLAS.set_num_threads(nt_blas);
 
     # rotate data
-    (Y0, X0, lambda0) = transform_rotation(Y, [Covar G], K; addIntercept = addIntercept);
+    (Y0, X0, lambda0) = transform_rotation(Y_st, [Covar_st G_st], K_st; addIntercept = addIntercept);
 
 
     X0_intercept = X0[:, 1:num_of_covar];
@@ -134,6 +158,7 @@ end
 ###########################################################
 function bulkscan_null_grid(Y::Array{Float64, 2}, G::Array{Float64, 2}, 
                             K::Array{Float64, 2}, grid_list::Array{Float64, 1};
+                            weights::Union{Missing, Array{Float64, 1}} = missing, 
                             prior_variance::Float64 = 1.0, prior_sample_size::Float64 = 0.0, 
                             reml::Bool = false)
 
@@ -142,6 +167,7 @@ function bulkscan_null_grid(Y::Array{Float64, 2}, G::Array{Float64, 2},
     intercept = ones(n, 1);
 
     return bulkscan_null_grid(Y, G, intercept, K, grid_list; 
+                              weights = weights,
                               addIntercept = false,
                               prior_variance = prior_variance, prior_sample_size = prior_sample_size,
                               reml = reml);
@@ -149,6 +175,7 @@ function bulkscan_null_grid(Y::Array{Float64, 2}, G::Array{Float64, 2},
 end
 function bulkscan_null_grid(Y::Array{Float64, 2}, G::Array{Float64, 2}, Covar::Array{Float64, 2}, 
                             K::Array{Float64, 2}, grid_list::Array{Float64, 1};
+                            weights::Union{Missing, Array{Float64, 1}} = missing, 
                             addIntercept::Bool = true,
                             prior_variance::Float64 = 1.0, prior_sample_size::Float64 = 0.0, 
                             reml::Bool = false)
@@ -156,7 +183,28 @@ function bulkscan_null_grid(Y::Array{Float64, 2}, G::Array{Float64, 2}, Covar::A
     m = size(Y, 2);
     p = size(G, 2);
 
-    results_by_bin = gridscan_by_bin(Y, G, Covar, K, grid_list; 
+    if !ismissing(weights)
+        W = diagm(weights);
+        Y_st = W*Y;
+        G_st = W*G;
+
+        if addIntercept == true
+            Covar_st = W*[ones(size(Y, 1)) Covar];
+        else
+            Covar_st = W*Covar
+        end
+
+        addIntercept = false;
+        K_st = W*K*W;
+
+    else
+        Y_st = Y;
+        G_st = G;
+        Covar_st = Covar;
+        K_st = K;
+    end
+
+    results_by_bin = gridscan_by_bin(Y_st, G_st, Covar_st, K_st, grid_list; 
                                      addIntercept = addIntercept, 
                                      prior_variance = prior_variance, prior_sample_size = prior_sample_size,
                                      reml = reml);
