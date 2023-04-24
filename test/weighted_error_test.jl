@@ -7,7 +7,7 @@ using Random
 
 n = size(pheno, 1);
 weights_identical = ones(n);
-weights_at_random = rand(Uniform(0, 1), n); # create weights at random
+weights_at_random = collect(1:n).*0.01# rand(Uniform(0, 1), n); # create weights at random
 pseudo_covars = pheno[:, 1:3];
 tol = 1e-3;
 
