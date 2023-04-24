@@ -88,6 +88,7 @@ function scan(y::Array{Float64,2}, g::Array{Float64,2}, covar::Array{Float64, 2}
         
         if addIntercept == true
             covar_st = W*[ones(n) covar];
+            addIntercept = false;
         else
             covar_st = W*covar;
         end
@@ -427,7 +428,9 @@ function scan_perms_lite(y::Array{Float64,2}, g::Array{Float64,2}, covar::Array{
     ## Note: estimate once the variance components from the null model and use for all marker scans
     # fit lmm
     (y0, X0, lambda0) = transform_rotation(y, [covar g], K; addIntercept = addIntercept); # rotation of data
-    (r0, X00) = transform_reweight(y0, X0, lambda0; 
+    
+    (r0, X00) = transform_reweight(y0, X0, lambda0;
+                                   n_covars = size(covar, 2),  
                                    prior_a = prior_variance, 
                                    prior_b = prior_sample_size, 
                                    reml = reml, method = method, optim_interval = optim_interval); # reweighting and taking residuals
