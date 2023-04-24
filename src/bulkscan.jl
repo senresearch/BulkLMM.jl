@@ -260,20 +260,44 @@ Maximal LOD scores are taken independently for each pair of trait and marker; wh
 
 """
 function bulkscan_alt_grid(Y::Array{Float64, 2}, G::Array{Float64, 2}, K::Array{Float64, 2}, 
-                           hsq_list::Array{Float64, 1})
+                           hsq_list::Array{Float64, 1};
+                           weights::Union{Missing, Array{Float64, 1}} = missing)
 
     n = size(Y, 1);
     intercept = ones(n, 1);
 
-    return bulkscan_alt_grid(Y, G, intercept, K, hsq_list; addIntercept = false);
+    return bulkscan_alt_grid(Y, G, intercept, K, hsq_list; 
+                             weights = weights, addIntercept = false);
 
 end
 
 function bulkscan_alt_grid(Y::Array{Float64, 2}, G::Array{Float64, 2}, 
                            Covar::Array{Float64, 2}, K::Array{Float64, 2}, hsq_list::Array{Float64, 1};
+                           weights::Union{Missing, Array{Float64, 1}} = missing, 
                            addIntercept::Bool = true)
+                            
+    if !ismissing(weights)
+        W = diagm(weights);
+        Y_st = W*Y;
+        G_st = W*G;
+                            
+        if addIntercept == true
+            Covar_st = W*[ones(size(Y, 1)) Covar];
+        else
+            Covar_st = W*Covar
+        end
+                            
+        addIntercept = false;
+        K_st = W*K*W;
+                            
+    else
+        Y_st = Y;
+        G_st = G;
+        Covar_st = Covar;
+        K_st = K;
+    end
 
-    (Y0, X0, lambda0) = transform_rotation(Y, [Covar G], K; addIntercept = addIntercept);
+    (Y0, X0, lambda0) = transform_rotation(Y_st, [Covar_st G_st], K_st; addIntercept = addIntercept);
 
     if addIntercept == true
         num_of_covar = size(Covar, 2)+1;
