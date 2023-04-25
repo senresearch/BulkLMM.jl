@@ -51,7 +51,7 @@ end
 ### Modeling covariates version
 function bulkscan_null(Y::Array{Float64, 2}, G::Array{Float64, 2}, 
                        Covar::Array{Float64, 2}, K::Array{Float64, 2};
-                       nb::Int64 = Threads.nthreads, nt_blas::Int64 = 1, 
+                       nb::Int64 = Threads.nthreads(), nt_blas::Int64 = 1, 
                        addIntercept::Bool = true, 
                        weights::Union{Missing, Array{Float64, 1}} = missing,
                        prior_variance::Float64 = 1.0, prior_sample_size::Float64 = 0.0,

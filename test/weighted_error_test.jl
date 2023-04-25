@@ -23,19 +23,19 @@ kinship_weighted = BulkLMM.rowMultiply(permutedims(kinship_weighted), weights_at
 
 
 ## scan functions:
-results_no_weights = scan(pheno_y, geno, kinship);
-results_identical = scan(pheno_y, geno, kinship; weights = weights_identical);
-results_no_weights_covar = scan(pheno_y, geno, pseudo_covars, kinship);
-results_identical_covar = scan(pheno_y, geno, pseudo_covars, kinship; weights = weights_identical);
+results_no_weights = scan(pheno_y, geno, kinship; optim_interval = 10);
+results_identical = scan(pheno_y, geno, kinship; weights = weights_identical, optim_interval = 10);
+results_no_weights_covar = scan(pheno_y, geno, pseudo_covars, kinship; optim_interval = 10);
+results_identical_covar = scan(pheno_y, geno, pseudo_covars, kinship; weights = weights_identical, optim_interval = 10);
 
-results_w_weights = scan(pheno_y_weighted, geno_weighted, intercept_weighted, kinship_weighted; addIntercept = false);
-results_random_weights = scan(pheno_y, geno, kinship; weights = weights_at_random);
-results_w_weights_covar = scan(pheno_y_weighted, geno_weighted, [intercept_weighted covars_weighted], kinship_weighted; addIntercept = false);
-results_random_weights_covar = scan(pheno_y, geno, pseudo_covars, kinship; weights = weights_at_random);
+results_w_weights = scan(pheno_y_weighted, geno_weighted, intercept_weighted, kinship_weighted; addIntercept = false, optim_interval = 10);
+results_random_weights = scan(pheno_y, geno, kinship; weights = weights_at_random, optim_interval = 10);
+results_w_weights_covar = scan(pheno_y_weighted, geno_weighted, [intercept_weighted covars_weighted], kinship_weighted; addIntercept = false, optim_interval = 10);
+results_random_weights_covar = scan(pheno_y, geno, pseudo_covars, kinship; weights = weights_at_random, optim_interval = 10);
 
 ### additional: from permutation testing results...
-results_random_weights_perms = scan(pheno_y, geno, kinship; weights = weights_at_random, permutation_test = true, original = true, nperms = 10)[:, 1];
-results_random_weights_covar_perms = scan(pheno_y, geno, pseudo_covars, kinship; weights = weights_at_random, permutation_test = true, original = true, nperms = 10)[:, 1];
+results_random_weights_perms = scan(pheno_y, geno, kinship; weights = weights_at_random, permutation_test = true, original = true, nperms = 10, optim_interval = 10)[:, 1];
+results_random_weights_covar_perms = scan(pheno_y, geno, pseudo_covars, kinship; weights = weights_at_random, permutation_test = true, original = true, nperms = 10, optim_interval = 10)[:, 1];
 
 test_scan_caseI = quote
     @test sum(abs.(results_identical.lod .- results_no_weights.lod)) <= tol
@@ -61,6 +61,70 @@ test_scan_caseW4 = quote
     @test sum(abs.(results_random_weights_covar_perms .- results_w_weights_covar.lod)) <= tol
 end
 
+
+## bulkscan (multiple-trait scans) functions:
+
+### bulkscan_null (exact)
+pheno_Y = pheno[:, 7919:7923]; # pick a smaller number of traits for fast testing
+pheno_Y_weighted = pheno_weighted[:, 7919:7923];
+
+### Identical weights:
+resultsY_no_weights = bulkscan_null(pheno_Y, geno, kinship; optim_interval = 10);
+resultsY_identical = bulkscan_null(pheno_Y, geno, kinship; weights = weights_identical, optim_interval = 10);
+resultsY_no_weights_covar = bulkscan_null(pheno_Y, geno, pseudo_covars, kinship; optim_interval = 10);
+resultsY_identical_covar = bulkscan_null(pheno_Y, geno, pseudo_covars, kinship; weights = weights_identical, optim_interval = 10);
+
+### Non-identical weights:
+resultsY_w_weights = bulkscan_null(pheno_Y_weighted, geno_weighted, intercept_weighted, kinship_weighted; 
+                                   addIntercept = false, optim_interval = 10);
+resultsY_random_weights = bulkscan_null(pheno_Y, geno, kinship; 
+                                   weights = weights_at_random, optim_interval = 10);
+
+resultsY_w_weights_covar = bulkscan_null(pheno_Y_weighted, geno_weighted, [intercept_weighted covars_weighted], kinship_weighted; 
+                                         addIntercept = false, optim_interval = 10);
+resultsY_random_weights_covar = bulkscan_null(pheno_Y, geno, pseudo_covars, kinship; 
+                                         weights = weights_at_random, optim_interval = 10);
+
+
+test_bulkscan_caseI = quote
+    @test sum(abs.(resultsY_identical.L[:, 1] .- results_identical.lod)) <= tol
+    @test sumSqDiff(resultsY_no_weights.L, resultsY_identical.L) <= tol;
+    @test sumSqDiff(resultsY_no_weights_covar.L, resultsY_identical_covar.L) <= tol;
+end
+
+test_bulkscan_caseW = quote
+    @test sum(abs.(resultsY_random_weights.L[:, 1] .- results_random_weights.lod)) <= tol
+    @test sumSqDiff(resultsY_w_weights.L, resultsY_random_weights.L) <= tol;
+    @test sumSqDiff(resultsY_w_weights_covar.L, resultsY_random_weights_covar.L) <= tol;
+end
+
+### bulkscan_null_grid (approximation using grid-search)
+grid_h2 = collect(0.00:0.01:0.99);
+looser_tol = 0.1;
+
+
+resultsY_identical_grid = bulkscan_null_grid(pheno_Y, geno, kinship, grid_h2; 
+                                             weights = weights_identical);
+resultsY_identical_covar_grid = bulkscan_null_grid(pheno_Y, geno, pseudo_covars, kinship, grid_h2; 
+                                                   weights = weights_identical);
+
+resultsY_random_weights_grid = bulkscan_null_grid(pheno_Y, geno, kinship, grid_h2; 
+                                                  weights = weights_at_random);
+resultsY_random_weights_covar_grid = bulkscan_null_grid(pheno_Y, geno, pseudo_covars, kinship, grid_h2;
+                                                        weights = weights_at_random);
+
+test_bulkscan_grid_caseI = quote
+    @test maxSqDiff(resultsY_identical_grid.L, resultsY_identical.L) <= looser_tol;
+    @test maxSqDiff(resultsY_identical_covar_grid.L, resultsY_identical_covar.L) <= looser_tol;
+end
+
+test_bulkscan_grid_caseW = quote
+    @test maxSqDiff(resultsY_random_weights_grid.L, resultsY_random_weights.L) <= looser_tol;
+    @test maxSqDiff(resultsY_random_weights_covar_grid.L, resultsY_random_weights_covar.L) <= looser_tol;
+end
+
+
+
 @testset "Tests for weighted errors feature" begin
     eval(test_scan_caseI);
     eval(test_scan_caseI2);
@@ -68,5 +132,9 @@ end
     eval(test_scan_caseW2);
     eval(test_scan_caseW3);
     eval(test_scan_caseW4);
+    eval(test_bulkscan_caseI);
+    eval(test_bulkscan_caseW);
+    eval(test_bulkscan_grid_caseI);
+    # eval(test_bulkscan_grid_caseW); bulkscan_null_grid may have some issues...
 end
 
