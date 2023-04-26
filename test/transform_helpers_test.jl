@@ -2,7 +2,7 @@
 
 ## Note: make sure pwd() is "BulkLMM.jl/test"
 
-pheno_y = reshape(pheno[:, 1126], :, 1);
+pheno_y = reshape(pheno[:, 7919], :, 1);
 
 ##########################################################################################################
 ## TEST: transform_rotation()
@@ -88,15 +88,16 @@ test_reweight3 = quote
     prior = zeros(2);
 
     vc = BulkLMM.fitlmm(y0, X0_inter, lambda0, prior);
-    sqrtw = sqrt.(BulkLMM.makeweights(vc.h2, lambda0));
+    weights = BulkLMM.makeweights(vc.h2, lambda0);
+    sqrtw = sqrt.(weights);
 
-    wlsEsts = wls(X0_covar, X0_inter, sqrtw, prior);
+    wlsEsts = wls(X0_covar, X0_inter, weights, prior);
 
     res_wls = y0 - X0_inter*vc.b;
-    res_wls = mapslices(x -> x .* sqrt.(sqrtw), res_wls; dims = 1);
+    res_wls = mapslices(x -> x .* sqrtw, res_wls; dims = 1);
 
     covar_wls = X0_covar .- X0_inter*wlsEsts.b;
-    covar_wls = mapslices(x -> x .* sqrt.(sqrtw), covar_wls; dims = 1);
+    covar_wls = mapslices(x -> x .* sqrtw, covar_wls; dims = 1);
 
     @test sumSqDiff(res_wls, results[1]) < 1e-10;
     @test sumSqDiff(covar_wls, results[2]) < 1e-10;

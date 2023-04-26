@@ -4,7 +4,7 @@
 ## TEST:  getLL()
 ##########################################################################################################
 
-pheno_id = 1997;
+pheno_id = 7919;
 pheno_y = reshape(pheno[:, pheno_id], :, 1);
 
 (y0, X0, lambda0) = BulkLMM.transform_rotation(pheno_y, geno, kinship; addIntercept = true);
