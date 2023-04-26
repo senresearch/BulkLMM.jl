@@ -1,7 +1,6 @@
 # Tests of single trait scan function scan() interface with adding covariates:
 
-## Consider the 705-th trait
-pheno_y = reshape(pheno[:, 705], :, 1);
+## Consider the 7919-th trait
 ## Take measurements of the first three traits as pseudo-covariates:
 pseudo_covar = pheno[:, 1:3];
 
@@ -21,5 +20,5 @@ catch e
     @test e.msg == "Intercept has to be added when no other covariate is given."
 end
 
-@test mean(abs.(test_scan_covar.lod .- test_grid_covar[:, 705])) <= tol
+@test mean(abs.(test_scan_covar.lod .- test_grid_covar[:, pheno_id])) <= tol
 
