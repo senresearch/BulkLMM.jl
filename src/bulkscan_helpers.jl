@@ -248,7 +248,8 @@ function gridscan_by_bin(pheno::Array{Float64, 2}, geno::Array{Float64, 2},
 
     m = size(pheno, 2);
 
-    Y_std = colStandardize(pheno);
+    # Y_std = colStandardize(pheno);
+    Y_std = pheno;
 
     (Y0, X0, lambda0) = transform_rotation(Y_std, [covar geno], kinship; addIntercept = addIntercept);
 
