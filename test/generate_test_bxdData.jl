@@ -4,6 +4,8 @@
 pheno_file = string(@__DIR__, "/../data/bxdData/spleen-pheno-nomissing.csv")
 pheno_raw = readdlm(pheno_file, ',', header = false);
 pheno = pheno_raw[2:end, 2:(end-1)].*1.0;
+pheno_id = 7919
+pheno_y = reshape(pheno[:, pheno_id], :, 1);
 
 geno_file = string(@__DIR__, "/../data/bxdData/spleen-bxd-genoprob.csv")
 geno_raw = readdlm(geno_file, ',', header = false);

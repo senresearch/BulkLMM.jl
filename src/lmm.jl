@@ -54,7 +54,7 @@ reml: boolean indicating ML or REML estimation
 
 """
 function fitlmm(y::Array{Float64, 2}, X::Array{Float64, 2}, lambda::Array{Float64, 1}, prior::Array{Float64, 1};
-                reml::Bool = false, loglik::Bool = true, method::String = "qr", 
+                reml::Bool = false, loglik::Bool = true, method::String = "qr", optim_interval::Int64 = 1,
                 h20::Float64 = 0.5, d::Float64 = 1.0)
 
     function logLik0(h2::Float64)
@@ -63,8 +63,24 @@ function fitlmm(y::Array{Float64, 2}, X::Array{Float64, 2}, lambda::Array{Float6
     end
     ## avoid the use of global variable in inner function;
 
-    opt = optimize(logLik0, max(h20-d, 0.0), min(h20+d, 1.0))
-    h2 = opt.minimizer
+    lb = max(h20-d, 0.0);
+    ub = min(h20+d, 1.0);
+
+    #=
+        opt = optimize(logLik0, lb, ub);
+        minimum_LL = Optim.minimum(opt);
+
+        lb_LL = logLik0(lb);
+    
+        if lb_LL < minimum_LL
+            h2 = lb
+        else
+            h2 = opt.minimizer;
+        end
+    =#
+    opt = gridbrent(logLik0, lb, ub, optim_interval);
+    h2 = opt.minimizer;
+
     est = wls(y, X, makeweights(h2, lambda), prior; reml = reml, loglik = loglik, method = method)
     return LMMEstimates(est.b, est.sigma2, h2, est.ell)
 end

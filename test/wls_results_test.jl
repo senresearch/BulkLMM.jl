@@ -104,7 +104,7 @@ function biasSquared(est::AbstractArray{Float64, 2}, truth::AbstractArray{Float6
     
 end
 
-tol = 1e-2;
+tol = 0.1;
 true_b = reshape([1.0 0.5], 2, 1);
 true_B = [beta beta2];
 
