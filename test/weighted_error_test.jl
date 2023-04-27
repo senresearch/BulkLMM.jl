@@ -13,15 +13,15 @@ prior = [1.0, 0.1];
 tol = 1e-3;
 
 ## Pre-process weighted data for comparison:
-pheno_weighted = rowMultiply(pheno, weights_at_random);
+pheno_weighted = BulkLMM.rowMultiply(pheno, weights_at_random);
 # pheno_weighted = colStandardize(pheno_weighted);
 pheno_y_weighted = reshape(pheno_weighted[:, pheno_id], :, 1);
-geno_weighted = rowMultiply(geno, weights_at_random);
-intercept_weighted = rowMultiply(ones(n, 1), weights_at_random);
-covars_weighted = rowMultiply(pseudo_covars, weights_at_random);
+geno_weighted = BulkLMM.rowMultiply(geno, weights_at_random);
+intercept_weighted = BulkLMM.rowMultiply(ones(n, 1), weights_at_random);
+covars_weighted = BulkLMM.rowMultiply(pseudo_covars, weights_at_random);
 
-kinship_weighted = rowMultiply(kinship, weights_at_random);
-kinship_weighted = rowMultiply(permutedims(kinship_weighted), weights_at_random);
+kinship_weighted = BulkLMM.rowMultiply(kinship, weights_at_random);
+kinship_weighted = BulkLMM.rowMultiply(permutedims(kinship_weighted), weights_at_random);
 
 
 ## scan functions:
