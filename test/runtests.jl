@@ -1,5 +1,4 @@
 using BulkLMM
-using Plots
 using CSV
 using Test
 using Statistics
