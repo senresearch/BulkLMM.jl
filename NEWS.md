@@ -1,4 +1,4 @@
-## Version 0.2.1 (April 19, 2023)
+## Version 1.0.1 (April 19, 2023)
 - Enabled modeling for heteroskedestic sources of error variance:
 
     By our assumption of the linear mixed models, 
@@ -24,7 +24,7 @@
 
     where $y$ contains the `number of strains` strain means of the expression trait of interest and $Y$ contains the strain means of multiple expression traits of interest.
 
-## Version 0.2.0 (March 09, 2023)
+## Version 1.0.0 (March 09, 2023)
 
 - Renamed the scan functions: now use `scan()` for performing single-trait scans, and use `bulkscan_...()` for performing multiple-trait scans.
 
