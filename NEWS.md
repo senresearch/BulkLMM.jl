@@ -1,3 +1,9 @@
+## Version 1.0.2 (May 5, 2023)
+
+- Modified `bulkscan_null_grid()` (scan function using grid-search algorithm) which previously did an implicit standardization to input matrices, which could cause accuracy issues when using weighted variances feature. 
+- Added new tests for the scanning functions using the `weights` keyword argument.
+
+
 ## Version 1.0.1 (April 19, 2023)
 - Enabled modeling for heteroskedestic sources of error variance:
 
@@ -20,6 +26,8 @@
     L = bulkscan_null(Y, G, K; weights = weights, ...).L # LOD scores for every input trait
 
     L = bulkscan_null_grid(Y, G, K, grid; weights = weights, ...).L # LOD scores for every input trait
+    
+    L = bulkscan_alt_grid(Y, G, K, grid; weights = weights, ...).L # LOD scores for every input trait
     ```
 
     where $y$ contains the `number of strains` strain means of the expression trait of interest and $Y$ contains the strain means of multiple expression traits of interest.
