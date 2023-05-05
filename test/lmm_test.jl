@@ -2,7 +2,7 @@
 
 ## Note: make sure pwd() is "BulkLMM.jl/test"
 
-pheno_y = reshape(pheno[:, 1126], :, 1);
+pheno_y = reshape(pheno[:, 7919], :, 1);
 
 ##########################################################################################################
 ## TEST: makeweights()

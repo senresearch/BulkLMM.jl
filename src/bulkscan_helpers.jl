@@ -248,7 +248,8 @@ function gridscan_by_bin(pheno::Array{Float64, 2}, geno::Array{Float64, 2},
 
     m = size(pheno, 2);
 
-    Y_std = colStandardize(pheno);
+    # Y_std = colStandardize(pheno);
+    Y_std = pheno;
 
     (Y0, X0, lambda0) = transform_rotation(Y_std, [covar geno], kinship; addIntercept = addIntercept);
 
@@ -280,9 +281,8 @@ function gridscan_by_bin(pheno::Array{Float64, 2}, geno::Array{Float64, 2},
     blocking_idxs = distribute_traits_by_h2(idxs_sets, h2_taken, m, nbins);
     results = Array{Array{Float64, 2}, 1}(undef, nbins);
 
-    ## Threads.@threads for t in 1:nbins
-
-    for t in 1:nbins
+    Threads.@threads for t in 1:nbins
+    ## for t in 1:nbins
         results[t] = weighted_liteqtl(Y0[:, blocking_idxs[t]], X0, lambda0, h2_taken[t]; 
                                       num_of_covar = num_of_covar);
     end
