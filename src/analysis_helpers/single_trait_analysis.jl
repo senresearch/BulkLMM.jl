@@ -81,12 +81,12 @@ function plotLL(y::Array{Float64, 2}, G::Array{Float64, 2}, covar::Array{Float64
 
     plot!(p, ones(2).*opt_h2_null, [y_lims[1]-0.05, opt_ll_null], color = "blue", style = :dash, label = "")
     plot!(p, [x_lims[1]-0.05, opt_h2_null], ones(2).*opt_ll_null, color = "blue", style = :dash, label = "")
-    annotate!(p, opt_h2_null, y_lims[1]-0.05, 
+    annotate!(p, opt_h2_null, y_lims[1]-1.75, 
               text("$opt_h2_null", :blue, :below, 8))
 
     plot!(p, ones(2).*opt_h2_alt, [y_lims[1]-0.05, opt_ll_alt], color = "red", style = :dash, label = "")
     plot!(p, [x_lims[1]-0.05, opt_h2_alt], ones(2).*opt_ll_alt, color = "red", style = :dash, label = "")
-    annotate!(p, opt_h2_alt, y_lims[1]-0.05, 
+    annotate!(p, opt_h2_alt, y_lims[1]-1.75, 
               text("$opt_h2_alt", :red, :below, 8))
 
 

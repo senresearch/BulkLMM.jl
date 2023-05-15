@@ -316,6 +316,7 @@ Does element-wise comparisons of two 2d Arrays and keep the larger elements in-p
 # Arguments
 - max = 2d Array of Float; matrix of current maximum values
 - toCompare = 2d Array of Flopat; matrix of values to compare with the current maximum values
+- 
 
 # Value
 
@@ -326,15 +327,28 @@ Nothing; does in-place maximizations.
 Will modify input matrix `max` by a parallelized loop; uses @tturbo in the package `LoopVectorization.jl`
 
 """
-function tmax!(max::Array{Float64, 2}, toCompare::Array{Float64, 2})
+function tmax!(max::Array{Float64, 2}, toCompare::Array{Float64, 2},
+               hsq_panel::Array{Float64, 2}, hsq_panel_counter::Array{Int64, 2},
+               hsq_list::Array{Float64, 1})
     
     (p, m) = size(max);
     
-    @tturbo for j in 1:m
+    # @tturbo for j in 1:m
+    Threads.@threads for j in 1:m
         for i in 1:p
-            
+
             max[i, j] = (max[i, j] >= toCompare[i, j]) ? max[i, j] : toCompare[i, j];
-            
+            hsq_panel_counter[i, j] = (max[i, j] >= toCompare[i, j]) ? hsq_panel_counter[i, j] : (hsq_panel_counter[i, j]+1);
+            hsq_panel[i, j] = hsq_list[hsq_panel_counter[i, j]]
+            #= 
+            if (max[i, j] < toCompare[i, j])
+                max[i, j] = toCompare[i, j];
+                hsq_panel_counter[i, j] = hsq_panel_counter[i, j]+1;
+                hsq_panel[i, j] = hsq_list[hsq_panel_counter[i, j]];
+            end
+            =# 
+
+            # max[i, j] = (max[i, j] >= toCompare[i, j]) ? max[i, j] : toCompare[i, j];
         end
     end
     

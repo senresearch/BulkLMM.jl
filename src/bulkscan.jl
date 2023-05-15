@@ -275,7 +275,11 @@ function bulkscan_alt_grid(Y::Array{Float64, 2}, G::Array{Float64, 2},
                            Covar::Array{Float64, 2}, K::Array{Float64, 2}, hsq_list::Array{Float64, 1};
                            weights::Union{Missing, Array{Float64, 1}} = missing, 
                            addIntercept::Bool = true)
-                            
+    
+
+    p = size(G, 2);
+    m = size(Y, 2);
+
     if !ismissing(weights)
         W = diagm(weights);
         Y_st = W*Y;
@@ -305,16 +309,19 @@ function bulkscan_alt_grid(Y::Array{Float64, 2}, G::Array{Float64, 2},
         num_of_covar = size(Covar, 2);
     end
 
+    ## initializing outputs:
     maxL = weighted_liteqtl(Y0, X0, lambda0, hsq_list[1]; num_of_covar = num_of_covar);
+    hsq_panel = ones(p, m) .* hsq_list[1]; 
+    hsq_panel_counter = Int.(ones(p, m));
 
     for hsq in hsq_list[2:end]
 
         currL = weighted_liteqtl(Y0, X0, lambda0, hsq; num_of_covar = num_of_covar);
-        tmax!(maxL, currL);
+        tmax!(maxL, currL, hsq_panel, hsq_panel_counter, hsq_list);
 
     end
 
-    return maxL
+    return maxL, hsq_panel
 
 end
 
