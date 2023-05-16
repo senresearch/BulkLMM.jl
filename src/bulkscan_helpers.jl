@@ -336,19 +336,15 @@ function tmax!(max::Array{Float64, 2}, toCompare::Array{Float64, 2},
     # @tturbo for j in 1:m
     Threads.@threads for j in 1:m
         for i in 1:p
-
-            max[i, j] = (max[i, j] >= toCompare[i, j]) ? max[i, j] : toCompare[i, j];
-            hsq_panel_counter[i, j] = (max[i, j] >= toCompare[i, j]) ? hsq_panel_counter[i, j] : (hsq_panel_counter[i, j]+1);
-            hsq_panel[i, j] = hsq_list[hsq_panel_counter[i, j]]
-            #= 
+            
+            # change inputs in-place only when condition is met (the coordinate of LOD is higher on the current h2 value)
             if (max[i, j] < toCompare[i, j])
                 max[i, j] = toCompare[i, j];
                 hsq_panel_counter[i, j] = hsq_panel_counter[i, j]+1;
                 hsq_panel[i, j] = hsq_list[hsq_panel_counter[i, j]];
             end
-            =# 
 
-            # max[i, j] = (max[i, j] >= toCompare[i, j]) ? max[i, j] : toCompare[i, j];
+            # do nothing if not.
         end
     end
     
