@@ -321,7 +321,7 @@ function bulkscan_alt_grid(Y::Array{Float64, 2}, G::Array{Float64, 2},
 
     end
 
-    return maxL, hsq_panel
+    return (L = maxL, h2_panel = hsq_panel)
 
 end
 
