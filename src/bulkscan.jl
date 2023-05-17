@@ -261,18 +261,21 @@ Maximal LOD scores are taken independently for each pair of trait and marker; wh
 """
 function bulkscan_alt_grid(Y::Array{Float64, 2}, G::Array{Float64, 2}, K::Array{Float64, 2}, 
                            hsq_list::Array{Float64, 1};
+                           prior::Array{Float64, 1} = [0.0, 0.0],
                            weights::Union{Missing, Array{Float64, 1}} = missing)
 
     n = size(Y, 1);
     intercept = ones(n, 1);
 
     return bulkscan_alt_grid(Y, G, intercept, K, hsq_list; 
+                             prior = prior,
                              weights = weights, addIntercept = false);
 
 end
 
 function bulkscan_alt_grid(Y::Array{Float64, 2}, G::Array{Float64, 2}, 
                            Covar::Array{Float64, 2}, K::Array{Float64, 2}, hsq_list::Array{Float64, 1};
+                           prior::Array{Float64, 1} = [0.0, 0.0],
                            weights::Union{Missing, Array{Float64, 1}} = missing, 
                            addIntercept::Bool = true)
     
@@ -309,19 +312,43 @@ function bulkscan_alt_grid(Y::Array{Float64, 2}, G::Array{Float64, 2},
         num_of_covar = size(Covar, 2);
     end
 
-    ## initializing outputs:
-    maxL = weighted_liteqtl(Y0, X0, lambda0, hsq_list[1]; num_of_covar = num_of_covar);
-    hsq_panel = ones(p, m) .* hsq_list[1]; 
-    hsq_panel_counter = Int.(ones(p, m));
-
-    for hsq in hsq_list[2:end]
-
-        currL = weighted_liteqtl(Y0, X0, lambda0, hsq; num_of_covar = num_of_covar);
-        tmax!(maxL, currL, hsq_panel, hsq_panel_counter, hsq_list);
-
+    if num_of_covar == 1
+        X0_base = reshape(X0[:, 1], :, 1);
+    else
+        X0_base = X0[:, 1:num_of_covar];
     end
 
-    return (L = maxL, h2_panel = hsq_panel)
+    ## initializing outputs:
+    logLR = weighted_liteqtl(Y0, X0, lambda0, hsq_list[1]; num_of_covar = num_of_covar);
+    logLR = logLR .* log(10);
+    weights_1 = makeweights(hsq_list[1], lambda0);
+    logL0 = wls_multivar(Y0, X0_base, weights_1, prior).Ell;
+    logL1 = logLR .+ repeat(logL0, p);
+
+    logL0_all_h2 = zeros(length(hsq_list), m);
+    logL0_all_h2[1, :] = logL0;
+    k = 1;
+
+    h2_panel = ones(p, m) .* hsq_list[1]; 
+    h2_panel_counter = Int.(ones(p, m));
+
+    for h2 in hsq_list[2:end]
+
+        logLR_k = weighted_liteqtl(Y0, X0, lambda0, h2) .* log(10);
+        weights_k = makeweights(h2, lambda0);
+        logL0_k = wls_multivar(Y0, X0_base, weights_k, prior).Ell; 
+        logL1_k = logLR_k .+ repeat(logL0_k, p);
+
+        k = k+1;
+        logL0_all_h2[k, :] = logL0_k;
+
+        tmax!(logL1, logL1_k, h2_panel, h2_panel_counter, hsq_list);
+    end
+
+    logL0_optimum = mapslices(x -> maximum(x), logL0_optimum, dims = 1) |> x -> repeat(x, p);
+    L = (logL1 .- logL0_optimum) ./ log(10);
+
+    return (L = L, h2_panel = h2_panel);
 
 end
 
