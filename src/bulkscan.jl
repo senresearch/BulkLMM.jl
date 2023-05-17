@@ -345,7 +345,7 @@ function bulkscan_alt_grid(Y::Array{Float64, 2}, G::Array{Float64, 2},
         tmax!(logL1, logL1_k, h2_panel, h2_panel_counter, hsq_list);
     end
 
-    logL0_optimum = mapslices(x -> maximum(x), logL0_optimum, dims = 1) |> x -> repeat(x, p);
+    logL0_optimum = mapslices(x -> maximum(x), logL0_all_h2, dims = 1) |> x -> repeat(x, p);
     L = (logL1 .- logL0_optimum) ./ log(10);
 
     return (L = L, h2_panel = h2_panel);
