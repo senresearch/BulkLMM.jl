@@ -292,11 +292,12 @@ function scan_alt(y::Array{Float64, 2}, g::Array{Float64, 2}, covar::Array{Float
         out11 = fitlmm(y0, X, lambda0, prior; reml = reml, method = method, optim_interval = optim_interval);
        
         # estimate variance components (vc) from the alt. model
+        sqrtw_null = sqrt.(makeweights(out00.h2, lambda0));
         sqrtw_alt = sqrt.(makeweights(out11.h2, lambda0));
 
         # re-scale both models (null, alt.) and evaluate the ells base on vc from alt. model
         wls_alt = wls(y0, X, sqrtw_alt, prior);
-        wls_null = wls(y0, X0_covar, sqrtw_alt, prior);
+        wls_null = wls(y0, X0_covar, sqrtw_null, prior);
         lod[i] = (wls_alt.ell - wls_null.ell)/log(10);
 
         pve_list[i] = out11.h2;
