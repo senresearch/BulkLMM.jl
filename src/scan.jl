@@ -43,7 +43,7 @@ function scan(y::Array{Float64,2}, g::Array{Float64,2}, K::Array{Float64,2};
               # vc estimation options:
               reml::Bool = false, assumption::String = "null", method::String = "qr", optim_interval::Int64 = 1,
               # permutation testing options:
-              permutation_test::Bool = false, nperms::Int64 = 1024, rndseed::Int64 = 0, original::Bool = true,
+              permutation_test::Bool = false, nperms::Int64 = 1024, rndseed::Int64 = 0,
               # option for inspecting h2 estimation process:
               plot_loglik::Bool = false, markerID::Int = 0, h2_grid::Array{Float64, 1} = Array{Float64, 1}(undef, 1),
               x_lims::Array{Float64, 1} = [0.0, 1.0], y_lims::Array{Float64, 1} = [-100.0, 100.0]
@@ -59,7 +59,7 @@ function scan(y::Array{Float64,2}, g::Array{Float64,2}, K::Array{Float64,2};
                 addIntercept = false,
                 prior_variance = prior_variance, prior_sample_size = prior_sample_size,
                 reml = reml, assumption = assumption, method = method, optim_interval = optim_interval,
-                permutation_test = permutation_test, nperms = nperms, rndseed = rndseed, original = original,
+                permutation_test = permutation_test, nperms = nperms, rndseed = rndseed,
                 plot_loglik = plot_loglik, markerID = markerID, h2_grid = h2_grid,
                 x_lims = x_lims, y_lims = y_lims)
 end
@@ -72,7 +72,7 @@ function scan(y::Array{Float64,2}, g::Array{Float64,2}, covar::Array{Float64, 2}
               # vc estimation options:
               reml::Bool = false, assumption::String = "null", method::String = "qr", optim_interval::Int64 = 1,
               # permutation testing options:
-              permutation_test::Bool = false, nperms::Int64 = 1024, rndseed::Int64 = 0, original::Bool = true,
+              permutation_test::Bool = false, nperms::Int64 = 1024, rndseed::Int64 = 0,
               # option for inspecting h2 estimation process:
               plot_loglik::Bool = false, markerID::Int = 0, h2_grid::Array{Float64, 1} = Array{Float64, 1}(undef, 1),
               x_lims::Array{Float64, 1} = [0.0, 1.0], y_lims::Array{Float64, 1} = [-100.0, 100.0]
@@ -98,7 +98,7 @@ function scan(y::Array{Float64,2}, g::Array{Float64,2}, covar::Array{Float64, 2}
                     addIntercept = false,
                     prior_variance = prior_variance, prior_sample_size = prior_sample_size,
                     reml = reml, assumption = assumption, method = method, optim_interval = optim_interval,
-                    permutation_test = permutation_test, nperms = nperms, rndseed = rndseed, original = original,
+                    permutation_test = permutation_test, nperms = nperms, rndseed = rndseed,
                     plot_loglik = plot_loglik, markerID = markerID, h2_grid = h2_grid,
                     x_lims = x_lims, y_lims = y_lims)
     else
@@ -112,7 +112,7 @@ function scan(y::Array{Float64,2}, g::Array{Float64,2}, covar::Array{Float64, 2}
         if permutation_test == true
             results = scan_perms_lite(y_st, g_st, covar_st, K_st; prior_variance = prior_variance, prior_sample_size = prior_sample_size,
                                       addIntercept = addIntercept, reml = reml, method = method, optim_interval = optim_interval,
-                                      nperms = nperms, rndseed = rndseed, original = original);
+                                      nperms = nperms, rndseed = rndseed);
         else
             results = scan_null(y_st, g_st, covar_st, K_st, [prior_variance, prior_sample_size], addIntercept; 
                                 reml = reml, method = method, optim_interval = optim_interval);
@@ -406,7 +406,7 @@ function scan_perms_lite(y::Array{Float64,2}, g::Array{Float64,2}, covar::Array{
                          prior_variance::Float64 = 1.0, prior_sample_size::Float64 = 0.0, 
                          addIntercept::Bool = true, method::String = "qr", optim_interval::Int64 = 1,
                          nperms::Int64 = 1024, rndseed::Int64 = 0, 
-                         reml::Bool = false, original::Bool = true)
+                         reml::Bool = false)
 
 
     # check the number of traits as this function only works for permutation testing of univariate trait
@@ -429,22 +429,17 @@ function scan_perms_lite(y::Array{Float64,2}, g::Array{Float64,2}, covar::Array{
     # fit lmm
     (y0, X0, lambda0) = transform_rotation(y, [covar g], K; addIntercept = addIntercept); # rotation of data
     
-    (r0, X00) = transform_reweight(y0, X0, lambda0;
+    (r0, X00, sigma2_e, h2_null) = transform_reweight(y0, X0, lambda0;
                                    n_covars = size(covar, 2),  
                                    prior_a = prior_variance, 
                                    prior_b = prior_sample_size, 
                                    reml = reml, method = method, optim_interval = optim_interval); # reweighting and taking residuals
 
     # If no permutation testing is required, move forward to process the single original vector
-    if nperms == 0
-
-        if original == false
-            throw(error("If no permutation testing is required, input value of `original` has to be `true`."));
-        end
-
-        r0perm = r0;
+    if nperms < 0
+        throw(error("The required number of permutations must be a positive integer."));
     else
-        r0perm = transform_permute(r0; nperms = nperms, rndseed = rndseed, original = original);
+        r0perm = transform_permute(r0; nperms = nperms, rndseed = rndseed, original = true);
     end
 
     norm_y = mapslices(x -> norm(x), r0perm, dims = 1) |> vec;
@@ -455,10 +450,13 @@ function scan_perms_lite(y::Array{Float64,2}, g::Array{Float64,2}, covar::Array{
     colDivide!(r0perm, norm_y);
     colDivide!(X00, norm_X);
 
-    lods = X00' * r0perm
-    threaded_map!(r2lod, lods, n);
+    L = X00' * r0perm
+    threaded_map!(r2lod, L, n);
 
-    return lods
+    lod = L[:, 1]; # lod scores for the original trait;
+    L_perms = L[:, 2:end]; # lod scores for the permuted copies of the original, excluding the lod scores for the original trait
+
+    return (sigma2_e = sigma2_e, h2_null = h2_null, lod = lod, L_perms = L_perms)
 
 end
 

@@ -66,7 +66,7 @@ function transform_reweight(y0::Array{Float64, 2}, X0::Array{Float64, 2}, lambda
             X00 = resid(copy_X0[:, (n_covars+1):end], copy_X0[:, 1:n_covars])
         end
 
-        return (copy_r0, X00, vc.sigma2)
+        return (copy_r0, X00, vc.sigma2, vc.h2)
 
 end
 
