@@ -31,7 +31,7 @@ end
 ##########################################################################################################
 test_getThreshold = quote 
 
-    perms_results = scan(pheno_y, geno, kinship; permutation_test = true, nperms = 100, original = false);
+    perms_results = scan(pheno_y, geno, kinship; permutation_test = true, nperms = 100).L_perms;
     thr_probs = [0.5];
 
     max_lods = zeros(size(perms_results, 2));
