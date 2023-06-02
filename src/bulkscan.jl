@@ -261,7 +261,7 @@ Maximal LOD scores are taken independently for each pair of trait and marker; wh
 """
 function bulkscan_alt_grid(Y::Array{Float64, 2}, G::Array{Float64, 2}, K::Array{Float64, 2}, 
                            hsq_list::Array{Float64, 1};
-                           reml::Array{Float64, 1} = false,
+                           reml::Bool = false,
                            prior_variance::Float64 = 1.0, prior_sample_size::Float64 = 0.0, 
                            weights::Union{Missing, Array{Float64, 1}} = missing)
 
@@ -277,7 +277,7 @@ end
 
 function bulkscan_alt_grid(Y::Array{Float64, 2}, G::Array{Float64, 2}, 
                            Covar::Array{Float64, 2}, K::Array{Float64, 2}, hsq_list::Array{Float64, 1};
-                           reml::Array{Float64, 1} = false,
+                           reml::Bool = false,
                            prior_variance::Float64 = 1.0, prior_sample_size::Float64 = 0.0, 
                            weights::Union{Missing, Array{Float64, 1}} = missing, 
                            addIntercept::Bool = true)

@@ -3,7 +3,7 @@ module BulkLMM
     # dependent packages 
     using CSV, DelimitedFiles, DataFrames, Missings 
     using LinearAlgebra, Statistics, Optim
-    using Random, Distributions, LoopVectorization
+    using Random, Distributions
     
     include("./util.jl");
     include("./kinship.jl");
