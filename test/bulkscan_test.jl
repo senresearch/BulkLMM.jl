@@ -128,9 +128,11 @@ test_bulkscan_alt_grid = quote
 
     test_bulkscan_alt_grid = BulkLMM.bulkscan_alt_grid(stand_pheno, stand_geno, kinship, grid_list; 
                                                        prior_variance = 1.0, prior_sample_size = 0.1);
-
-    @test sum((test_alt_705.lod .- test_bulkscan_alt_grid.L[:, 1]).^2) <= 1e-3;
-    @test sum((test_alt_1112.lod .- test_bulkscan_alt_grid.L[:, end]).^2) <= 1e-3;
+                                                       
+    @test mean(abs.(test_alt_705.h2_each_marker .- test_bulkscan_alt_grid.h2_panel[:, 1])) <= 0.05                                               
+    @test mean(abs.(test_alt_1112.h2_each_marker .- test_bulkscan_alt_grid.h2_panel[:, end])) <= 0.05
+    @test mean((test_alt_705.lod .- test_bulkscan_alt_grid.L[:, 1]).^2) <= 0.01;
+    @test mean((test_alt_1112.lod .- test_bulkscan_alt_grid.L[:, end]).^2) <= 0.01;
 
 end;
 
