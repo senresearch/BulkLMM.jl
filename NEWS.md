@@ -5,9 +5,8 @@
 
 - Removed dependency to the package `LoopVectorization.jl`.
 
-
-## Version 1.0.2 (May 5, 2023)
 - Modified `bulkscan_null_grid()` (scan function using grid-search algorithm) which previously did an implicit standardization to input matrices, which could cause accuracy issues when using weighted variances feature. 
+
 - Added new tests for the scanning functions using the `weights` keyword argument.
 
 
