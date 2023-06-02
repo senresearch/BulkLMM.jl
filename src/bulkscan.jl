@@ -261,21 +261,24 @@ Maximal LOD scores are taken independently for each pair of trait and marker; wh
 """
 function bulkscan_alt_grid(Y::Array{Float64, 2}, G::Array{Float64, 2}, K::Array{Float64, 2}, 
                            hsq_list::Array{Float64, 1};
-                           prior::Array{Float64, 1} = [0.0, 0.0],
+                           reml::Array{Float64, 1} = false,
+                           prior_variance::Float64 = 1.0, prior_sample_size::Float64 = 0.0, 
                            weights::Union{Missing, Array{Float64, 1}} = missing)
 
     n = size(Y, 1);
     intercept = ones(n, 1);
 
     return bulkscan_alt_grid(Y, G, intercept, K, hsq_list; 
-                             prior = prior,
+                             reml = reml, 
+                             prior_variance = prior_variance, prior_sample_size = prior_sample_size, 
                              weights = weights, addIntercept = false);
 
 end
 
 function bulkscan_alt_grid(Y::Array{Float64, 2}, G::Array{Float64, 2}, 
                            Covar::Array{Float64, 2}, K::Array{Float64, 2}, hsq_list::Array{Float64, 1};
-                           prior::Array{Float64, 1} = [0.0, 0.0],
+                           reml::Array{Float64, 1} = false,
+                           prior_variance::Float64 = 1.0, prior_sample_size::Float64 = 0.0, 
                            weights::Union{Missing, Array{Float64, 1}} = missing, 
                            addIntercept::Bool = true)
     
@@ -318,11 +321,12 @@ function bulkscan_alt_grid(Y::Array{Float64, 2}, G::Array{Float64, 2},
         X0_base = X0[:, 1:num_of_covar];
     end
 
+    prior = [prior_variance, prior_sample_size];
     ## initializing outputs:
     logLR = weighted_liteqtl(Y0, X0, lambda0, hsq_list[1]; num_of_covar = num_of_covar);
     logLR = logLR .* log(10);
     weights_1 = makeweights(hsq_list[1], lambda0);
-    logL0 = wls_multivar(Y0, X0_base, weights_1, prior).Ell;
+    logL0 = wls_multivar(Y0, X0_base, weights_1, prior; reml = reml).Ell;
     logL1 = logLR .+ repeat(logL0, p);
 
     logL0_all_h2 = zeros(length(hsq_list), m);
@@ -336,7 +340,7 @@ function bulkscan_alt_grid(Y::Array{Float64, 2}, G::Array{Float64, 2},
 
         logLR_k = weighted_liteqtl(Y0, X0, lambda0, h2) .* log(10);
         weights_k = makeweights(h2, lambda0);
-        logL0_k = wls_multivar(Y0, X0_base, weights_k, prior).Ell; 
+        logL0_k = wls_multivar(Y0, X0_base, weights_k, prior; reml = reml).Ell; 
         logL1_k = logLR_k .+ repeat(logL0_k, p);
 
         k = k+1;

@@ -1,5 +1,10 @@
-## Version 1.0.2 (May 5, 2023)
+## Version 1.1.0 (June 1, 2023)
+- Added the feature to output the comprehensive results running `bulkscan_alt_grid()`, which does multiple-trait scans with estimation of h2 under each alternative model using grid-search approximation. It now returns the heritability estimated for each trait and each genomic marker, stored in a 2-D array. The user is able to access this information by getting the field `h2_panel` from the resulting object.
 
+- Removed dependency to the package `LoopVectorization.jl`.
+
+
+## Version 1.0.2 (May 5, 2023)
 - Modified `bulkscan_null_grid()` (scan function using grid-search algorithm) which previously did an implicit standardization to input matrices, which could cause accuracy issues when using weighted variances feature. 
 - Added new tests for the scanning functions using the `weights` keyword argument.
 
