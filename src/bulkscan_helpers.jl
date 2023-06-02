@@ -49,8 +49,6 @@ function computeR_LMM(wY::Array{Float64, 2}, wX::Array{Float64, 2}, wIntercept::
     # exclude the effect of (rotated) intercept (idea is similar as centering data in the linear model case)
     Y00 = resid(wY, wIntercept);
     X00 = resid(wX, wIntercept);
-    
-    # n = size(y00, 1);
 
     # standardize the response and covariates by dividing by their norms
     norm_Y = mapslices(x -> norm(x), Y00, dims = 1) |> vec;
@@ -333,7 +331,6 @@ function tmax!(max::Array{Float64, 2}, toCompare::Array{Float64, 2},
     
     (p, m) = size(max);
     
-    # @tturbo for j in 1:m
     Threads.@threads for j in 1:m
         for i in 1:p
             
