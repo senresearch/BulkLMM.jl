@@ -45,7 +45,7 @@ function scan(y::Array{Float64,2}, g::Array{Float64,2}, K::Array{Float64,2};
               # permutation testing options:
               permutation_test::Bool = false, nperms::Int64 = 1024, rndseed::Int64 = 0,
               # option for inspecting h2 estimation process:
-              plot_loglik::Bool = false, markerID::Int = 0, h2_grid::Array{Float64, 1} = Array{Float64, 1}(undef, 1),
+              profileLL::Bool = false, markerID::Int = 0, h2_grid::Array{Float64, 1} = Array{Float64, 1}(undef, 1),
               x_lims::Array{Float64, 1} = [0.0, 1.0], y_lims::Array{Float64, 1} = [-100.0, 100.0]
               )
 
@@ -60,7 +60,7 @@ function scan(y::Array{Float64,2}, g::Array{Float64,2}, K::Array{Float64,2};
                 prior_variance = prior_variance, prior_sample_size = prior_sample_size,
                 reml = reml, assumption = assumption, method = method, optim_interval = optim_interval,
                 permutation_test = permutation_test, nperms = nperms, rndseed = rndseed,
-                plot_loglik = plot_loglik, markerID = markerID, h2_grid = h2_grid,
+                profileLL = profileLL, markerID = markerID, h2_grid = h2_grid,
                 x_lims = x_lims, y_lims = y_lims)
 end
 
@@ -74,7 +74,7 @@ function scan(y::Array{Float64,2}, g::Array{Float64,2}, covar::Array{Float64, 2}
               # permutation testing options:
               permutation_test::Bool = false, nperms::Int64 = 1024, rndseed::Int64 = 0,
               # option for inspecting h2 estimation process:
-              plot_loglik::Bool = false, markerID::Int = 0, h2_grid::Array{Float64, 1} = Array{Float64, 1}(undef, 1),
+              profileLL::Bool = false, markerID::Int = 0, h2_grid::Array{Float64, 1} = Array{Float64, 1}(undef, 1),
               x_lims::Array{Float64, 1} = [0.0, 1.0], y_lims::Array{Float64, 1} = [-100.0, 100.0]
               )
 
@@ -99,7 +99,7 @@ function scan(y::Array{Float64,2}, g::Array{Float64,2}, covar::Array{Float64, 2}
                     prior_variance = prior_variance, prior_sample_size = prior_sample_size,
                     reml = reml, assumption = assumption, method = method, optim_interval = optim_interval,
                     permutation_test = permutation_test, nperms = nperms, rndseed = rndseed,
-                    plot_loglik = plot_loglik, markerID = markerID, h2_grid = h2_grid,
+                    profileLL = profileLL, markerID = markerID, h2_grid = h2_grid,
                     x_lims = x_lims, y_lims = y_lims)
     else
         y_st = y;
@@ -131,7 +131,7 @@ function scan(y::Array{Float64,2}, g::Array{Float64,2}, covar::Array{Float64, 2}
 
     # return results
 
-    if plot_loglik == true
+    if profileLL == true
         println("Loglik plot: ")
         p = plotLL(y_st, g_st, covar_st, K_st, h2_grid, markerID; 
                    x_lims = x_lims, y_lims = y_lims,
