@@ -129,16 +129,20 @@ function scan(y::Array{Float64,2}, g::Array{Float64,2}, covar::Array{Float64, 2}
         error("Assumption keyword is not supported. Please enter null or alt.")
     end
 
-    # return results
-
     if profileLL == true
+        #= 
         println("Loglik plot: ")
         p = plotLL(y_st, g_st, covar_st, K_st, h2_grid, markerID; 
                    x_lims = x_lims, y_lims = y_lims,
                    prior = [prior_variance, prior_sample_size])
-        # plot(p)
+
         display(p)
-        return results
+        =# 
+
+        results_profileLL = profileLL(y_st, g_st, covar_st, K_st, h2_grid, markerID; 
+                                      prior = [prior_variance, prior_sample_size]);
+
+        return (results, results_profileLL);
     else
         return results
     end
