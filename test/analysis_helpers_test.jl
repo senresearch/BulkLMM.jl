@@ -41,7 +41,7 @@ test_getThreshold = quote
 
     thr_obj = BulkLMM.get_thresholds(perms_results, thr_probs);
 
-    @test quantile(max_lods, thr_obj.thr_probs[1]) == thr_obj.thrs[1];
+    @test quantile(max_lods, thr_obj.probs[1]) == thr_obj.thrs[1];
 
 end
 
