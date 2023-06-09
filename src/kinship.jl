@@ -38,44 +38,29 @@ function calcKinship(geno::Matrix{Float64})
     return d
 end
 
+function calcKinship2(geno::Array{Float64, 2})
 
-function calcKinship(geno::Matrix{Union{Missing,Float64}})
+    (n, p) = size(geno); # n - the sample size; p - the number of tested markers
 
-    # get dimensions
-    sz = size(geno)
+    K = ones(n, n);
 
-    # assign to variables for convenience
-    nr = sz[1]
-    nc = sz[2]
+    for i in 1:(n-1)
+        for j in (i+1):n
 
-    # if empty then there is nothing to do
-    if(nr==0)
-        error("Nothing to do here.")
-    else
-        # make matrix to hold distances
-        d = zeros(nr,nr)
-    end
+            K[i, j] = calcCorr_IBD(vec(geno[i, :]), vec(geno[j, :]));
 
-    # assign diagonals to ones
-    for i=1:nr
-        d[i,i] = 1.0
-    end
-
-    iscomplete = Array{Bool,1}(undef,nc)
-    ncomplete::Int64 = 0
-    # off-diagonal elements need to be calculated
-    if(nr>=2)
-        for i=1:(nr-1)
-            for j=(i+1):nr
-                iscomplete = .!( ismissing.(geno[i,:]) .& ismissing.(geno[j,:]) )
-                ncomplete = sum(iscomplete)
-                p1 = geno[i,iscomplete]
-                p2 = geno[j,iscomplete]
-                d[i,j] = d[j,i] = sum( p1 .* p2
-                                       + (1-p1) .* (1-p2) ) / ncomplete
-
-            end
         end
     end
-    return d
+
+    return K;
+
+end
+
+function calcCorr_IBD(vg_i::Array{Float64, 1}, vg_j::Array{Float64, 1})
+
+    x_i = 0.5 .- vg_i;
+    x_j = 0.5 .- vg_j;
+
+    return sum(0.5 .+ 2 .* (x_i .* x_j))
+
 end
