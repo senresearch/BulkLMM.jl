@@ -49,7 +49,9 @@ end
 ##########################################################################################################
 ## TEST: run all tests
 ##########################################################################################################
+println("Profile likelihood functions test: ", 
 @testset "Test Analysis Helpers" begin
     eval(test_getLL);
     eval(test_getThreshold);
 end
+)

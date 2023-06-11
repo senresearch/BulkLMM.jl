@@ -141,6 +141,7 @@ end;
 ##########################################################################################################
 ## TEST: run all tests
 ##########################################################################################################
+println("Bulkscan functions test: ", 
 @testset "Multiple Trait Scan Tests" begin
 
     eval(test_r2lod);
@@ -150,4 +151,5 @@ end;
     eval(test_bulkscan_null_grid);
     eval(test_bulkscan_alt_grid); 
 
-end;
+end
+)

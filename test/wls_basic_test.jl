@@ -78,10 +78,12 @@ end
 ##########################################################################################################
 ## RUN TESTS:
 ##########################################################################################################
+println("WLS functions test: ", 
 @testset "Basic wls() Tests" begin
     eval(test1_resids)
     eval(test2_resids)
     eval(test3_resids)
     eval(tests_rss)
-end;
+end
+)
  

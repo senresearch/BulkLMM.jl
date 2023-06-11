@@ -127,7 +127,7 @@ test_bulkscan_grid_caseW = quote
 end
 
 
-
+println("Weighted residual variance functions test: ", 
 @testset "Tests for weighted errors feature" begin
     eval(test_scan_caseI);
     eval(test_scan_caseI2);
@@ -140,4 +140,5 @@ end
     eval(test_bulkscan_grid_caseI);
     eval(test_bulkscan_grid_caseW); # bulkscan_null_grid may have some issues...
 end
+)
 
