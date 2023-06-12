@@ -17,6 +17,7 @@ include("testHelpers.jl");
     include("wls_results_test.jl");
 
     include("generate_test_bxdData.jl"); # read in real BXD data for the remaining tests:
+    Helium.writehe(kinship, "ref_data_for_tests/kinship_test.he");
     include("kinship_test.jl");
     include("lmm_test.jl");
     include("transform_helpers_test.jl");
