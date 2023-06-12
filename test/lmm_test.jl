@@ -31,9 +31,8 @@ end;
 ##########################################################################################################
 ## TEST: runtests
 ##########################################################################################################
-println("LMM functions test: ", 
+println("LMM functions test: ") 
 @testset "Test lmm.jl" begin
     eval(test_makeweights1);
     eval(test_makeweights2);
 end
-)

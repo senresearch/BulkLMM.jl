@@ -331,7 +331,7 @@ tests_compareValues = quote
     testHelper(test2_compareValues);
 end;
 
-println("Utility functions test: ", 
+println("Utility functions test: ")
 @testset "Utility Functions Tests" begin
 
     eval(tests_colCenter);
@@ -344,5 +344,4 @@ println("Utility functions test: ",
     eval(tests_compareValues);
 
 end
-)
 

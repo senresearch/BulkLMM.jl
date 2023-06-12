@@ -22,7 +22,7 @@ lods_lmmlite_reml = parse.(Float64, reshape(reml_results_lmmlite[2:end, 5], :, 1
 lods_lmmlite_ml = parse.(Float64, reshape(ml_results_lmmlite[2:end, 5], :, 1));
 
 ## Testings:
-println("Scan functions test: ", 
+println("Scan functions test: ")
 @testset "lmmlite_results_tests" begin
     tol = 1e-9;
     @test sumSqDiff(lods_lmmlite_reml, lods_BulkLMM_reml) <= sqrt(tol);
@@ -30,4 +30,3 @@ println("Scan functions test: ",
     @test maxSqDiff(lods_lmmlite_reml, lods_BulkLMM_reml) <= tol;
     @test maxSqDiff(lods_lmmlite_ml, lods_BulkLMM_ml) <= tol;
 end
-)
