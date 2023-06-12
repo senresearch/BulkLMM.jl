@@ -12,6 +12,7 @@ geno_raw = readdlm(geno_file, ',', header = false);
 geno = geno_raw[2:end, 1:2:end] .* 1.0;
 
 kinship = calcKinship(geno); # calculate k
+Helium.writehe(kinship, "ref_data_for_tests/kinship_test.he");
 
 # Write to CSV files for running lmmlite in R for testing:
 # writedlm("test/run-lmmlite_R/processed_bxdData/BXDpheno.csv",  pheno, ',');
