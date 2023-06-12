@@ -45,7 +45,7 @@ function scan(y::Array{Float64,2}, g::Array{Float64,2}, K::Array{Float64,2};
               # permutation testing options:
               permutation_test::Bool = false, nperms::Int64 = 1024, rndseed::Int64 = 0,
               # option for inspecting h2 estimation process:
-              plot_loglik::Bool = false, markerID::Int = 0, h2_grid::Array{Float64, 1} = Array{Float64, 1}(undef, 1),
+              profileLL::Bool = false, markerID::Int = 0, h2_grid::Array{Float64, 1} = Array{Float64, 1}(undef, 1),
               x_lims::Array{Float64, 1} = [0.0, 1.0], y_lims::Array{Float64, 1} = [-100.0, 100.0]
               )
 
@@ -60,7 +60,7 @@ function scan(y::Array{Float64,2}, g::Array{Float64,2}, K::Array{Float64,2};
                 prior_variance = prior_variance, prior_sample_size = prior_sample_size,
                 reml = reml, assumption = assumption, method = method, optim_interval = optim_interval,
                 permutation_test = permutation_test, nperms = nperms, rndseed = rndseed,
-                plot_loglik = plot_loglik, markerID = markerID, h2_grid = h2_grid,
+                profileLL = profileLL, markerID = markerID, h2_grid = h2_grid,
                 x_lims = x_lims, y_lims = y_lims)
 end
 
@@ -74,7 +74,7 @@ function scan(y::Array{Float64,2}, g::Array{Float64,2}, covar::Array{Float64, 2}
               # permutation testing options:
               permutation_test::Bool = false, nperms::Int64 = 1024, rndseed::Int64 = 0,
               # option for inspecting h2 estimation process:
-              plot_loglik::Bool = false, markerID::Int = 0, h2_grid::Array{Float64, 1} = Array{Float64, 1}(undef, 1),
+              profileLL::Bool = false, markerID::Int = 0, h2_grid::Array{Float64, 1} = Array{Float64, 1}(undef, 1),
               x_lims::Array{Float64, 1} = [0.0, 1.0], y_lims::Array{Float64, 1} = [-100.0, 100.0]
               )
 
@@ -99,7 +99,7 @@ function scan(y::Array{Float64,2}, g::Array{Float64,2}, covar::Array{Float64, 2}
                     prior_variance = prior_variance, prior_sample_size = prior_sample_size,
                     reml = reml, assumption = assumption, method = method, optim_interval = optim_interval,
                     permutation_test = permutation_test, nperms = nperms, rndseed = rndseed,
-                    plot_loglik = plot_loglik, markerID = markerID, h2_grid = h2_grid,
+                    profileLL = profileLL, markerID = markerID, h2_grid = h2_grid,
                     x_lims = x_lims, y_lims = y_lims)
     else
         y_st = y;
@@ -129,16 +129,20 @@ function scan(y::Array{Float64,2}, g::Array{Float64,2}, covar::Array{Float64, 2}
         error("Assumption keyword is not supported. Please enter null or alt.")
     end
 
-    # return results
-
-    if plot_loglik == true
+    if profileLL == true
+        #= 
         println("Loglik plot: ")
         p = plotLL(y_st, g_st, covar_st, K_st, h2_grid, markerID; 
                    x_lims = x_lims, y_lims = y_lims,
                    prior = [prior_variance, prior_sample_size])
-        # plot(p)
+
         display(p)
-        return results
+        =# 
+
+        results_profileLL = profileLL(y_st, g_st, covar_st, K_st, h2_grid, markerID; 
+                                      prior = [prior_variance, prior_sample_size]);
+
+        return (results, results_profileLL);
     else
         return results
     end
@@ -311,7 +315,6 @@ end
 ## genome scan with permutations
 ## no covariates
 ## one-df tests
-## with parallelization
 
 """
     scan(y, g, K, nperm, nprocs, rndseed, reml)
@@ -339,69 +342,6 @@ are estimated from the null model and assumed to be the same across markers.
 # Some notes
 
 """
-function scan_perms(y::Array{Float64,2}, g::Array{Float64,2}, K::Array{Float64,2};
-              prior_variance::Float64 = 1.0, prior_sample_size::Float64 = 0.0, addIntercept::Bool = true, method::String = "qr",
-              nperms::Int64 = 1024, rndseed::Int64 = 0, 
-              reml::Bool = false, original::Bool = true, optim_interval::Int64 = 1)
-
-    # check the number of traits as this function only works for permutation testing of univariate trait
-    if(size(y, 2) != 1)
-        error("Can only handle one trait.")
-    end
-
-    # sy = colStandardize(y);
-    # sg = colStandardize(g);
-
-    # n - the sample size
-    # p - the number of markers
-    (n, p) = size(g)
-
-    ## Note: estimate once the variance components from the null model and use for all marker scans
-    # fit lmm
-    (y0, X0, lambda0) = transform_rotation(y, g, K; addIntercept = addIntercept); # rotation of data
-    (r0, X00) = transform_reweight(y0, X0, lambda0; prior_a = prior_variance, prior_b = prior_sample_size, 
-                                                    reml = reml, method = method, optim_interval = optim_interval); # reweighting and taking residuals
-
-    # If no permutation testing is required, move forward to process the single original vector
-    if nperms == 0
-
-        if original == false
-            throw(error("If no permutation testing is required, input value of `original` has to be `true`."));
-        end
-    
-        r0perm = r0;
-    else
-        r0perm = transform_permute(r0; nperms = nperms, rndseed = rndseed, original = original);
-    end
-
-
-    ## Null RSS:
-    # By null hypothesis, mean is 0. RSS just becomes the sum of squares of the residuals (r0perm's)
-    # (For theoretical derivation of the results, see supplement results)
-    rss0 = sum(r0perm[:, 1].^2) # a scalar; bc rss0 for every permuted trait is the same under the null (zero mean);
-    
-    ## make array to hold Alternative RSS's for each permutated trait
-    if original
-        rss1 = Array{Float64, 2}(undef, nperms+1, p)
-    else
-        rss1 = Array{Float64, 2}(undef, nperms, p)
-    end
-    
-    ## loop over markers
-    for i = 1:p
-        ## alternative rss
-        @inbounds rss1[:, i] = rss(r0perm, @view X00[:, i]);
-        
-    end
-
-    
-    lod = (-n/2)*(log10.(rss1) .- log10(rss0))
-
-    return lod
-
-end
-
-
 function scan_perms_lite(y::Array{Float64,2}, g::Array{Float64,2}, covar::Array{Float64, 2}, K::Array{Float64,2};
                          prior_variance::Float64 = 1.0, prior_sample_size::Float64 = 0.0, 
                          addIntercept::Bool = true, method::String = "qr", optim_interval::Int64 = 1,

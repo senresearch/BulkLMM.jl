@@ -83,8 +83,8 @@ The BXD data are accessible through our published [github
 repo](https://github.com/senresearch/BulkLMM.jl) of the `BulkLMM.jl`
 package as .csv files under the `data/bxdData` directory.
 
-The raw BXD traits `BXDtraits_with_missing.csv`contains missing
-values. After removing the missings, load the BXD traits data
+The original data for BXD spleen traits `BXDtraits_with_missing.csv`contains missing
+values. We saved the data after removed any missings to the file named "spleen-pheno_nomissing.csv" under the same directory. 
 
 ```julia
 bulklmmdir = dirname(pathof(BulkLMM));
@@ -150,8 +150,8 @@ kinship = calcKinship(geno_processed); # calculate K
 
 ### Single trait scanning:
 
-For example, to conduct genome-wide association mappings on the
-1112-th trait, ran the function `scan()` with inputs of the trait (as
+For example, to conduct genome-wide associations mapping on the
+1112-th trait, we can run the function `scan()` with inputs of the trait (as
 a 2D-array of one column), geno matrix, and the kinship matrix.
 
 
@@ -168,11 +168,11 @@ pheno_y = reshape(pheno_processed[:, traitID], :, 1);
       0.059480 seconds (80.86 k allocations: 47.266 MiB)
 
 
-The output structure `single_results` stores the model estimates about the variance components (VC, environmental variance, heritability estimated under the null intercept model) and the lod scores. They are obtainable by
+The output `single_results` is an object containing model results about the variance components (residual variance and the heritability parameter) estimated under the null baseline model, and the lod scores, as the fields named respectively as "sigma2_e", "h2_null", and "lod".
 
 
 ```julia
-# VCs: environmental variance, heritability, genetic_variance/total_variance
+# VCs: residual variance, heritability which is the proportion of genetic variance to total variance
 (single_results.sigma2_e, single_results.h2_null)
 ```
 
@@ -189,23 +189,20 @@ The output structure `single_results` stores the model estimates about the varia
 single_results.lod; 
 ```
 
-`BulkLMM.jl` supports permutation testing for a single trait GWAS. Simply run the function `scan()` and input the optional keyword argument `permutation_test = true` with the number of permutations passed to the keyword argument `nperms = # of permutations`. For example, to ask the package to do a permutation testing of 1000 permutations, do 
+`BulkLMM.jl` supports permutation testing for a single trait GWAS. Simply run the function `scan()` and set the optional keyword argument `permutation_test = true` with the required number of permutations as `nperms = # of permutations`. For example, to ask the package to do a permutation testing of 1000 permutations, do 
 
 
 ```julia
-@time single_results_perms = scan(pheno_y, geno_processed, kinship; permutation_test = true, nperms = 1000, original = false);
+@time single_results_perms = scan(pheno_y, geno_processed, kinship; permutation_test = true, nperms = 1000);
 ```
 
       0.079464 seconds (94.02 k allocations: 207.022 MiB)
 
-
-(use the input `original = false` to suppress the default of performing genome scans on the original trait)
-
-The output `single_results_perms` is a matrix of LOD scores of dimension `p * nperms`, with each column being the LOD scores of the $p$ markers on a permuted copy and each row being the marker-specific LOD scores on all permuted copies.
+Similarly as the structure of output from the simple single-trait scan function with no permutation testing required, `single_results_perms` contains the fields "sigma2_e", "h2_null", and "lod" for the original trait. Additionally, we report the results of permutation tests as the raw LOD scores computed for each permuted copies, which are stored in a matrix named as "L_perms" of dimension `p * nperms`, where each column contains the LOD scores corresponding to $p$ markers on one permuted copy, and each row are the LOD scores for a particular marker fitted on all 1000 permuted copies.
 
 
 ```julia
-size(single_results_perms)
+size(single_results_perms.L_perms)
 ```
 
 
@@ -214,7 +211,7 @@ size(single_results_perms)
     (7321, 1000)
 
 
-
+### (To discuss changes from here...)
 
 ```julia
 max_lods = vec(mapslices(x -> maximum(x), single_results_perms; dims = 1));
@@ -287,6 +284,8 @@ plot!(x_bxd, y_bxd_gemma, color = :purple, label = "GEMMA", legend = true) # plo
 hline!([thrs], color = "red", linestyle=:dash, label = "") # plot thresholds...
 ```
 
+### (First major change ends here...)
+
 ### Multiple traits scanning:
 
 To get LODs for multiple traits, for better runtime performance, first
@@ -322,6 +321,8 @@ size(multiple_results_allTraits)
 
     (7321, 35554)
 
+
+### Second change, for reproducing eQTL plot, starts here...
 To visualize the multiple-trait scan results, we can use the plotting utility function `plot_eQTL`to generate the eQTL plot.
 The functions for plotting utilities will be available in the package `BigRiverPlots.jl` in the future. For now, we can easily have access to the plotting function in the script `plot_utils/visuals_utils.jl`, by running the following commands:
 
@@ -337,6 +338,9 @@ plot_eQTL(multiple_results_allTraits, pheno, gInfo, pInfo; thr = 5.0)
 ```
 
 ![svg](img/output_112_1.svg)
+
+### Second change ends here...
+
 
 
 ## Installation:
