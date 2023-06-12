@@ -11,7 +11,7 @@ geno_file = string(@__DIR__, "/../data/bxdData/spleen-bxd-genoprob.csv")
 geno_raw = readdlm(geno_file, ',', header = false);
 geno = geno_raw[2:end, 1:2:end] .* 1.0;
 
-kinship = calcKinship(geno); # calculate k
+kinship = calcKinship(geno) |> x -> round.(x, digits = 13); # calculate k
 
 # Write to CSV files for running lmmlite in R for testing:
 # writedlm("test/run-lmmlite_R/processed_bxdData/BXDpheno.csv",  pheno, ',');
