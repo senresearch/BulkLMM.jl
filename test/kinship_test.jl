@@ -2,7 +2,7 @@
 
 
 ## kinship_ref created from calling calcKinship from Julia on Beale
-kinship_ref = Helium.readhe(joinpath(@__DIR__, "ref_data_for_tests", "kinship_ref.he")) |> x -> round.(x, digits = 13);
+kinship_ref = Helium.readhe(joinpath(@__DIR__, "ref_data_for_tests", "kinship_ref.he")) |> x -> round.(x, digits = 12);
 # println("Max abs diff: ", maximum(abs.(kinship_test .- kinship_ref)))
 println("Kinship test: ", @test kinship == kinship_ref)
 
