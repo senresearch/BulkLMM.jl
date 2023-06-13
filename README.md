@@ -10,7 +10,9 @@ The current implementation is for genome scans with one-degree of
 freedom tests with choices of adding additional covariates. Future releases will
 cover the scenario of more-than-one degrees of freedom tests.
 
-## Linear Mixed Model (LMM)
+## Background
+
+### Linear Mixed Model (LMM)
 
 We consider the case when a univariate trait of interest is measured
 in a population of related individuals with kinship matrix $K$.  Let
@@ -65,6 +67,29 @@ will have to start Julia with mutliple threads to take advantage of
 this.  You should use as many threads as your computer is capable of.
 Further speedups may be obtained by spreading (distributing) the
 computation across mutliple computers.
+
+## Installation:
+
+The package `BulkLMM.jl` can be installed by running
+
+```julia
+using Pkg
+Pkg.add("BulkLMM")
+```
+
+To install from the **Julia** REPL, first press `]` to enter the Pkg
+mode and then use:
+
+```
+add BulkLMM
+```
+
+The most recent release of the package can be obtained by running 
+
+```julia
+using Pkg
+Pkg.add(url = "https://github.com/senresearch/BulkLMM.jl", rev="main")
+```
 
 ## Example: application on BXD spleen expression data
 
@@ -239,49 +264,32 @@ gInfo = CSV.read(gmap_file, DataFrame);
 phenocovar_file = joinpath(bulklmmdir,"..","data/bxdData/phenocovar.csv");
 pInfo = CSV.read(phenocovar_file, DataFrame);
 ```
+Next, load the results preprocessed from GEMMA:
 
-We would need to use some utility functions for plotting in the package named `BigRiverPlots.jl`, which will be released soon. 
-
-After downloading the package, run
 ```julia
-using BigRiverPlots
-
-# Get information for the genetic markers about which chromosome each was measured at
-Chr_bxd = string.(gInfo[:, :Chr]);
-Chr_bxd = reshape(Chr_bxd, :, 1);
-
-# Get information for the genetic markers about where (in Mb length) on the chromosome each was measured at
-Pos_bxd = gInfo[:, :Mb];
-Pos_bxd = reshape(Pos_bxd, :, 1);
-
-Lod_bxd = single_results.lod[1:end, :]; # load the BulkLMM LOD scores results
 gemma_results_path = joinpath(bulklmmdir,"..","data/bxdData/GEMMA_BXDTrait1112/gemma_lod_1112.txt")
 Lod_gemma = readdlm(gemma_results_path, '\t'); # load gemma LOD scores results available in the package
-
-traitName = pInfo[traitID, 1] # get the trait name of the 1112-th trait
-
 ```
-
-Then, to use the functions in the package `BigRiverPlots.jl`, run
+Finally, we use the QTL plotting package  `BigRiverQTLPlots.jl`. After adding the package, run:
 
 ```julia
-vecSteps_bxd = BigRiverPlots.get_chromosome_steps(Pos_bxd, Chr_bxd)
+traitName = pInfo[traitID, 1] # get the trait name of the 1112-th trait
 
-# get unique chr id
-v_chr_names_bxd = unique(Chr_bxd)
-
-# generate new distances coordinates
-
-x_bxd, y_bxd = BigRiverPlots.get_qtl_coord(Pos_bxd, Chr_bxd, Lod_bxd);
-x_bxd_gemma, y_bxd_gemma = BigRiverPlots.get_qtl_coord(Pos_bxd, Chr_bxd, Lod_gemma);
-
-qtlplot(x_bxd, y_bxd, vecSteps_bxd, v_chr_names_bxd;
-        label = "BulkLMM.jl",
-        xlabel = "Locus (Chromosome)", ylims = (0.0, 6.5),
-        title = "Single trait $traitName LOD scores") # plot BulkLMM LODs
-plot!(x_bxd, y_bxd_gemma, color = :purple, label = "GEMMA", legend = true) # plot GEMMA LODs
-
-hline!([thrs], color = "red", linestyle=:dash, label = "") # plot thresholds...
+plot_QTL(
+	single_results_perms, 
+	gInfo, 
+	thresholds = [0.90, 0.95],
+	legend = true,
+	label = "BulkLMM.jl",
+	title = "Single trait $traitName LOD scores"
+)
+plot_QTL!(
+	vec(Lod_gemma), 
+	gInfo, 
+	linecolor = :purple, 
+	label = "GEMMA", 
+	legend = :topright
+)
 ```
 
 ### (First major change ends here...)
@@ -323,48 +331,16 @@ size(multiple_results_allTraits)
 
 
 ### Second change, for reproducing eQTL plot, starts here...
-To visualize the multiple-trait scan results, we can use the plotting utility function `plot_eQTL`to generate the eQTL plot.
-The functions for plotting utilities will be available in the package `BigRiverPlots.jl` in the future. For now, we can easily have access to the plotting function in the script `plot_utils/visuals_utils.jl`, by running the following commands:
+To visualize the multiple-trait scan results, we can use the plotting function `plot_eQTL` from `BigRiverQTLPlots.jl` to generate the eQTL plot.
+In the following example, we only plot the LOD scores that are above 5.0 by calling the function and specifying in the optional argument `threshold = 5.0`:
 
 ```julia
-using RecipesBase, Plots, Plots.PlotMeasures, ColorSchemes
-include(joinpath(bulklmmdir, "..", "plot_utils", "visuals_utils.jl"));
-```
-
-For the following example, we only plot the LOD scores that are above 5.0 by calling the function and specifying in the optional argument `thr = 5.0`:
-
-```julia
-plot_eQTL(multiple_results_allTraits, pheno, gInfo, pInfo; thr = 5.0)
+plot_eQTL(multiple_results_allTraits, pheno, gInfo, pInfo; threshold = 5.0)
 ```
 
 ![svg](img/output_112_1.svg)
 
 ### Second change ends here...
-
-
-
-## Installation:
-
-The package `BulkLMM.jl` can be installed by running
-
-```julia
-using Pkg
-Pkg.add("BulkLMM")
-```
-
-To install from the **Julia** REPL, first press `]` to enter the Pkg
-mode and then use:
-
-```
-add BulkLMM
-```
-
-The most recent release of the package can be obtained by running 
-
-```julia
-using Pkg
-Pkg.add(url = "https://github.com/senresearch/BulkLMM.jl", rev="main")
-```
 
 ## Contact, contribution and feedback
 
