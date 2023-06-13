@@ -244,7 +244,7 @@ max_lods = vec(mapslices(x -> maximum(x), single_results_perms; dims = 1));
 
 
 ```julia
-thrs = map(x -> quantile(max_lods, x), [0.05, 0.95]);
+thrs = map(x -> quantile(max_lods, x), [0.90, 0.95]);
 ```
 
 Plot the BulkLMM LOD scores of the 1112-th trait and compare with the results from running
