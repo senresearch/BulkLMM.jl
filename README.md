@@ -173,6 +173,10 @@ Compute the kinship matrix $K$ from the genotype probabilities using the functio
 kinship = calcKinship(geno_processed); # calculate K
 ```
 
+```julia
+kinship = round.(kinship; digits = 12);
+```
+
 ### Single trait scanning:
 
 For example, to conduct genome-wide associations mapping on the
@@ -223,7 +227,7 @@ single_results.lod;
 
       0.079464 seconds (94.02 k allocations: 207.022 MiB)
 
-Similarly as the structure of output from the simple single-trait scan function with no permutation testing required, `single_results_perms` contains the fields "sigma2_e", "h2_null", and "lod" for the original trait. Additionally, we report the results of permutation tests as the raw LOD scores computed for each permuted copies, which are stored in a matrix named as "L_perms" of dimension `p * nperms`, where each column contains the LOD scores corresponding to $p$ markers on one permuted copy, and each row are the LOD scores for a particular marker fitted on all 1000 permuted copies.
+Similarly to the results of the single-trait scan with no permutation, `single_results_perms` contains the fields `sigma2_e`, `h2_null`, and `lod` for the original trait. Additionally, we report the results of permutation tests as the raw LOD scores computed for each permuted copies, which are stored in a matrix named as `L_perms` of dimension $p \times nperms$, where each column contains the LOD scores corresponding to $p$ markers on one permuted copy, and each row are the LOD scores for a particular marker fitted on all 1000 permuted copies.
 
 
 ```julia
@@ -235,15 +239,14 @@ size(single_results_perms.L_perms)
 
     (7321, 1000)
 
-## TODO
-Using the function `get_thresholds()`, it is possible to obtain the LOD thresholds indicationg significance level. For that, in addition the permutation 
-matrix, we need to specify the level signficance. 
+Based on the results of the permutation test, we can use the function `get_thresholds()` to obtain the LOD thresholds according to the quantile probabilities, based on the desired significance levels.
 
 ```julia
-lod_thresholds = get_thrsholds(single_results_perms.L_perms, [0.90, 0.95])
+lod_thresholds = get_thrsholds(single_results_perms.L_perms, [0.90, 0.95]);
+round.(lod_threshols, digits = 4)
 ```
-3.2123
-3.345
+	3.3644  
+	3.6504
 
 Let's plot the BulkLMM LOD scores of the 1112-th trait and compare with the results from running
 [GEMMA](https://github.com/genetics-statistics/GEMMA):
