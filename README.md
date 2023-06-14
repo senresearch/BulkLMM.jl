@@ -235,19 +235,17 @@ size(single_results_perms.L_perms)
 
     (7321, 1000)
 
-
-### (To discuss changes from here...)
-
-```julia
-max_lods = vec(mapslices(x -> maximum(x), single_results_perms; dims = 1));
-```
-
+## TODO
+Using the function `get_thresholds()`, it is possible to obtain the LOD thresholds indicationg significance level. For that, in addition the permutation 
+matrix, we need to specify the level signficance. 
 
 ```julia
-thrs = map(x -> quantile(max_lods, x), [0.90, 0.95]);
+lod_thresholds = get_thrsholds(single_results_perms.L_perms, [0.90, 0.95])
 ```
+3.2123
+3.345
 
-Plot the BulkLMM LOD scores of the 1112-th trait and compare with the results from running
+Let's plot the BulkLMM LOD scores of the 1112-th trait and compare with the results from running
 [GEMMA](https://github.com/genetics-statistics/GEMMA):
 
 Note: to get results from GEMMA, one would need to run GEMMA on a Linux machine with input files of the same trait (here the 1112-th trait, X10339113), genetic markers and the kinship matrix, and finally convert the LRT p-values into corresponding LOD scores. Alternatively, you may simply load the results we obtained by following the procedures mentioned above. The resulting LOD scores from GEMMA are a .txt file in `data/bxdData/GEMMA_BXDTrait1112/gemma_lod_1112.txt`.
@@ -270,9 +268,10 @@ Next, load the results preprocessed from GEMMA:
 gemma_results_path = joinpath(bulklmmdir,"..","data/bxdData/GEMMA_BXDTrait1112/gemma_lod_1112.txt")
 Lod_gemma = readdlm(gemma_results_path, '\t'); # load gemma LOD scores results available in the package
 ```
-Finally, we use the QTL plotting package  `BigRiverQTLPlots.jl`. After adding the package, run:
+Finally, we use the QTL plotting function from the package  [`BigRiverQTLPlots.jl`](https://github.com/senresearch/BigRiverQTLPlots.jl):
 
 ```julia
+using BigRiverQTLPlots
 traitName = pInfo[traitID, 1] # get the trait name of the 1112-th trait
 
 plot_QTL(
@@ -291,8 +290,6 @@ plot_QTL!(
 	legend = :topright
 )
 ```
-
-### (First major change ends here...)
 
 ### Multiple traits scanning:
 
@@ -314,33 +311,37 @@ get the LOD scores for all **~35k** BXD traits:
 
 
 ```julia
-@time multiple_results_allTraits = bulkscan_null(pheno_processed, geno_processed, kinship; nb = Threads.nthreads()).L;
+@time multiple_results_allTraits = bulkscan_null(pheno_processed, geno_processed, kinship; nb = Threads.nthreads());
 ```
 
      82.421037 seconds (2.86 G allocations: 710.821 GiB, 41.76% gc time)
 
 
-The output `multiple_results_allTraits` is a matrix of LOD scores of dimension $p \times n$, with each column being the LOD scores from performing GWAS on each given trait.
-
+The output `multiple_results_allTraits` is an object containing our model results:
+- the matrix of LOD scores $L_{p \times m}$, where $p$ is the number of markers and $m$ is number of traits; each column corresponds to the LOD scores resulting from performing GWAS on each given trait.
+- the vector of heritability estimate per trait, `h2_null_list`, obtained from fitting the null model. 
 
 ```julia
-size(multiple_results_allTraits)
+size(multiple_results_allTraits.L)
 ```
 
     (7321, 35554)
 
+```julia
+length(multiple_results_allTraits.h2_null_list)
+```
 
-### Second change, for reproducing eQTL plot, starts here...
+    35554
+
 To visualize the multiple-trait scan results, we can use the plotting function `plot_eQTL` from `BigRiverQTLPlots.jl` to generate the eQTL plot.
 In the following example, we only plot the LOD scores that are above 5.0 by calling the function and specifying in the optional argument `threshold = 5.0`:
 
 ```julia
-plot_eQTL(multiple_results_allTraits, pheno, gInfo, pInfo; threshold = 5.0)
+plot_eQTL(multiple_results_allTraits.L, pheno, gInfo, pInfo; threshold = 5.0)
 ```
 
 ![svg](img/output_112_1.svg)
 
-### Second change ends here...
 
 ## Contact, contribution and feedback
 
