@@ -36,8 +36,8 @@ results_w_weights_covar = scan(pheno_y_weighted, geno_weighted, [intercept_weigh
 results_random_weights_covar = scan(pheno_y, geno, pseudo_covars, kinship; weights = weights_at_random, optim_interval = 10, prior_variance = prior[1], prior_sample_size = prior[2]);
 
 ### additional: from permutation testing results...
-results_random_weights_perms = scan(pheno_y, geno, kinship; weights = weights_at_random, permutation_test = true, original = true, nperms = 10, optim_interval = 10, prior_variance = prior[1], prior_sample_size = prior[2])[:, 1];
-results_random_weights_covar_perms = scan(pheno_y, geno, pseudo_covars, kinship; weights = weights_at_random, permutation_test = true, original = true, nperms = 10, optim_interval = 10, prior_variance = prior[1], prior_sample_size = prior[2])[:, 1];
+results_random_weights_perms = scan(pheno_y, geno, kinship; weights = weights_at_random, permutation_test = true, nperms = 10, optim_interval = 10, prior_variance = prior[1], prior_sample_size = prior[2]);
+results_random_weights_covar_perms = scan(pheno_y, geno, pseudo_covars, kinship; weights = weights_at_random, permutation_test = true, nperms = 10, optim_interval = 10, prior_variance = prior[1], prior_sample_size = prior[2]);
 
 test_scan_caseI = quote
     @test sum(abs.(results_identical.lod .- results_no_weights.lod)) <= tol
@@ -56,11 +56,11 @@ test_scan_caseW2 = quote
 end
 
 test_scan_caseW3 = quote
-    @test sum(abs.(results_random_weights_perms .- results_w_weights.lod)) <= tol
+    @test sum(abs.(results_random_weights_perms.lod .- results_w_weights.lod)) <= tol
 end
 
 test_scan_caseW4 = quote
-    @test sum(abs.(results_random_weights_covar_perms .- results_w_weights_covar.lod)) <= tol
+    @test sum(abs.(results_random_weights_covar_perms.lod .- results_w_weights_covar.lod)) <= tol
 end
 
 
@@ -127,7 +127,7 @@ test_bulkscan_grid_caseW = quote
 end
 
 
-
+println("Weighted residual variance functions test: ")
 @testset "Tests for weighted errors feature" begin
     eval(test_scan_caseI);
     eval(test_scan_caseI2);

@@ -108,9 +108,10 @@ tol = 0.1;
 true_b = reshape([1.0 0.5], 2, 1);
 true_B = [beta beta2];
 
+println("WLS functions test: ")
 @testset "simple test WLS" begin
     @test biasSquared(result_wls.b, result_ls.b) <= tol^4
     @test biasSquared(result_wls.b, true_b) <= tol
     @test biasSquared(result_ls.b, true_b) <= tol
     @test biasSquared(result_wls_multivar.B, true_B) <= tol
-end;
+end

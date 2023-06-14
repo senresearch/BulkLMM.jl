@@ -106,11 +106,42 @@ test_bulkscan_null_grid = quote
 
 end;
 
+##########################################################################################################
+## TEST: bulkscan_alt_grid
+##########################################################################################################
+
+test_bulkscan_alt_grid = quote
+    stand_pheno = BulkLMM.colStandardize(pheno[:, 705:1112]);
+    stand_geno = BulkLMM.colStandardize(geno);
+
+    y_705 = reshape(pheno[:, 705], :, 1);
+    test_alt_705 = BulkLMM.scan(y_705, geno, kinship; 
+                                 assumption = "alt",
+                                 prior_variance = var(y_705), prior_sample_size = 0.1);
+
+    y_1112 = reshape(pheno[:, 1112], :, 1);
+    test_alt_1112 = BulkLMM.scan(y_1112, geno, kinship; 
+                                  assumption = "alt",
+                                  prior_variance = var(y_1112), prior_sample_size = 0.1);
+
+    grid_list = collect(0.0:0.05:0.95);
+
+    test_bulkscan_alt_grid = BulkLMM.bulkscan_alt_grid(stand_pheno, stand_geno, kinship, grid_list; 
+                                                       prior_variance = 1.0, prior_sample_size = 0.1);
+                                                       
+    @test mean(abs.(test_alt_705.h2_each_marker .- test_bulkscan_alt_grid.h2_panel[:, 1])) <= 0.05                                               
+    @test mean(abs.(test_alt_1112.h2_each_marker .- test_bulkscan_alt_grid.h2_panel[:, end])) <= 0.05
+    @test mean((test_alt_705.lod .- test_bulkscan_alt_grid.L[:, 1]).^2) <= 0.01;
+    @test mean((test_alt_1112.lod .- test_bulkscan_alt_grid.L[:, end]).^2) <= 0.01;
+
+end;
+
 
 
 ##########################################################################################################
 ## TEST: run all tests
 ##########################################################################################################
+println("Bulkscan functions test: ")
 @testset "Multiple Trait Scan Tests" begin
 
     eval(test_r2lod);
@@ -118,6 +149,6 @@ end;
     eval(test_computeR_LMM2);
     eval(test_bulkscan_null);
     eval(test_bulkscan_null_grid);
-    # eval(test_bulkscan_alt_grid); # test cases for grid approximation of 
+    eval(test_bulkscan_alt_grid); 
 
-end;
+end

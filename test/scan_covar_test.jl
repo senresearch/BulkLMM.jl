@@ -20,5 +20,7 @@ catch e
     @test e.msg == "Intercept has to be added when no other covariate is given."
 end
 
+println("Scan with covariates functions test: ", 
 @test mean(abs.(test_scan_covar.lod .- test_grid_covar[:, pheno_id])) <= tol
+)
 

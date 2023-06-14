@@ -7,4 +7,6 @@ test_gridbrent = quote
     @test abs(gridbrent(f,-3.0,1.0,100).minimizer - 1.0) <= tol
 end
 
+println("Brent's method test: ", 
 eval(test_gridbrent)
+)

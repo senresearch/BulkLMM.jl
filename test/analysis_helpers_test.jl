@@ -31,7 +31,7 @@ end
 ##########################################################################################################
 test_getThreshold = quote 
 
-    perms_results = scan(pheno_y, geno, kinship; permutation_test = true, nperms = 100, original = false);
+    perms_results = scan(pheno_y, geno, kinship; permutation_test = true, nperms = 100).L_perms;
     thr_probs = [0.5];
 
     max_lods = zeros(size(perms_results, 2));
@@ -41,7 +41,7 @@ test_getThreshold = quote
 
     thr_obj = BulkLMM.get_thresholds(perms_results, thr_probs);
 
-    @test quantile(max_lods, thr_obj.thr_probs[1]) == thr_obj.thrs[1];
+    @test quantile(max_lods, thr_obj.probs[1]) == thr_obj.thrs[1];
 
 end
 
@@ -49,6 +49,7 @@ end
 ##########################################################################################################
 ## TEST: run all tests
 ##########################################################################################################
+println("Profile likelihood functions test: ")
 @testset "Test Analysis Helpers" begin
     eval(test_getLL);
     eval(test_getThreshold);

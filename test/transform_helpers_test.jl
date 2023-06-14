@@ -133,6 +133,7 @@ end;
 ##########################################################################################################
 ## TEST: Run all tests
 ##########################################################################################################
+println("Transform helper functions test: ")
 @testset "testTransformHelpers" begin
 
     eval(test_rotation1);
@@ -147,4 +148,4 @@ end;
     eval(test_permute1);
     eval(test_permute2);
 
-end;
+end

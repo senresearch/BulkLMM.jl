@@ -1,11 +1,13 @@
-This data set contains 3 files:
+## BXD spleen traits data used for BulkLMM.jl package demo:
 
-1. traits.csv : 
-This file is the phenotype of BXD data. It's been cleaned without missing data type.
+This data directory contains the BXD mice spleen traits data, the corresponding mean genotype file and the meta data files.
 
-2. traits_with_missing.csv :
-This file is the same as traits.csv, but with missing data. 
+Genotype-related files:
+- spleen-bxd-genoprob.csv: contains the mean genotype probabilities of 79 samples at 7321 markers. 
+- gmap.csv: contains the locus name, chromosome, cM and Mb of each of those 7321 genotyped markers.
 
-3. geno_prob.csv :
-This file contains genotype probablity calculated using r/qtl2 package. 
+Spleen traits-related files:
+- spleen-pheno-nomissing.csv: contains the measurements of 79 samples on 35,554 spleen traits. 
+- phenocovar.csv: contains the ProbeSet id, chromosome and Mb length of each of the 35,554 spleen traits.
+- phenocovar_original.csv: the original file of the phenocovar.csv.
 
