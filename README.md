@@ -234,19 +234,17 @@ Similarly to the results of the single-trait scan with no permutation, `single_r
 size(single_results_perms.L_perms)
 ```
 
-
-
-
     (7321, 1000)
 
 Based on the results of the permutation test, we can use the function `get_thresholds()` to obtain the LOD thresholds according to the quantile probabilities, based on the desired significance levels.
 
 ```julia
-lod_thresholds = get_thrsholds(single_results_perms.L_perms, [0.90, 0.95]);
-round.(lod_threshols, digits = 4)
+lod_thresholds = BulkLMM.get_thresholds(single_results_perms.L_perms, [0.90, 0.95]);
+round.(lod_thresholds.thrs, digits = 4)
 ```
-	3.3644  
-	3.6504
+
+    3.3644  
+    3.6504
 
 Let's plot the BulkLMM LOD scores of the 1112-th trait and compare with the results from running
 [GEMMA](https://github.com/genetics-statistics/GEMMA):
