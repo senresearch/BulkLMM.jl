@@ -49,8 +49,6 @@ function computeR_LMM(wY::Array{Float64, 2}, wX::Array{Float64, 2}, wIntercept::
     # exclude the effect of (rotated) intercept (idea is similar as centering data in the linear model case)
     Y00 = resid(wY, wIntercept);
     X00 = resid(wX, wIntercept);
-    
-    # n = size(y00, 1);
 
     # standardize the response and covariates by dividing by their norms
     norm_Y = mapslices(x -> norm(x), Y00, dims = 1) |> vec;
@@ -248,7 +246,8 @@ function gridscan_by_bin(pheno::Array{Float64, 2}, geno::Array{Float64, 2},
 
     m = size(pheno, 2);
 
-    Y_std = colStandardize(pheno);
+    # Y_std = colStandardize(pheno);
+    Y_std = pheno;
 
     (Y0, X0, lambda0) = transform_rotation(Y_std, [covar geno], kinship; addIntercept = addIntercept);
 
@@ -281,7 +280,6 @@ function gridscan_by_bin(pheno::Array{Float64, 2}, geno::Array{Float64, 2},
     results = Array{Array{Float64, 2}, 1}(undef, nbins);
 
     ## Threads.@threads for t in 1:nbins
-
     for t in 1:nbins
         results[t] = weighted_liteqtl(Y0[:, blocking_idxs[t]], X0, lambda0, h2_taken[t]; 
                                       num_of_covar = num_of_covar);
@@ -316,6 +314,7 @@ Does element-wise comparisons of two 2d Arrays and keep the larger elements in-p
 # Arguments
 - max = 2d Array of Float; matrix of current maximum values
 - toCompare = 2d Array of Flopat; matrix of values to compare with the current maximum values
+- 
 
 # Value
 
@@ -326,15 +325,23 @@ Nothing; does in-place maximizations.
 Will modify input matrix `max` by a parallelized loop; uses @tturbo in the package `LoopVectorization.jl`
 
 """
-function tmax!(max::Array{Float64, 2}, toCompare::Array{Float64, 2})
+function tmax!(max::Array{Float64, 2}, toCompare::Array{Float64, 2},
+               hsq_panel::Array{Float64, 2}, hsq_panel_counter::Array{Int64, 2},
+               hsq_list::Array{Float64, 1})
     
     (p, m) = size(max);
     
-    @tturbo for j in 1:m
+    Threads.@threads for j in 1:m
         for i in 1:p
             
-            max[i, j] = (max[i, j] >= toCompare[i, j]) ? max[i, j] : toCompare[i, j];
-            
+            # change inputs in-place only when condition is met (the coordinate of LOD is higher on the current h2 value)
+            if (max[i, j] < toCompare[i, j])
+                max[i, j] = toCompare[i, j];
+                hsq_panel_counter[i, j] = hsq_panel_counter[i, j]+1;
+                hsq_panel[i, j] = hsq_list[hsq_panel_counter[i, j]];
+            end
+
+            # do nothing if not.
         end
     end
     

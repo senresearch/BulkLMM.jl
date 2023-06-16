@@ -331,6 +331,7 @@ tests_compareValues = quote
     testHelper(test2_compareValues);
 end;
 
+println("Utility functions test: ")
 @testset "Utility Functions Tests" begin
 
     eval(tests_colCenter);
@@ -342,5 +343,5 @@ end;
     eval(tests_shuffleVector);
     eval(tests_compareValues);
 
-end;
+end
 

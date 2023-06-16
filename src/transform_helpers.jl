@@ -34,9 +34,9 @@ end
 
 # Takes the rotated data, evaluates the VC estimators (only based on the intercept model) for weights calculation, and finally re-weights the input data.
 function transform_reweight(y0::Array{Float64, 2}, X0::Array{Float64, 2}, lambda0::Array{Float64, 1};
-                    n_covars::Int = 1, 
-                    prior_a::Float64 = 0.0, prior_b::Float64 = 0.0, method::String = "qr", optim_interval::Int64 = 1,
-                    reml::Bool = false)
+                            n_covars::Int = 1, 
+                            prior_a::Float64 = 0.0, prior_b::Float64 = 0.0, method::String = "qr", optim_interval::Int64 = 1,
+                            reml::Bool = false)
 
         ## Note: estimate once the variance components from the null model and use for all marker scans
         # fit lmm
@@ -66,12 +66,12 @@ function transform_reweight(y0::Array{Float64, 2}, X0::Array{Float64, 2}, lambda
             X00 = resid(copy_X0[:, (n_covars+1):end], copy_X0[:, 1:n_covars])
         end
 
-        return (copy_r0, X00, vc.sigma2)
+        return (copy_r0, X00, vc.sigma2, vc.h2)
 
 end
 
 function transform_permute(r0::Array{Float64, 2}; 
-                    nperms::Int64 = 1024, rndseed::Int64 = 0, original::Bool = true)
+                           nperms::Int64 = 1024, rndseed::Int64 = 0, original::Bool = true)
 
         ## random permutations; the first column is the original data
         rng = MersenneTwister(rndseed);

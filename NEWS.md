@@ -1,4 +1,16 @@
-## Version 0.2.1 (April 19, 2023)
+## Version 1.1.0 (June 13, 2023)
+- Added the feature to output the comprehensive results for `bulkscan_alt_grid()`, which does multiple-trait scans with estimation of h2 under each alternative model using grid-search approximation. It now returns the heritability estimated for each trait and each genomic marker, stored in a matrix of size $p \times m$, where $p$ is the number of tested markers and $m$ is the number of tested traits. The user is able to access this information by getting the field `h2_panel` from the output object.
+
+- Revised the output structure for the single-trait scan function `scan(...; permutation_testing = true, ...)` when permutation testing is requested, to preserve the consistency of results for `scan()` function in general. Just as when permutation testing is not requested, calling `scan(...; permutation_testing = true, ...)` now reports the variance components (residual variance and heritability estimated from the null), the LOD scores for the original trait, and with the option to do permutation testing on, it additionally reports the raw output of LOD scores for each permuted copies of the original, as a matrix of size $p \times nperms$, where $nperms$ is the number of permutations requested. The user is able to access this information by getting the field `L_perms` from the output object.
+
+- Removed dependency to the package `LoopVectorization.jl`.
+
+- Modified `bulkscan_null_grid()` (scan function using grid-search algorithm) which previously did an implicit standardization to input matrices, which could cause accuracy issues when using weighted variances feature. 
+
+- Added new tests for the scanning functions using the `weights` keyword argument.
+
+
+## Version 1.0.1 (April 19, 2023)
 - Enabled modeling for heteroskedestic sources of error variance:
 
     By our assumption of the linear mixed models, 
@@ -20,11 +32,13 @@
     L = bulkscan_null(Y, G, K; weights = weights, ...).L # LOD scores for every input trait
 
     L = bulkscan_null_grid(Y, G, K, grid; weights = weights, ...).L # LOD scores for every input trait
+    
+    L = bulkscan_alt_grid(Y, G, K, grid; weights = weights, ...).L # LOD scores for every input trait
     ```
 
     where $y$ contains the `number of strains` strain means of the expression trait of interest and $Y$ contains the strain means of multiple expression traits of interest.
 
-## Version 0.2.0 (March 09, 2023)
+## Version 1.0.0 (March 09, 2023)
 
 - Renamed the scan functions: now use `scan()` for performing single-trait scans, and use `bulkscan_...()` for performing multiple-trait scans.
 
