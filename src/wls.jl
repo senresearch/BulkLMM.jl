@@ -162,7 +162,7 @@ function wls_multivar(Y::Array{Float64, 2}, X::Array{Float64, 2}, w::Array{Float
         
         if(reml)
             # ell = ell + 0.5 * (p*log(2pi*sigma2) + logdetXtX - logdetXXtXX) # full log-likelihood including the constant terms;
-            ll = ll + 0.5 * (p*log(sigma2_e) - logdetXXtXX)
+            ll = ll .+ 0.5 * (p*log.(sigma2_e) .- logdetXXtXX)
         end
         
     else
