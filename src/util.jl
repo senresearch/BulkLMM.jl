@@ -47,7 +47,7 @@ end
 function checkZeros(x::Vector{Float64})
 
     for i in 1:length(x)
-        if x[i] == 0.0
+        if isapprox(x[i], 0.0; atol=eps(Float64), rtol=0)
             return true
         end
     end
