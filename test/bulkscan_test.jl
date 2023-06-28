@@ -54,42 +54,101 @@ test_computeR_LMM2 = quote
 end;
 
 ##########################################################################################################
-## TEST: scan_lite_multivar
+## TEST: bulkscan_null
 ##########################################################################################################
 
-test_scan_multivar = quote
+test_bulkscan_null = quote
     stand_pheno = BulkLMM.colStandardize(pheno[:, 705:1112]);
     stand_geno = BulkLMM.colStandardize(geno);
 
-    test_multivar = BulkLMM.scan_lite_multivar(stand_pheno, stand_geno, kinship, 4;
+    test_bulkscan_null = BulkLMM.bulkscan_null(stand_pheno, stand_geno, kinship;
+                                               nb = 4, 
                                                prior_variance = 1.0, 
                                                prior_sample_size = 0.1);
 
     y_705 = reshape(pheno[:, 705], :, 1);
     test_null_705 = BulkLMM.scan(y_705, geno, kinship; 
-                            prior_variance = var(y_705), prior_sample_size = 0.1).lod;
+                            prior_variance = var(y_705), prior_sample_size = 0.1);
 
     y_1112 = reshape(pheno[:, 1112], :, 1);
     test_null_1112 = BulkLMM.scan(y_1112, geno, kinship; 
-                            prior_variance = var(y_1112), prior_sample_size = 0.1).lod;
+                            prior_variance = var(y_1112), prior_sample_size = 0.1);
 
-    @test sum((test_null_705 .- test_multivar[:, 1]).^2) <= 1e-7;
-    @test sum((test_null_1112 .- test_multivar[:, end]).^2) <= 1e-7;
+    @test sum((test_null_705.lod .- test_bulkscan_null.L[:, 1]).^2) <= 1e-7;
+    @test sum((test_null_1112.lod .- test_bulkscan_null.L[:, end]).^2) <= 1e-7;
 
 end;
 
+##########################################################################################################
+## TEST: bulkscan_null_grid
+##########################################################################################################
 
+test_bulkscan_null_grid = quote
+    stand_pheno = BulkLMM.colStandardize(pheno[:, 705:1112]);
+    stand_geno = BulkLMM.colStandardize(geno);
+
+    y_705 = reshape(pheno[:, 705], :, 1);
+    test_null_705 = BulkLMM.scan(y_705, geno, kinship; 
+                                 prior_variance = var(y_705), prior_sample_size = 0.1);
+
+    y_1112 = reshape(pheno[:, 1112], :, 1);
+    test_null_1112 = BulkLMM.scan(y_1112, geno, kinship; 
+                                  prior_variance = var(y_1112), prior_sample_size = 0.1);
+
+    grid_list = vcat(collect(0.0:0.05:0.95), 
+                     test_null_705.h2_null, test_null_1112.h2_null);
+
+    test_bulkscan_null_grid = BulkLMM.bulkscan_null_grid(stand_pheno, stand_geno, kinship, grid_list; 
+                                                         prior_variance = 1.0, prior_sample_size = 0.1);
+
+    @test sum((test_null_705.lod .- test_bulkscan_null_grid.L[:, 1]).^2) <= 1e-7;
+    @test sum((test_null_1112.lod .- test_bulkscan_null_grid.L[:, end]).^2) <= 1e-7;
+
+end;
+
+##########################################################################################################
+## TEST: bulkscan_alt_grid
+##########################################################################################################
+
+test_bulkscan_alt_grid = quote
+    stand_pheno = BulkLMM.colStandardize(pheno[:, 705:1112]);
+    stand_geno = BulkLMM.colStandardize(geno);
+
+    y_705 = reshape(pheno[:, 705], :, 1);
+    test_alt_705 = BulkLMM.scan(y_705, geno, kinship; 
+                                 assumption = "alt",
+                                 prior_variance = var(y_705), prior_sample_size = 0.1);
+
+    y_1112 = reshape(pheno[:, 1112], :, 1);
+    test_alt_1112 = BulkLMM.scan(y_1112, geno, kinship; 
+                                  assumption = "alt",
+                                  prior_variance = var(y_1112), prior_sample_size = 0.1);
+
+    grid_list = collect(0.0:0.05:0.95);
+
+    test_bulkscan_alt_grid = BulkLMM.bulkscan_alt_grid(stand_pheno, stand_geno, kinship, grid_list; 
+                                                       prior_variance = 1.0, prior_sample_size = 0.1);
+                                                       
+    @test mean(abs.(test_alt_705.h2_each_marker .- test_bulkscan_alt_grid.h2_panel[:, 1])) <= 0.05                                               
+    @test mean(abs.(test_alt_1112.h2_each_marker .- test_bulkscan_alt_grid.h2_panel[:, end])) <= 0.05
+    @test mean((test_alt_705.lod .- test_bulkscan_alt_grid.L[:, 1]).^2) <= 0.01;
+    @test mean((test_alt_1112.lod .- test_bulkscan_alt_grid.L[:, end]).^2) <= 0.01;
+
+end;
 
 
 
 ##########################################################################################################
 ## TEST: run all tests
 ##########################################################################################################
+println("Bulkscan functions test: ")
 @testset "Multiple Trait Scan Tests" begin
 
     eval(test_r2lod);
     eval(test_computeR_LMM1);
     eval(test_computeR_LMM2);
-    eval(test_scan_multivar);
+    eval(test_bulkscan_null);
+    eval(test_bulkscan_null_grid);
+    eval(test_bulkscan_alt_grid); 
 
-end;
+end

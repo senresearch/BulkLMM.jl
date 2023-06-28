@@ -22,7 +22,8 @@ function transform_rotation(y::Array{Float64, 2}, g::Array{Float64, 2}, K::Array
 
     # return an error if there are any negative eigenvalues
     if any(EF.values .< -1e-7)
-        throw(error("Negative eigenvalues exist. The kinship matrix supplied may not be SPD."));
+        # throw(error("Negative eigenvalues exist. The kinship matrix supplied may not be SPD."));
+        @warn "Negative eigenvalues exist. The kinship matrix supplied may not be SPD."
     end
 
     # rotate data so errors are uncorrelated
@@ -33,14 +34,20 @@ end
 
 # Takes the rotated data, evaluates the VC estimators (only based on the intercept model) for weights calculation, and finally re-weights the input data.
 function transform_reweight(y0::Array{Float64, 2}, X0::Array{Float64, 2}, lambda0::Array{Float64, 1};
-                    prior_a::Float64 = 0.0, prior_b::Float64 = 0.0, method::String = "qr",
-                    reml::Bool = false)
+                            n_covars::Int = 1, 
+                            prior_a::Float64 = 0.0, prior_b::Float64 = 0.0, method::String = "qr", optim_interval::Int64 = 1,
+                            reml::Bool = false)
 
         ## Note: estimate once the variance components from the null model and use for all marker scans
         # fit lmm
-        vc = fitlmm(y0, reshape(X0[:, 1], :, 1), lambda0, [prior_a, prior_b]; reml = reml, method = method);
+        if n_covars == 1
+            vc = fitlmm(y0, reshape(X0[:, 1], :, 1), lambda0, [prior_a, prior_b]; reml = reml, method = method, optim_interval = optim_interval);
+        else
+            vc = fitlmm(y0, X0[:, 1:n_covars], lambda0, [prior_a, prior_b]; reml = reml, method = method, optim_interval = optim_interval);
+        end
+
         # println(vc) # vc.b is estimated through weighted least square
-        r0 = y0 - X0[:, 1]*vc.b
+        r0 = y0 - X0[:, 1:n_covars]*vc.b
 
         # weights inversely-proportional to the variances
         sqrtw = sqrt.(makeweights(vc.h2, lambda0))
@@ -52,14 +59,19 @@ function transform_reweight(y0::Array{Float64, 2}, X0::Array{Float64, 2}, lambda
         ## NOTE: although rowDivide! makes in-place changes to the inputs, it only modifies the rotated data which are returned outputs
         rowMultiply!(copy_r0, sqrtw) # dont want to change the inputs: r0, X0
         rowMultiply!(copy_X0, sqrtw) # dont want to change the inputs: r0, X0
-        X00 = resid(copy_X0[:, 2:end], reshape(copy_X0[:, 1], :, 1)) # after re-weighting X, calling resid on re-weighted X is the same as doing wls too.
+        
+        if n_covars == 1
+            X00 = resid(copy_X0[:, 2:end], reshape(copy_X0[:, 1], :, 1)) # after re-weighting X, calling resid on re-weighted X is the same as doing wls too.
+        else
+            X00 = resid(copy_X0[:, (n_covars+1):end], copy_X0[:, 1:n_covars])
+        end
 
-        return (copy_r0, X00, vc.sigma2)
+        return (copy_r0, X00, vc.sigma2, vc.h2)
 
 end
 
 function transform_permute(r0::Array{Float64, 2}; 
-                    nperms::Int64 = 1024, rndseed::Int64 = 0, original::Bool = true)
+                           nperms::Int64 = 1024, rndseed::Int64 = 0, original::Bool = true)
 
         ## random permutations; the first column is the original data
         rng = MersenneTwister(rndseed);

@@ -2,7 +2,7 @@
 
 ## Note: make sure pwd() is "BulkLMM.jl/test"
 
-pheno_y = reshape(pheno[:, 1126], :, 1);
+pheno_y = reshape(pheno[:, 7919], :, 1);
 
 ##########################################################################################################
 ## TEST: makeweights()
@@ -31,8 +31,8 @@ end;
 ##########################################################################################################
 ## TEST: runtests
 ##########################################################################################################
-
+println("LMM functions test: ") 
 @testset "Test lmm.jl" begin
     eval(test_makeweights1);
     eval(test_makeweights2);
-end;
+end
