@@ -242,8 +242,8 @@ size(single_results_perms.L_perms)
 Based on the results of the permutation test, we can use the function `get_thresholds()` to obtain the LOD thresholds according to the quantile probabilities, based on the desired significance levels.
 
 ```julia
-lod_thresholds = get_thrsholds(single_results_perms.L_perms, [0.90, 0.95]);
-round.(lod_threshols, digits = 4)
+lod_thresholds = get_thresholds(single_results_perms.L_perms, [0.90, 0.95]);
+round.(lod_thresholds, digits = 4)
 ```
 	3.3644  
 	3.6504
