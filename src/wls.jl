@@ -64,7 +64,7 @@ function wls(y::Array{Float64, 2}, X::Array{Float64, 2}, w::Array{Float64, 1}, p
     end
 
     yyhat = XX*coef
-    rss0 = sum((yy-yyhat).^2)
+    rss0 = norm(yy-yyhat)^2 #sum((yy-yyhat).^2)
 
     if prior[2] > 0.0
         prior_df = prior[2]+2;
@@ -140,7 +140,8 @@ function wls_multivar(Y::Array{Float64, 2}, X::Array{Float64, 2}, w::Array{Float
     end
 
     YYhat = XX*coef
-    rss0 = mapslices(x -> sum(x.^2), YY-YYhat; dims = 1)
+    # rss0 = mapslices(x -> sum(x.^2), YY-YYhat; dims = 1)
+    rss0 = mapslices(x -> norm(x)^2, YY-YYhat; dims = 1)
 
     if prior[2] > 0.0
         prior_df = prior[2]+2;
