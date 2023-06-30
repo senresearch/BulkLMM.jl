@@ -13,7 +13,7 @@ function gridbrent(f::Function,a::Float64,b::Float64,ninterval::Int64=1)
     av = points[1:ninterval]
     bv = points[2:(ninterval+1)]
     # apply Brent's method to subintervals
-    res = broadcast(optimize,f,av,bv,[GoldenSection()])
+    res = broadcast(optimize,f,av,bv,[Brent()])
     # find the minimum in each interval
     minimumv = Optim.minimum.(res)
     # find index of global minimum
