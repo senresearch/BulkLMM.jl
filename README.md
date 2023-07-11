@@ -243,7 +243,7 @@ Based on the results of the permutation test, we can use the function `get_thres
 
 ```julia
 lod_thresholds = get_thresholds(single_results_perms.L_perms, [0.90, 0.95]);
-round.(lod_thresholds, digits = 4)
+round.(lod_threshols, digits = 4)
 ```
 	3.3644  
 	3.6504
@@ -280,7 +280,7 @@ traitName = pInfo[traitID, 1] # get the trait name of the 1112-th trait
 plot_QTL(
 	single_results_perms, 
 	gInfo, 
-	thresholds = [0.90, 0.95],
+	significance= [0.10, 0.05],
 	legend = true,
 	label = "BulkLMM.jl",
 	title = "Single trait $traitName LOD scores"
