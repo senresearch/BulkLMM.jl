@@ -10,11 +10,12 @@
 ###     - An object containing the quantiles of maximal LOD scores among all maximal 
 ###       LOD scores for all permutations and the corresponding probabilities . 
 
-function get_thresholds(L::Array{Float64, 2}, thr_probs::Array{Float64, 1})
+function get_thresholds(L::Array{Float64, 2}, signif_level::Array{Float64, 1})
 
     # Get the LOD score peak for each trait
     peak_each_trait = vec(mapslices(x -> maximum(x), L; dims = 1));
     # Thresholds will be determined by the quantiles of the peaks
+    thr_probs = 1 .- signif_level;
     thrs = map(x -> quantile(peak_each_trait, x), thr_probs);
 
     return (probs = thr_probs, thrs = thrs);
