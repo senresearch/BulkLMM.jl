@@ -21,6 +21,6 @@ catch e
 end
 
 println("Scan with covariates functions test: ", 
-@test mean(abs.(test_scan_covar.lod .- test_grid_covar[:, (pheno_id+3)])) <= tol
+@test mean(abs.(test_scan_covar.lod .- test_grid_covar[:, (pheno_id-3)])) <= tol
 )
 
