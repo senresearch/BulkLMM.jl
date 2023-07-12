@@ -1,3 +1,9 @@
+## Version 1.1.1 (July 11, 2023)
+- Fixed bugs:  
+    - REML option in multiple trait scan functions ("bulkscan"'s) used to lead to compilation errors.
+    - `checkZeros()` before will not consider and detect small floats that are significantly close to zero as "zeros".
+- Updated the interface for the function to obtain permutation testing thresholds `get_thresholds()`: now the user will specify the significance levels to obtain the corresponding thresholds. For example, user input of significance level of 0.05 will give the 95th quantile of LOD scores from permutations.
+
 ## Version 1.1.0 (June 13, 2023)
 - Added the feature to output the comprehensive results for `bulkscan_alt_grid()`, which does multiple-trait scans with estimation of h2 under each alternative model using grid-search approximation. It now returns the heritability estimated for each trait and each genomic marker, stored in a matrix of size $p \times m$, where $p$ is the number of tested markers and $m$ is the number of tested traits. The user is able to access this information by getting the field `h2_panel` from the output object.
 
