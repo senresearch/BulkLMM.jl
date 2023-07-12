@@ -1,5 +1,8 @@
 # BulkLMM.jl
 
+[![CI](https://github.com/senresearch/BulkLMM.jl/actions/workflows/ci.yml/badge.svg)](https://github.com/senresearch/BulkLMM.jl/actions/workflows/ci.yml)
+[![Coverage](https://codecov.io/gh/senresearch/BulkLMM.jl/branch/main/graph/badge.svg)](https://codecov.io/gh/senresearch/BulkLMM.jl)
+
 BulkLMM is a Julia package for performing genome scans for multiple traits (in
 "Bulk" sizes) using linear mixed models (LMMs). It is suitable for eQTL mapping
 with thousands of traits and markers. BulkLMM also performs permutation
@@ -245,7 +248,7 @@ For example, if we would like to see the significant LOD scores with significanc
 
 ```julia
 lod_thresholds = get_thresholds(single_results_perms.L_perms, [0.10, 0.05]);
-round.(lod_threshols, digits = 4)
+round.(lod_thresholds, digits = 4)
 ```
 	3.3644  
 	3.6504
