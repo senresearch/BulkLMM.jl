@@ -64,7 +64,7 @@ function wls(y::Array{Float64, 2}, X::Array{Float64, 2}, w::Array{Float64, 1}, p
     end
 
     yyhat = XX*coef
-    rss0 = sum((yy-yyhat).^2)
+    rss0 = norm(yy-yyhat)^2 #sum((yy-yyhat).^2)
 
     if prior[2] > 0.0
         prior_df = prior[2]+2;
@@ -81,7 +81,7 @@ function wls(y::Array{Float64, 2}, X::Array{Float64, 2}, w::Array{Float64, 1}, p
     # see formulas (2) and (3) of Kang (2008)
     if(loglik)
 
-        ll = -0.5 * ((n+prior[2])*log(sigma2_e) - sum(log.(w)) + (rss0+prior[1]*prior[2])/sigma2_e)
+        ll = -0.5 * ((n+prior[2])*log(sigma2_e) - sum(log,w) + (rss0+prior[1]*prior[2])/sigma2_e)
         
         if(reml)
             # ell = ell + 0.5 * (p*log(2pi*sigma2) + logdetXtX - logdetXXtXX) # full log-likelihood including the constant terms;
@@ -140,7 +140,8 @@ function wls_multivar(Y::Array{Float64, 2}, X::Array{Float64, 2}, w::Array{Float
     end
 
     YYhat = XX*coef
-    rss0 = mapslices(x -> sum(x.^2), YY-YYhat; dims = 1)
+    # rss0 = mapslices(x -> sum(x.^2), YY-YYhat; dims = 1)
+    rss0 = mapslices(x -> norm(x)^2, YY-YYhat; dims = 1)
 
     if prior[2] > 0.0
         prior_df = prior[2]+2;
@@ -158,11 +159,11 @@ function wls_multivar(Y::Array{Float64, 2}, X::Array{Float64, 2}, w::Array{Float
     # see formulas (2) and (3) of Kang (2008)
     if(loglik)
 
-        ll = -0.5 * ((n+prior[2])*log.(sigma2_e) .- sum(log.(w)) .+ (rss0.+prior[1]*prior[2])./sigma2_e)
+        ll = -0.5 * ((n+prior[2])*log.(sigma2_e) .- sum(log,w) .+ (rss0.+prior[1]*prior[2])./sigma2_e)
         
         if(reml)
             # ell = ell + 0.5 * (p*log(2pi*sigma2) + logdetXtX - logdetXXtXX) # full log-likelihood including the constant terms;
-            ll = ll + 0.5 * (p*log(sigma2_e) - logdetXXtXX)
+            ll = ll .+ 0.5 * (p*log.(sigma2_e) .- logdetXXtXX)
         end
         
     else

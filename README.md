@@ -1,5 +1,8 @@
 # BulkLMM.jl
 
+[![CI](https://github.com/senresearch/BulkLMM.jl/actions/workflows/ci.yml/badge.svg)](https://github.com/senresearch/BulkLMM.jl/actions/workflows/ci.yml)
+[![Coverage](https://codecov.io/gh/senresearch/BulkLMM.jl/branch/main/graph/badge.svg)](https://codecov.io/gh/senresearch/BulkLMM.jl)
+
 BulkLMM is a Julia package for performing genome scans for multiple traits (in
 "Bulk" sizes) using linear mixed models (LMMs). It is suitable for eQTL mapping
 with thousands of traits and markers. BulkLMM also performs permutation
@@ -197,7 +200,7 @@ pheno_y = reshape(pheno_processed[:, traitID], :, 1);
       0.059480 seconds (80.86 k allocations: 47.266 MiB)
 
 
-The output `single_results` is an object containing model results about the variance components (residual variance and the heritability parameter) estimated under the null baseline model, and the lod scores, as the fields named respectively as "sigma2_e", "h2_null", and "lod".
+The output `single_results` is an object containing model results about the variance components (residual variance and the heritability parameter) estimated under the null baseline model, and the lod scores, as the fields named respectively as "sigma2_e", "h2_null", and "lod". By default, variance components are estimated from maximum-likelihood (ML). The user may choose REML for estimating by specifying in the input "reml = true".
 
 
 ```julia
@@ -239,11 +242,13 @@ size(single_results_perms.L_perms)
 
     (7321, 1000)
 
-Based on the results of the permutation test, we can use the function `get_thresholds()` to obtain the LOD thresholds according to the quantile probabilities, based on the desired significance levels.
+Based on the results of the permutation test, we can use the function `get_thresholds()` to obtain the LOD thresholds according to the quantile probabilities, based on the significance levels requested. 
+
+For example, if we would like to see the significant LOD scores with significance levels of 0.10 and 0.05, we can run the function `get_thresholds()` and give raw results of LOD scores from permutation testing and the desired significance (0.10, 0.05). The user can ask for results of as many significance levels as they want. In this case, the function reports the 90th and the 95th quantiles among LOD scores testing all 1000 permuted copies. The results are as follows:
 
 ```julia
-lod_thresholds = get_thrsholds(single_results_perms.L_perms, [0.90, 0.95]);
-round.(lod_threshols, digits = 4)
+lod_thresholds = get_thresholds(single_results_perms.L_perms, [0.10, 0.05]);
+round.(lod_thresholds, digits = 4)
 ```
 	3.3644  
 	3.6504
@@ -280,7 +285,7 @@ traitName = pInfo[traitID, 1] # get the trait name of the 1112-th trait
 plot_QTL(
 	single_results_perms, 
 	gInfo, 
-	thresholds = [0.90, 0.95],
+	significance= [0.10, 0.05],
 	legend = true,
 	label = "BulkLMM.jl",
 	title = "Single trait $traitName LOD scores"
@@ -323,6 +328,8 @@ get the LOD scores for all **~35k** BXD traits:
 The output `multiple_results_allTraits` is an object containing our model results:
 - the matrix of LOD scores $L_{p \times m}$, where $p$ is the number of markers and $m$ is number of traits; each column corresponds to the LOD scores resulting from performing GWAS on each given trait.
 - the vector of heritability estimate per trait, `h2_null_list`, obtained from fitting the null model. 
+
+Similarly as the single trait scan function `scan()`, variance components are estimated from maximum-likelihood (ML) by default ("reml = false"). The user may choose REML for estimating by specifying in the input "reml = true".
 
 ```julia
 size(multiple_results_allTraits.L)
