@@ -141,14 +141,16 @@ test_bulkscan_general = quote
     stand_pheno = BulkLMM.colStandardize(pheno[:, 705:1112]);
     stand_geno = BulkLMM.colStandardize(geno);
 
+    grid_list = vcat(collect(0.0:0.05:0.95), test_null_705.h2_null, test_null_1112.h2_null);
+
     # null-grid
     test_bulkscan = BulkLMM.bulkscan(stand_pheno, stand_geno, kinship;
                                      method = "null-grid", 
                                      h2_grid = grid_list, 
                                      prior_variance = 1.0, prior_sample_size = 0.1);
                     
-    @test sum((test_bulkscan.L[:, 1] .- test_bulkscan_null_grid.L[:, 1]).^2) <= 1e-7;
-    @test sum((test_bulkscan.L[:, end] .- test_bulkscan_null_grid.L[:, end]).^2) <= 1e-7;
+    @test sum((test_bulkscan.L .- test_bulkscan_null_grid.L).^2) <= 1e-7;
+    @test sum((test_bulkscan.L .- test_bulkscan_null_grid.L).^2) <= 1e-7;
 
     # null-exact
     test_bulkscan = BulkLMM.bulkscan(stand_pheno, stand_geno, kinship;
@@ -156,8 +158,8 @@ test_bulkscan_general = quote
                                      nb = 4, 
                                      prior_variance = 1.0, prior_sample_size = 0.1);
 
-    @test sum((test_bulkscan.L[:, 1] .- test_bulkscan_null.L[:, 1]).^2) <= 1e-7;
-    @test sum((test_bulkscan.L[:, end] .- test_bulkscan_null.L[:, end]).^2) <= 1e-7;
+    @test sum((test_bulkscan.L .- test_bulkscan_null.L).^2) <= 1e-7;
+    @test sum((test_bulkscan.L .- test_bulkscan_null.L).^2) <= 1e-7;
 
     # alt-grid
     test_bulkscan = BulkLMM.bulkscan(stand_pheno, stand_geno, kinship;
@@ -165,8 +167,8 @@ test_bulkscan_general = quote
                                      h2_grid = grid_list, 
                                      prior_variance = 1.0, prior_sample_size = 0.1);
 
-    @test sum((test_bulkscan.L[:, 1] .- test_bulkscan_alt_grid.L[:, 1]).^2) <= 1e-7;
-    @test sum((test_bulkscan.L[:, end] .- test_bulkscan_alt_grid.L[:, end]).^2) <= 1e-7;
+    @test sum((test_bulkscan.L .- test_bulkscan_alt_grid.L).^2) <= 1e-7;
+    @test sum((test_bulkscan.L .- test_bulkscan_alt_grid.L).^2) <= 1e-7;
 
 
 end;
