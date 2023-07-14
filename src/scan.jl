@@ -48,6 +48,7 @@ Performs genome scan for univariate trait and each of the gene markers, one mark
 ## Examining Profile Likelihood - as a function of the heritability estimates
 - `ProfileLL::Bool`: Option to return values of the profile likelihood function under different h2 values 
     (default: false)
+- `markerID::Int64`: The ID of the marker of interest
 - `h2_grid::Array{Float64, 1}`: Different values of h2 for calculating the corresponding profile likelihood values
     (default: an empty array)
 
@@ -55,17 +56,32 @@ Performs genome scan for univariate trait and each of the gene markers, one mark
 - `method::String`: Keyword indicating the matrix factorization scheme for model evaluation; either by "qr" or 
     "cholesky" decomposition (default: "qr")
 
-# Value
+# Returned Values:
 
-A list of output values are returned:
-- out00.sigma2 = Float; estimated marginal variance due to random errors (by null lmm)
-- out00.h2 = Float; estimated heritability (by null lmm)
-- lod = 1d array of floats consisting of the lod scores of this trait and all markers (dimension: p*1)
+The output of the single-trait scan function is an object. Depending on the user inputs and options, the fields of
+    the output object will differ. For example, for the returned output named as `out`:
 
-# Some notes
+## Null-LMM: by the "Null" approximation of the h2 value and applied to testing all markers:
+- `out.sigma2_e::Float64`: Estimated residual unexplained variances from the null model
+- `out.h2_null::Float64`: Estimated heritability (h2) from the null model
+- `out.lod::Array{Float64, 1}`: 1-dimensional array consisting of the LOD scores
 
-    This function calls either `scan_null` or `scan_alt` depending on the input passed as `method`.
-    Output data structure might need some revisions.
+## Exact-LMM: by re-estimating the h2 and sigma2_e independently while testing each marker:
+- `out.sigma2_e::Float64`: Estimated residual unexplained variances from the null model
+- `out.h2_null::Float64`: Estimated heritability (h2) from the null model
+- `out.h2_each_marker::Array{Float64, 1}`: 1-dimensional array of the estimated heritability for each marker model
+- `out.lod::Array{Float64, 1}`: 1-dimensional array consisting of the LOD scores
+
+## Null-LMM and when permutation testing is required:
+- `out.sigma2_e::Float64`: Estimated residual unexplained variances from the null model
+- `out.h2_null::Float64`: Estimated heritability (h2) from the null model
+- `out.lod::Array{Float64, 1}`: 1-dimensional array consisting of the LOD scores
+- `out.L_perms::Array{Float64, 2}`: 2-dimensional array of the LOD scores from permutation testing; each column
+    is a vector of length p of p LOD scores for each permuted copy.
+
+## Additionally, if the user wants to examine the profile likelihood values under a given set of h2-values:
+- `out.ll_list_null::Array{Float64, 1}`: gives the values under the null model under each h2-value
+- `out.ll_list_alt::Array{Float64, 1}`: gives the values under the user-specified marker model under each h2-value
 
 """
 function scan(y::Array{Float64,2}, g::Array{Float64,2}, K::Array{Float64,2};
