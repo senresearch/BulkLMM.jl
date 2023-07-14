@@ -138,14 +138,17 @@ end;
 
 test_bulkscan_general = quote
 
+    stand_pheno = BulkLMM.colStandardize(pheno[:, 705:1112]);
+    stand_geno = BulkLMM.colStandardize(geno);
+
     # null-grid
     test_bulkscan = BulkLMM.bulkscan(stand_pheno, stand_geno, kinship;
                                      method = "null-grid", 
                                      h2_grid = grid_list, 
                                      prior_variance = 1.0, prior_sample_size = 0.1);
                     
-   @test sum((test_bulkscan.L[:, 1] .- test_bulkscan_null_grid.L[:, 1]).^2) <= 1e-7;
-   @test sum((test_bulkscan.L[:, end] .- test_bulkscan_null_grid.L[:, end]).^2) <= 1e-7;
+    @test sum((test_bulkscan.L[:, 1] .- test_bulkscan_null_grid.L[:, 1]).^2) <= 1e-7;
+    @test sum((test_bulkscan.L[:, end] .- test_bulkscan_null_grid.L[:, end]).^2) <= 1e-7;
 
     # null-exact
     test_bulkscan = BulkLMM.bulkscan(stand_pheno, stand_geno, kinship;
@@ -153,8 +156,8 @@ test_bulkscan_general = quote
                                      nb = 4, 
                                      prior_variance = 1.0, prior_sample_size = 0.1);
 
-    @test sum((test_bulkscan.L[:, 1] .- test_bulkscan_null_exact.L[:, 1]).^2) <= 1e-7;
-    @test sum((test_bulkscan.L[:, end] .- test_bulkscan_null_exact.L[:, end]).^2) <= 1e-7;
+    @test sum((test_bulkscan.L[:, 1] .- test_bulkscan_null.L[:, 1]).^2) <= 1e-7;
+    @test sum((test_bulkscan.L[:, end] .- test_bulkscan_null.L[:, end]).^2) <= 1e-7;
 
     # alt-grid
     test_bulkscan = BulkLMM.bulkscan(stand_pheno, stand_geno, kinship;
