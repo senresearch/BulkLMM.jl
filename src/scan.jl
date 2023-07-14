@@ -3,15 +3,16 @@
 # allow modeling of additional non-genetic covariates, two genotype groups
 ###########################################################
 """
-    scan(y, g, Z, K)
+    scan(y, G, K; optional inputs) 
+    scan(y, G, Z, K; optional inputs) - if modeling additional covariates Z
 
-Performs genome scan for univariate trait and each of the gene markers, one marker at a time (one-df test) 
+Perform genome scan for univariate trait and a set of genome markers
 
 # Required Inputs
 
-- `y::AbstractArray{Float64, 2}`: Single univariate quantitative trait of N measurements (dimension: N*1)
-- `g::AbstractArray{Float64, 2}`: Matrix of genotype probabilities at p tested markers (dimension: N*p)
-- `K::AbstractArray{Float64, 2}`: Genetic relatedness matrix of the N subjects (dimension:N*N)
+- `y::Array{Float64, 2}`: Single univariate quantitative trait of N measurements (dimension: N*1)
+- `G::Array{Float64, 2}`: Matrix of genotype probabilities at p tested markers (dimension: N*p)
+- `K::Array{Float64, 2}`: Genetic relatedness matrix of the N subjects (dimension:N*N)
 
 # Optional Inputs
 
@@ -25,8 +26,6 @@ Performs genome scan for univariate trait and each of the gene markers, one mark
 ## Modeling Additional Covariates:   
 - `Z::AbstractArray{Float64, 2}`: Matrix of additional non-genetic covariates (should be independent to tested 
     markers)
-
-    example function call: `scan(y, g, Z, K; other optional arguments)`.
 
 ## Permutation Testing: 
 - `permutation_test::Bool`: Option to perform permutation testing on the studied single trait (default: false)
