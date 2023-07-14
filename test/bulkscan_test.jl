@@ -161,12 +161,14 @@ test_bulkscan_general = quote
                                      nb = 4, 
                                      prior_variance = 1.0, prior_sample_size = 0.1);
     
-    test_bulkscan_null_exact = BulkLMM.bulkscan_null(stand_pheno, stand_geno, kinship; 
+    test_bulkscan_null_exact = BulkLMM.bulkscan_null(stand_pheno, stand_geno, kinship;
+                                     nb = 4, 
                                      prior_variance = 1.0, prior_sample_size = 0.1);
 
     @test sum((test_bulkscan.L .- test_bulkscan_null.L).^2) <= 1e-7;
     @test sum((test_bulkscan.L .- test_bulkscan_null.L).^2) <= 1e-7;
 
+    BLAS.set_num_threads(4);
     # alt-grid
     test_bulkscan = BulkLMM.bulkscan(stand_pheno, stand_geno, kinship;
                                      method = "alt-grid", 
