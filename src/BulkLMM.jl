@@ -36,7 +36,7 @@ module BulkLMM
     include("./bulkscan_helpers.jl");
 
     include("./bulkscan.jl");
-    export bulkscan_null, bulkscan_null_grid, bulkscan_alt_grid
+    export bulkscan, bulkscan_null, bulkscan_null_grid, bulkscan_alt_grid
 
     include("./transform_helpers.jl");
     # export transform_rotation
