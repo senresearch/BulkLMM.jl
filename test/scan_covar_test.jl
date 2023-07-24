@@ -8,6 +8,7 @@
 ## For short wait-time reason, test by comparing single trait with covariates scan with the 
 ## multiple trait null_grid algorithm function bulkscan_null_grid()
 test_scan_covar = scan(pheno_y, geno, pseudo_covars, kinship);
+test_scan_covar_svd = scan(pheno_y, geno, pseudo_covars, kinship; decomp_scheme = "svd");
 test_grid_covar = bulkscan_null_grid(pheno[:, 4:end], geno, pseudo_covars, kinship, 
                                      vcat(collect(0.0:0.05:0.95), test_scan_covar.h2_null)).L;
 
@@ -22,5 +23,9 @@ end
 
 println("Scan with covariates functions test: ", 
 @test mean(abs.(test_scan_covar.lod .- test_grid_covar[:, (pheno_id-3)])) <= tol
+)
+
+println("Scan with covariates functions test (SVD): ", 
+@test mean(abs.(test_scan_covar.lod .- test_scan_covar_svd.lod)) <= tol
 )
 
