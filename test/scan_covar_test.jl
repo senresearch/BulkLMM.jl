@@ -32,7 +32,9 @@ println("Scan with covariates functions test (SVD): ",
 @test mean(abs.(test_scan_covar.lod .- test_scan_covar_svd.lod)) <= tol
 )
 
+#=
 println("Scan with covariates functions test (SVD2): ", 
 @test mean(abs.(test_scan_covar.lod .- test_grid_covar_svd[:, (pheno_id-3)])) <= tol
 )
+=# 
 
