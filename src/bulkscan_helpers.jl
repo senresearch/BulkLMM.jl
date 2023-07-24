@@ -241,7 +241,8 @@ function gridscan_by_bin(pheno::Array{Float64, 2}, geno::Array{Float64, 2},
                          grid::Array{Float64, 1}; 
                          addIntercept::Bool = true, 
                          prior_variance = 1.0, prior_sample_size = 0.0,
-                         reml::Bool = false
+                         reml::Bool = false,
+                         decomp_scheme::String = "eigen"
                          )
 
     m = size(pheno, 2);
@@ -249,7 +250,8 @@ function gridscan_by_bin(pheno::Array{Float64, 2}, geno::Array{Float64, 2},
     # Y_std = colStandardize(pheno);
     Y_std = pheno;
 
-    (Y0, X0, lambda0) = transform_rotation(Y_std, [covar geno], kinship; addIntercept = addIntercept);
+    (Y0, X0, lambda0) = transform_rotation(Y_std, [covar geno], kinship; 
+                                           addIntercept = addIntercept, decomp_scheme = decomp_scheme);
 
     prior = [prior_variance, prior_sample_size];
 

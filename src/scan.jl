@@ -54,6 +54,8 @@ Perform genome scan for univariate trait and a set of genome markers
 ## Other Inputs:
 - `method::String`: Keyword indicating the matrix factorization scheme for model evaluation; either by "qr" or 
     "cholesky" decomposition (default: "qr")
+- `decomp_scheme::String`: Keyword indicating the decomposition scheme for the kinship matrix; either by "eigen" 
+    or "svd" decomposition (default: "eigen")
 
 # Returned Values:
 

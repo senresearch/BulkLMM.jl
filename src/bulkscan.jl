@@ -78,7 +78,10 @@ function bulkscan(Y::Array{Float64, 2}, G::Array{Float64, 2}, K::Array{Float64, 
                   nt_blas::Int64 = 1, 
                   weights::Union{Missing, Array{Float64, 1}} = missing,
                   prior_variance::Float64 = 1.0, prior_sample_size::Float64 = 0.0,
-                  reml::Bool = false, optim_interval::Int64 = 1)
+                  reml::Bool = false, optim_interval::Int64 = 1,
+                  # option for kinship decomposition scheme:
+                  decomp_scheme::String = "eigen"
+                  )
 
     n = size(Y, 1);
 
@@ -93,7 +96,8 @@ function bulkscan(Y::Array{Float64, 2}, G::Array{Float64, 2}, K::Array{Float64, 
                     addIntercept = false, 
                     weights = weights,
                     prior_variance = prior_variance, prior_sample_size = prior_sample_size,
-                    reml = reml, optim_interval = optim_interval)
+                    reml = reml, optim_interval = optim_interval,
+                    decomp_scheme = decomp_scheme)
 
 
 end
@@ -105,7 +109,9 @@ function bulkscan(Y::Array{Float64, 2}, G::Array{Float64, 2}, Covar::Array{Float
                   addIntercept::Bool = true, 
                   weights::Union{Missing, Array{Float64, 1}} = missing,
                   prior_variance::Float64 = 1.0, prior_sample_size::Float64 = 0.0,
-                  reml::Bool = false, optim_interval::Int64 = 1)
+                  reml::Bool = false, optim_interval::Int64 = 1,
+                  # option for kinship decomposition scheme:
+                  decomp_scheme::String = "eigen")
     
     if method == "null-exact"
         return bulkscan_null(Y, G, Covar, K; 
@@ -113,7 +119,8 @@ function bulkscan(Y::Array{Float64, 2}, G::Array{Float64, 2}, Covar::Array{Float
                              addIntercept = addIntercept, 
                              weights = weights,
                              prior_variance = prior_variance, prior_sample_size = prior_sample_size,
-                             reml = reml, optim_interval = optim_interval);
+                             reml = reml, optim_interval = optim_interval, 
+                             decomp_scheme = decomp_scheme);
     end
 
     if method == "null-grid"
@@ -121,7 +128,8 @@ function bulkscan(Y::Array{Float64, 2}, G::Array{Float64, 2}, Covar::Array{Float
                                   weights = weights,
                                   addIntercept = addIntercept,
                                   prior_variance = prior_variance, prior_sample_size = prior_sample_size,
-                                  reml = reml);
+                                  reml = reml, 
+                                  decomp_scheme = decomp_scheme);
     end
 
     if method == "alt-grid"
@@ -129,7 +137,8 @@ function bulkscan(Y::Array{Float64, 2}, G::Array{Float64, 2}, Covar::Array{Float
                                   weights = weights,
                                   addIntercept = addIntercept,
                                   prior_variance = prior_variance, prior_sample_size = prior_sample_size,
-                                  reml = reml);
+                                  reml = reml,
+                                  decomp_scheme = decomp_scheme);
     end
 
 end
@@ -163,7 +172,8 @@ function bulkscan_null(Y::Array{Float64, 2}, G::Array{Float64, 2}, K::Array{Floa
                        nt_blas::Int64 = 1, 
                        weights::Union{Missing, Array{Float64, 1}} = missing,
                        prior_variance::Float64 = 1.0, prior_sample_size::Float64 = 0.0,
-                       reml::Bool = false, optim_interval::Int64 = 1)
+                       reml::Bool = false, optim_interval::Int64 = 1,
+                       decomp_scheme::String = "eigen")
 
     n = size(Y, 1);
 
@@ -176,7 +186,8 @@ function bulkscan_null(Y::Array{Float64, 2}, G::Array{Float64, 2}, K::Array{Floa
                          addIntercept = false, 
                          weights = weights,
                          prior_variance = prior_variance, prior_sample_size = prior_sample_size,
-                         reml = reml, optim_interval = optim_interval);
+                         reml = reml, optim_interval = optim_interval,
+                         decomp_scheme = decomp_scheme);
 
 end
 ### Modeling covariates version
@@ -186,7 +197,8 @@ function bulkscan_null(Y::Array{Float64, 2}, G::Array{Float64, 2},
                        addIntercept::Bool = true, 
                        weights::Union{Missing, Array{Float64, 1}} = missing,
                        prior_variance::Float64 = 1.0, prior_sample_size::Float64 = 0.0,
-                       reml::Bool = false, optim_interval::Int64 = 1)
+                       reml::Bool = false, optim_interval::Int64 = 1,
+                       decomp_scheme::String = "eigen")
 
 
     m = size(Y, 2);
@@ -222,7 +234,8 @@ function bulkscan_null(Y::Array{Float64, 2}, G::Array{Float64, 2},
     BLAS.set_num_threads(nt_blas);
 
     # rotate data
-    (Y0, X0, lambda0) = transform_rotation(Y_st, [Covar_st G_st], K_st; addIntercept = addIntercept);
+    (Y0, X0, lambda0) = transform_rotation(Y_st, [Covar_st G_st], K_st; 
+                                           addIntercept = addIntercept, decomp_scheme = decomp_scheme);
 
 
     X0_intercept = X0[:, 1:num_of_covar];
@@ -291,7 +304,8 @@ function bulkscan_null_grid(Y::Array{Float64, 2}, G::Array{Float64, 2},
                             K::Array{Float64, 2}, grid_list::Array{Float64, 1};
                             weights::Union{Missing, Array{Float64, 1}} = missing, 
                             prior_variance::Float64 = 1.0, prior_sample_size::Float64 = 0.0, 
-                            reml::Bool = false)
+                            reml::Bool = false,
+                            decomp_scheme::String = "eigen")
 
 
     n = size(Y, 1);
@@ -301,7 +315,8 @@ function bulkscan_null_grid(Y::Array{Float64, 2}, G::Array{Float64, 2},
                               weights = weights,
                               addIntercept = false,
                               prior_variance = prior_variance, prior_sample_size = prior_sample_size,
-                              reml = reml);
+                              reml = reml,
+                              decomp_scheme = decomp_scheme);
 
 end
 function bulkscan_null_grid(Y::Array{Float64, 2}, G::Array{Float64, 2}, Covar::Array{Float64, 2}, 
@@ -309,7 +324,8 @@ function bulkscan_null_grid(Y::Array{Float64, 2}, G::Array{Float64, 2}, Covar::A
                             weights::Union{Missing, Array{Float64, 1}} = missing, 
                             addIntercept::Bool = true,
                             prior_variance::Float64 = 1.0, prior_sample_size::Float64 = 0.0, 
-                            reml::Bool = false)
+                            reml::Bool = false,
+                            decomp_scheme::String = "eigen")
 
     m = size(Y, 2);
     p = size(G, 2);
@@ -338,7 +354,8 @@ function bulkscan_null_grid(Y::Array{Float64, 2}, G::Array{Float64, 2}, Covar::A
     results_by_bin = gridscan_by_bin(Y_st, G_st, Covar_st, K_st, grid_list; 
                                      addIntercept = addIntercept, 
                                      prior_variance = prior_variance, prior_sample_size = prior_sample_size,
-                                     reml = reml);
+                                     reml = reml,
+                                     decomp_scheme = decomp_scheme);
     
     LOD_grid = reorder_results(results_by_bin.idxs_by_bin, results_by_bin.LODs_by_bin, m, p);
 
@@ -394,7 +411,8 @@ function bulkscan_alt_grid(Y::Array{Float64, 2}, G::Array{Float64, 2}, K::Array{
                            hsq_list::Array{Float64, 1};
                            reml::Bool = false,
                            prior_variance::Float64 = 1.0, prior_sample_size::Float64 = 0.0, 
-                           weights::Union{Missing, Array{Float64, 1}} = missing)
+                           weights::Union{Missing, Array{Float64, 1}} = missing,
+                           decomp_scheme::String = "eigen")
 
     n = size(Y, 1);
     intercept = ones(n, 1);
@@ -402,7 +420,7 @@ function bulkscan_alt_grid(Y::Array{Float64, 2}, G::Array{Float64, 2}, K::Array{
     return bulkscan_alt_grid(Y, G, intercept, K, hsq_list; 
                              reml = reml, 
                              prior_variance = prior_variance, prior_sample_size = prior_sample_size, 
-                             weights = weights, addIntercept = false);
+                             weights = weights, addIntercept = false, decomp_scheme = decomp_scheme);
 
 end
 
@@ -411,7 +429,8 @@ function bulkscan_alt_grid(Y::Array{Float64, 2}, G::Array{Float64, 2},
                            reml::Bool = false,
                            prior_variance::Float64 = 1.0, prior_sample_size::Float64 = 0.0, 
                            weights::Union{Missing, Array{Float64, 1}} = missing, 
-                           addIntercept::Bool = true)
+                           addIntercept::Bool = true,
+                           decomp_scheme::String = "eigen")
     
 
     p = size(G, 2);
@@ -438,7 +457,8 @@ function bulkscan_alt_grid(Y::Array{Float64, 2}, G::Array{Float64, 2},
         K_st = K;
     end
 
-    (Y0, X0, lambda0) = transform_rotation(Y_st, [Covar_st G_st], K_st; addIntercept = addIntercept);
+    (Y0, X0, lambda0) = transform_rotation(Y_st, [Covar_st G_st], K_st; 
+                                           addIntercept = addIntercept, decomp_scheme = decomp_scheme);
 
     if addIntercept == true
         num_of_covar = size(Covar, 2)+1;
