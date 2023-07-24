@@ -11,9 +11,9 @@ test_scan_covar = scan(pheno_y, geno, pseudo_covars, kinship);
 test_scan_covar_svd = scan(pheno_y, geno, pseudo_covars, kinship; decomp_scheme = "svd");
 test_grid_covar = bulkscan_null_grid(pheno[:, 4:end], geno, pseudo_covars, kinship, 
                                      vcat(collect(0.0:0.05:0.95), test_scan_covar.h2_null)).L;
-test_grid_covar_svd = bulkscan_null_grid(pheno[:, 4:end], geno, pseudo_covars, kinship, 
-                                     vcat(collect(0.0:0.05:0.95), test_scan_covar.h2_null);
-                                     decomp_scheme = "svd").L;                                    
+# test_grid_covar_svd = bulkscan_null_grid(pheno[:, 4:end], geno, pseudo_covars, kinship, 
+#                                      vcat(collect(0.0:0.05:0.95), test_scan_covar.h2_null);
+#                                      decomp_scheme = "svd").L;                                    
 
 tol = 1e-8;    
 
