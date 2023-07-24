@@ -52,6 +52,8 @@ Perform genome scan for multiple univariate traits and a set of genome markers
 - `prior_variance::Float64`: Scale parameter of the prior Scaled Inv-Chisq distributed residual variances (default: 0)
 - `prior_sample_size::Float64`: Degree of freedom parameter of the prior Scaled Inv-Chisq distributed residual 
     variances (default: 0)
+- `decomp_scheme::String`: Keyword indicating the decomposition scheme for the kinship matrix; either by "eigen" 
+    or "svd" decomposition (default: "eigen")
 
 # Returned Values:
 
