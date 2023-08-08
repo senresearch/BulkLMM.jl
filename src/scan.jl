@@ -54,6 +54,8 @@ Perform genome scan for univariate trait and a set of genome markers
 ## Other Inputs:
 - `method::String`: Keyword indicating the matrix factorization scheme for model evaluation; either by "qr" or 
     "cholesky" decomposition (default: "qr")
+- `decomp_scheme::String`: Keyword indicating the decomposition scheme for the kinship matrix; either by "eigen" 
+    or "svd" decomposition (default: "eigen")
 
 # Returned Values:
 
@@ -93,7 +95,9 @@ function scan(y::Array{Float64,2}, g::Array{Float64,2}, K::Array{Float64,2};
               # permutation testing options:
               permutation_test::Bool = false, nperms::Int64 = 1024, rndseed::Int64 = 0,
               # option for inspecting h2 estimation process:
-              profileLL::Bool = false, markerID::Int = 0, h2_grid::Array{Float64, 1} = Array{Float64, 1}(undef, 1)
+              profileLL::Bool = false, markerID::Int = 0, h2_grid::Array{Float64, 1} = Array{Float64, 1}(undef, 1),
+              # option for kinship decomposition scheme:
+              decomp_scheme::String = "eigen"
               )
 
     if addIntercept == false
@@ -107,7 +111,8 @@ function scan(y::Array{Float64,2}, g::Array{Float64,2}, K::Array{Float64,2};
                 prior_variance = prior_variance, prior_sample_size = prior_sample_size,
                 reml = reml, assumption = assumption, method = method, optim_interval = optim_interval,
                 permutation_test = permutation_test, nperms = nperms, rndseed = rndseed,
-                profileLL = profileLL, markerID = markerID, h2_grid = h2_grid)
+                profileLL = profileLL, markerID = markerID, h2_grid = h2_grid,
+                decomp_scheme = decomp_scheme)
 end
 
 function scan(y::Array{Float64,2}, g::Array{Float64,2}, covar::Array{Float64, 2}, K::Array{Float64,2};
@@ -120,7 +125,9 @@ function scan(y::Array{Float64,2}, g::Array{Float64,2}, covar::Array{Float64, 2}
               # permutation testing options:
               permutation_test::Bool = false, nperms::Int64 = 1024, rndseed::Int64 = 0,
               # option for inspecting h2 estimation process:
-              profileLL::Bool = false, markerID::Int = 0, h2_grid::Array{Float64, 1} = Array{Float64, 1}(undef, 1)
+              profileLL::Bool = false, markerID::Int = 0, h2_grid::Array{Float64, 1} = Array{Float64, 1}(undef, 1),
+              # option for kinship decomposition scheme:
+              decomp_scheme::String = "eigen"
               )
 
     n = size(y, 1);
@@ -144,7 +151,8 @@ function scan(y::Array{Float64,2}, g::Array{Float64,2}, covar::Array{Float64, 2}
                     prior_variance = prior_variance, prior_sample_size = prior_sample_size,
                     reml = reml, assumption = assumption, method = method, optim_interval = optim_interval,
                     permutation_test = permutation_test, nperms = nperms, rndseed = rndseed,
-                    profileLL = profileLL, markerID = markerID, h2_grid = h2_grid)
+                    profileLL = profileLL, markerID = markerID, h2_grid = h2_grid,
+                    decomp_scheme = decomp_scheme)
     else
         y_st = y;
         g_st = g;
@@ -156,17 +164,20 @@ function scan(y::Array{Float64,2}, g::Array{Float64,2}, covar::Array{Float64, 2}
         if permutation_test == true
             results = scan_perms_lite(y_st, g_st, covar_st, K_st; prior_variance = prior_variance, prior_sample_size = prior_sample_size,
                                       addIntercept = addIntercept, reml = reml, method = method, optim_interval = optim_interval,
-                                      nperms = nperms, rndseed = rndseed);
+                                      nperms = nperms, rndseed = rndseed, 
+                                      decomp_scheme = decomp_scheme);
         else
             results = scan_null(y_st, g_st, covar_st, K_st, [prior_variance, prior_sample_size], addIntercept; 
-                                reml = reml, method = method, optim_interval = optim_interval);
+                                reml = reml, method = method, optim_interval = optim_interval,
+                                decomp_scheme = decomp_scheme);
         end 
     elseif assumption == "alt"
         if permutation_test == true
             error("Permutation test option currently is not supported for the alternative assumption.");
         else
             results = scan_alt(y_st, g_st, covar_st, K_st, [prior_variance, prior_sample_size], addIntercept; 
-                               reml = reml, method = method, optim_interval = optim_interval)
+                               reml = reml, method = method, optim_interval = optim_interval,
+                               decomp_scheme = decomp_scheme)
         end
 
     else
@@ -232,7 +243,8 @@ A list of output values are returned:
 """
 function scan_null(y::Array{Float64, 2}, g::Array{Float64, 2}, covar::Array{Float64, 2}, K::Array{Float64, 2}, 
                    prior::Array{Float64, 1}, addIntercept::Bool;
-                   reml::Bool = false, method::String = "qr", optim_interval::Int64 = 1)
+                   reml::Bool = false, method::String = "qr", optim_interval::Int64 = 1,
+                   decomp_scheme::String = "eigen")
 
     # number of markers
     (n, p) = size(g)
@@ -240,7 +252,8 @@ function scan_null(y::Array{Float64, 2}, g::Array{Float64, 2}, covar::Array{Floa
     num_of_covar = addIntercept ? (size(covar, 2)+1) : size(covar, 2);
 
     # rotate data
-    (y0, X0, lambda0) = transform_rotation(y, [covar g], K; addIntercept = addIntercept)
+    (y0, X0, lambda0) = transform_rotation(y, [covar g], K; 
+                                           addIntercept = addIntercept, decomp_scheme = decomp_scheme)
     X0_covar = X0[:, 1:num_of_covar];
 
     if size(X0_covar, 2) == 1
@@ -310,7 +323,8 @@ A list of output values are returned:
 """
 function scan_alt(y::Array{Float64, 2}, g::Array{Float64, 2}, covar::Array{Float64, 2}, K::Array{Float64, 2}, 
                   prior::Array{Float64, 1}, addIntercept::Bool;
-                  reml::Bool = false, method::String = "qr", optim_interval::Int64 = 1)
+                  reml::Bool = false, method::String = "qr", optim_interval::Int64 = 1,
+                  decomp_scheme::String = "eigen")
 
     # number of markers
     (n, p) = size(g)
@@ -318,7 +332,9 @@ function scan_alt(y::Array{Float64, 2}, g::Array{Float64, 2}, covar::Array{Float
     num_of_covar = addIntercept ? (size(covar, 2)+1) : size(covar, 2);
 
     # rotate data
-    (y0, X0, lambda0) = transform_rotation(y, [covar g], K; addIntercept = addIntercept)
+    (y0, X0, lambda0) = transform_rotation(y, [covar g], K; 
+                                           addIntercept = addIntercept,
+                                           decomp_scheme = decomp_scheme)
     X0_covar = X0[:, 1:num_of_covar];
 
     if size(X0_covar, 2) == 1
@@ -390,7 +406,8 @@ function scan_perms_lite(y::Array{Float64,2}, g::Array{Float64,2}, covar::Array{
                          prior_variance::Float64 = 1.0, prior_sample_size::Float64 = 0.0, 
                          addIntercept::Bool = true, method::String = "qr", optim_interval::Int64 = 1,
                          nperms::Int64 = 1024, rndseed::Int64 = 0, 
-                         reml::Bool = false)
+                         reml::Bool = false,
+                         decomp_scheme::String = "eigen")
 
 
     # check the number of traits as this function only works for permutation testing of univariate trait
@@ -411,7 +428,9 @@ function scan_perms_lite(y::Array{Float64,2}, g::Array{Float64,2}, covar::Array{
 
     ## Note: estimate once the variance components from the null model and use for all marker scans
     # fit lmm
-    (y0, X0, lambda0) = transform_rotation(y, [covar g], K; addIntercept = addIntercept); # rotation of data
+    (y0, X0, lambda0) = transform_rotation(y, [covar g], K; 
+                                           addIntercept = addIntercept,
+                                           decomp_scheme = decomp_scheme); # rotation of data
     
     (r0, X00, sigma2_e, h2_null) = transform_reweight(y0, X0, lambda0;
                                    n_covars = size(covar, 2),  

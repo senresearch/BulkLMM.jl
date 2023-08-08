@@ -39,7 +39,7 @@ module BulkLMM
     export bulkscan, bulkscan_null, bulkscan_null_grid, bulkscan_alt_grid
 
     include("./transform_helpers.jl");
-    # export transform_rotation
+    export transform_rotation
 
     include("./analysis_helpers/single_trait_analysis.jl");
     export LODthresholds, get_thresholds, getLL, plotLL
