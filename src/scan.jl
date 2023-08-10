@@ -432,8 +432,12 @@ function scan_perms_lite(y::Array{Float64,2}, g::Array{Float64,2}, covar::Array{
                                            addIntercept = addIntercept,
                                            decomp_scheme = decomp_scheme); # rotation of data
     
+
+    # if the intercept is added, the number of covariates to be regressed out will be one more (the intercept)
+    n_covars = addIntercept ? (size(covar, 2)+1) : (size(covar, 2)); 
+
     (r0, X00, sigma2_e, h2_null) = transform_reweight(y0, X0, lambda0;
-                                   n_covars = size(covar, 2),  
+                                   n_covars = n_covars,  
                                    prior_a = prior_variance, 
                                    prior_b = prior_sample_size, 
                                    reml = reml, method = method, optim_interval = optim_interval); # reweighting and taking residuals
