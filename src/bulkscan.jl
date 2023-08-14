@@ -153,10 +153,10 @@ function bulkscan(Y::Array{Float64, 2}, G::Array{Float64, 2}, Covar::Array{Float
 
     if output_pvals
         Pvals_mat = lod2p.(bulkscan_results.L, 1);
-        return (bulkscan_results, Pvals_mat = Pvals_mat)
-    else
-        return bulkscan_results
+        bulkscan_results.Pvals_mat = Pvals_mat
     end
+    
+    return bulkscan_result
 end
 
 ###########################################################
