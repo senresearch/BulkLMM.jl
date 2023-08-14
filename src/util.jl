@@ -190,7 +190,7 @@ end
 function lod2p(lod::Float64, df::Int64)
     
     lrs = lod*2*log(10);
-    pval = 1-cdf(Chisq(df), lrs)
+    pval = ccdf(Chisq(df), lrs)
     
     return pval
     
