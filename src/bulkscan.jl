@@ -88,7 +88,7 @@ function bulkscan(Y::Array{Float64, 2}, G::Array{Float64, 2}, K::Array{Float64, 
                   # option for kinship decomposition scheme:
                   decomp_scheme::String = "eigen",
                   # option for returning p-values results:
-                  output_pvals::Bool = false
+                  output_pvals::Bool = false, chisq_df::Int64 = 1
                   )
 
     n = size(Y, 1);
@@ -105,7 +105,7 @@ function bulkscan(Y::Array{Float64, 2}, G::Array{Float64, 2}, K::Array{Float64, 
                     weights = weights,
                     prior_variance = prior_variance, prior_sample_size = prior_sample_size,
                     reml = reml, optim_interval = optim_interval,
-                    decomp_scheme = decomp_scheme, output_pvals = output_pvals)
+                    decomp_scheme = decomp_scheme, output_pvals = output_pvals, chisq_df = chisq_df)
 
 
 end
@@ -121,7 +121,7 @@ function bulkscan(Y::Array{Float64, 2}, G::Array{Float64, 2}, Covar::Array{Float
                   # option for kinship decomposition scheme:
                   decomp_scheme::String = "eigen",
                   # option for returning p-values results:
-                  output_pvals::Bool = false)
+                  output_pvals::Bool = false, chisq_df::Int64 = 1)
     
     if method == "null-exact"
         bulkscan_results =  bulkscan_null(Y, G, Covar, K; 
@@ -152,8 +152,8 @@ function bulkscan(Y::Array{Float64, 2}, G::Array{Float64, 2}, Covar::Array{Float
     end
 
     if output_pvals
-        Pvals_mat = lod2p.(bulkscan_results.L, 1);
-        temp_tuple = (Pvals_mat = Pvals_mat, output_pvals = true);
+        Pvals_mat = lod2p.(bulkscan_results.L, chisq_df);
+        temp_tuple = (Pvals_mat = Pvals_mat, Chisq_df = chisq_df);
         return merge(bulkscan_results, temp_tuple)
     else
         return bulkscan_results

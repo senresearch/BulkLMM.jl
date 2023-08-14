@@ -105,7 +105,7 @@ function scan(y::Array{Float64, 1}, g::Array{Float64, 2}, K::Array{Float64, 2};
               # option for kinship decomposition scheme:
               decomp_scheme::String = "eigen",
               # option for returning p-values results:
-              output_pvals::Bool = false
+              output_pvals::Bool = false, chisq_df::Int64 = 1
               )
 
     return scan(reshape(y, :, 1), g, K; 
@@ -115,7 +115,7 @@ function scan(y::Array{Float64, 1}, g::Array{Float64, 2}, K::Array{Float64, 2};
                 reml = reml, assumption = assumption, method = method, optim_interval = optim_interval,
                 permutation_test = permutation_test, nperms = nperms, rndseed = rndseed,
                 profileLL = profileLL, markerID = markerID, h2_grid = h2_grid,
-                decomp_scheme = decomp_scheme, output_pvals = output_pvals)
+                decomp_scheme = decomp_scheme, output_pvals = output_pvals, chisq_df = chisq_df)
 
 end
 
@@ -133,7 +133,7 @@ function scan(y::Array{Float64, 1}, g::Array{Float64, 2}, covar::Array{Float64, 
               # option for kinship decomposition scheme:
               decomp_scheme::String = "eigen",
               # option for returning p-values results:
-              output_pvals::Bool = false
+              output_pvals::Bool = false, chisq_df::Int64 = 1
     )
 
     return scan(reshape(y, :, 1), g, covar, K; 
@@ -143,7 +143,7 @@ function scan(y::Array{Float64, 1}, g::Array{Float64, 2}, covar::Array{Float64, 
                 reml = reml, assumption = assumption, method = method, optim_interval = optim_interval,
                 permutation_test = permutation_test, nperms = nperms, rndseed = rndseed,
                 profileLL = profileLL, markerID = markerID, h2_grid = h2_grid,
-                decomp_scheme = decomp_scheme, output_pvals = output_pvals)
+                decomp_scheme = decomp_scheme, output_pvals = output_pvals, chisq_df = chisq_df)
 
 end 
 
@@ -161,7 +161,7 @@ function scan(y::Array{Float64, 2}, g::Array{Float64, 2}, K::Array{Float64, 2};
               # option for kinship decomposition scheme:
               decomp_scheme::String = "eigen",
               # option for returning p-values results:
-              output_pvals::Bool = false
+              output_pvals::Bool = false, chisq_df::Int64 = 1
               )
 
     if addIntercept == false
@@ -176,7 +176,7 @@ function scan(y::Array{Float64, 2}, g::Array{Float64, 2}, K::Array{Float64, 2};
                 reml = reml, assumption = assumption, method = method, optim_interval = optim_interval,
                 permutation_test = permutation_test, nperms = nperms, rndseed = rndseed,
                 profileLL = profileLL, markerID = markerID, h2_grid = h2_grid,
-                decomp_scheme = decomp_scheme, output_pvals = output_pvals)
+                decomp_scheme = decomp_scheme, output_pvals = output_pvals, chisq_df = chisq_df)
 end
 
 function scan(y::Array{Float64,2}, g::Array{Float64,2}, covar::Array{Float64, 2}, K::Array{Float64,2};
@@ -193,7 +193,7 @@ function scan(y::Array{Float64,2}, g::Array{Float64,2}, covar::Array{Float64, 2}
               # option for kinship decomposition scheme:
               decomp_scheme::String = "eigen",
               # option for returning p-values results:
-              output_pvals::Bool = false
+              output_pvals::Bool = false, chisq_df::Int64 = 1
               )
 
     n = size(y, 1);
@@ -218,7 +218,7 @@ function scan(y::Array{Float64,2}, g::Array{Float64,2}, covar::Array{Float64, 2}
                     reml = reml, assumption = assumption, method = method, optim_interval = optim_interval,
                     permutation_test = permutation_test, nperms = nperms, rndseed = rndseed,
                     profileLL = profileLL, markerID = markerID, h2_grid = h2_grid,
-                    decomp_scheme = decomp_scheme, output_pvals = output_pvals)
+                    decomp_scheme = decomp_scheme, output_pvals = output_pvals, chisq_df = chisq_df)
     else
         y_st = y;
         g_st = g;
@@ -235,7 +235,7 @@ function scan(y::Array{Float64,2}, g::Array{Float64,2}, covar::Array{Float64, 2}
         else
             results = scan_null(y_st, g_st, covar_st, K_st, [prior_variance, prior_sample_size], addIntercept; 
                                 reml = reml, method = method, optim_interval = optim_interval,
-                                decomp_scheme = decomp_scheme, output_pvals = output_pvals);
+                                decomp_scheme = decomp_scheme, output_pvals = output_pvals, chisq_df = chisq_df);
         end 
     elseif assumption == "alt"
         if permutation_test == true
@@ -243,7 +243,7 @@ function scan(y::Array{Float64,2}, g::Array{Float64,2}, covar::Array{Float64, 2}
         else
             results = scan_alt(y_st, g_st, covar_st, K_st, [prior_variance, prior_sample_size], addIntercept; 
                                reml = reml, method = method, optim_interval = optim_interval,
-                               decomp_scheme = decomp_scheme, output_pvals = output_pvals)
+                               decomp_scheme = decomp_scheme, output_pvals = output_pvals, chisq_df = chisq_df)
         end
 
     else
@@ -312,7 +312,7 @@ function scan_null(y::Array{Float64, 2}, g::Array{Float64, 2}, covar::Array{Floa
                    reml::Bool = false, method::String = "qr", optim_interval::Int64 = 1,
                    decomp_scheme::String = "eigen", 
                    # option for returning p-values results:
-                   output_pvals::Bool = false)
+                   output_pvals::Bool = false, chisq_df::Int64 = 1)
 
     # number of markers
     (n, p) = size(g)
@@ -351,7 +351,7 @@ function scan_null(y::Array{Float64, 2}, g::Array{Float64, 2}, covar::Array{Floa
     end
 
     if output_pvals
-        pvals = lod2p.(lod, 1);
+        pvals = lod2p.(lod, chisq_df);
         return (sigma2_e = out00.sigma2, h2_null = out00.h2, lod = lod, pvals = pvals)
     else
         return (sigma2_e = out00.sigma2, h2_null = out00.h2, lod = lod)
@@ -399,7 +399,7 @@ function scan_alt(y::Array{Float64, 2}, g::Array{Float64, 2}, covar::Array{Float
                   reml::Bool = false, method::String = "qr", optim_interval::Int64 = 1,
                   decomp_scheme::String = "eigen",
                   # option for returning p-values results:
-                  output_pvals::Bool = false)
+                  output_pvals::Bool = false, chisq_df::Int64 = 1)
 
     # number of markers
     (n, p) = size(g)
@@ -443,7 +443,7 @@ function scan_alt(y::Array{Float64, 2}, g::Array{Float64, 2}, covar::Array{Float
     end
 
     if output_pvals
-        pvals = lod2p.(lod, 1);
+        pvals = lod2p.(lod, chisq_df);
         return (sigma2_e = out00.sigma2, h2_null = out00.h2, h2_each_marker = pve_list, lod = lod, pvals = pvals);
     else
         return (sigma2_e = out00.sigma2, h2_null = out00.h2, h2_each_marker = pve_list, lod = lod);
@@ -489,7 +489,7 @@ function scan_perms_lite(y::Array{Float64,2}, g::Array{Float64,2}, covar::Array{
                          reml::Bool = false,
                          decomp_scheme::String = "eigen",
                          # option for returning p-values results:
-                         output_pvals::Bool = false)
+                         output_pvals::Bool = false, chisq_df::Int64 = 1)
 
 
     # check the number of traits as this function only works for permutation testing of univariate trait
@@ -546,8 +546,8 @@ function scan_perms_lite(y::Array{Float64,2}, g::Array{Float64,2}, covar::Array{
     L_perms = L[:, 2:end]; # lod scores for the permuted copies of the original, excluding the lod scores for the original trait
 
     if output_pvals
-        pvals = lod2p.(lod, 1);
-        Pvals_perms = lod2p.(L_perms, 1);
+        pvals = lod2p.(lod, chisq_df);
+        Pvals_perms = lod2p.(L_perms, chisq_df);
         return (sigma2_e = sigma2_e, h2_null = h2_null, lod = lod, pvals = pvals,
                                                         L_perms = L_perms, Pvals_perms = Pvals_perms)
     else
