@@ -184,7 +184,8 @@ kinship = round.(kinship; digits = 12);
 
 For example, to conduct genome-wide associations mapping on the
 1112-th trait, we can run the function `scan()` with inputs of the trait (as
-a 2D-array of one column), geno matrix, and the kinship matrix.
+a 2D-array of one column), geno matrix, and the kinship matrix. Type `?scan()` for more 
+detailed description of the function.
 
 
 ```julia
@@ -308,40 +309,47 @@ multi-threads](https://docs.julialang.org/en/v1/manual/multi-threading/)
 or switch to a multi-threaded *julia* kernel if using Jupyter
 notebooks.
 
-Then, run the function `bulkscan_null()` with the matrices of
-traits, genome markers, kinship. The fourth required input is the
-number of parallelized tasks and we recommend it to be the number of
-*julia* threads.
+Then, run the function `bulkscan()` with the matrices of the
+traits of interest, genome markers, and the kinship. Type `?bulkscan()` for more 
+detailed description of the function.
 
-Here, we started a 16-threaded *julia* and executed the program on a
-Linux server with the Intel(R) Xeon(R) Silver 4214 CPU @ 2.20GHz to
-get the LOD scores for all **~35k** BXD traits:
+Here, we started a 16-threaded *julia* session in julia version 1.9.2. Specific session info 
+is as follows:
+```julia
+	versioninfo()
+```
+
+	Julia Version 1.9.2
+	Commit e4ee485e909 (2023-07-05 09:39 UTC)
+	Platform Info:
+		OS: Linux (x86_64-linux-gnu)
+		CPU: 48 × Intel(R) Xeon(R) Silver 4214 CPU @ 2.20GHz
+		WORD_SIZE: 64
+		LIBM: libopenlibm
+		LLVM: libLLVM-14.0.6 (ORCJIT, cascadelake)
+		Threads: 17 on 48 virtual cores
+	Environment:
+		JULIA_NUM_THREADS = 16
 
 
 ```julia
-@time multiple_results_allTraits = bulkscan_null(pheno_processed, geno_processed, kinship; nb = Threads.nthreads());
+@time multiple_results_allTraits = bulkscan(pheno_processed, geno_processed, kinship);
 ```
 
-     82.421037 seconds (2.86 G allocations: 710.821 GiB, 41.76% gc time)
+    2.112011 seconds (107.94 k allocations: 5.053 GiB, 2.59% gc time)
 
+Please Note: the default method and modeling options for `bulkscan()` takes an approximated approach for 
+the best runtime performance. The user may choose to use other methods and options provided for more precision but longer runtime, following the detailed instructions in `?bulkscan()`.
 
 The output `multiple_results_allTraits` is an object containing our model results:
 - the matrix of LOD scores $L_{p \times m}$, where $p$ is the number of markers and $m$ is number of traits; each column corresponds to the LOD scores resulting from performing GWAS on each given trait.
-- the vector of heritability estimate per trait, `h2_null_list`, obtained from fitting the null model. 
-
-Similarly as the single trait scan function `scan()`, variance components are estimated from maximum-likelihood (ML) by default ("reml = false"). The user may choose REML for estimating by specifying in the input "reml = true".
+- variance components (heritability) results will be returned in various formats depending on the specific method and other options by the user. For more details, enter `?bulkscan()`.
 
 ```julia
 size(multiple_results_allTraits.L)
 ```
 
     (7321, 35554)
-
-```julia
-length(multiple_results_allTraits.h2_null_list)
-```
-
-    35554
 
 To visualize the multiple-trait scan results, we can use the plotting function `plot_eQTL` from `BigRiverQTLPlots.jl` to generate the eQTL plot.
 In the following example, we only plot the LOD scores that are above 5.0 by calling the function and specifying in the optional argument `threshold = 5.0`:
