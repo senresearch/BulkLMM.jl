@@ -22,6 +22,7 @@ Perform genome scan for univariate trait and a set of genome markers
 - `assumption::String`: Keyword argument indicating whether to estimate the variance components independently 
     for each marker ("alt") or to estimate once for the null model and use for testing all markers ("null)
     (default: "null")
+- `output_pvals::Bool`: Option to additionally report the LRT p-values (default: false)
 
 ## Modeling Additional Covariates:   
 - `Z::AbstractArray{Float64, 2}`: Matrix of additional non-genetic covariates (should be independent to tested 
@@ -80,12 +81,17 @@ The output of the single-trait scan function is an object. Depending on the user
 - `out.L_perms::Array{Float64, 2}`: 2-dimensional array of the LOD scores from permutation testing; each column
     is a vector of length p of p LOD scores for each permuted copy.
 
+## If the option for reporting p-values is on, the p-values results will be returned as:
+- `out.pvals::Array{Float64, 1}`: 1-dimensional array consisting of the p-values
+- `out.Pvals_mat_perms::Array{Float64, 2}`: 2-dimensional array consisting of the p-values testing all 
+    permuted copies of the original trait
+
 ## Additionally, if the user wants to examine the profile likelihood values under a given set of h2-values:
 - `out.ll_list_null::Array{Float64, 1}`: gives the values under the null model under each h2-value
 - `out.ll_list_alt::Array{Float64, 1}`: gives the values under the user-specified marker model under each h2-value
 
 """
-function scan(y::Array{Float64,2}, g::Array{Float64,2}, K::Array{Float64,2};
+function scan(y::Array{Float64, 1}, g::Array{Float64, 2}, K::Array{Float64, 2};
               # weighted environmental variances:
               weights::Union{Missing, Array{Float64, 1}} = missing,
               # regularization options:
@@ -97,7 +103,65 @@ function scan(y::Array{Float64,2}, g::Array{Float64,2}, K::Array{Float64,2};
               # option for inspecting h2 estimation process:
               profileLL::Bool = false, markerID::Int = 0, h2_grid::Array{Float64, 1} = Array{Float64, 1}(undef, 1),
               # option for kinship decomposition scheme:
-              decomp_scheme::String = "eigen"
+              decomp_scheme::String = "eigen",
+              # option for returning p-values results:
+              output_pvals::Bool = false
+              )
+
+    return scan(reshape(y, :, 1), g, K; 
+                weights = weights,
+                addIntercept = addIntercept,
+                prior_variance = prior_variance, prior_sample_size = prior_sample_size,
+                reml = reml, assumption = assumption, method = method, optim_interval = optim_interval,
+                permutation_test = permutation_test, nperms = nperms, rndseed = rndseed,
+                profileLL = profileLL, markerID = markerID, h2_grid = h2_grid,
+                decomp_scheme = decomp_scheme, output_pvals = output_pvals)
+
+end
+
+function scan(y::Array{Float64, 1}, g::Array{Float64, 2}, covar::Array{Float64, 2}, K::Array{Float64, 2};
+              # weighted environmental variances:
+              weights::Union{Missing, Array{Float64, 1}} = missing,
+              # regularization options:
+              prior_variance::Float64 = 0.0, prior_sample_size::Float64 = 0.0, addIntercept::Bool = true,
+              # vc estimation options:
+              reml::Bool = false, assumption::String = "null", method::String = "qr", optim_interval::Int64 = 1,
+              # permutation testing options:
+              permutation_test::Bool = false, nperms::Int64 = 1024, rndseed::Int64 = 0,
+              # option for inspecting h2 estimation process:
+              profileLL::Bool = false, markerID::Int = 0, h2_grid::Array{Float64, 1} = Array{Float64, 1}(undef, 1),
+              # option for kinship decomposition scheme:
+              decomp_scheme::String = "eigen",
+              # option for returning p-values results:
+              output_pvals::Bool = false
+    )
+
+    return scan(reshape(y, :, 1), g, covar, K; 
+                weights = weights,
+                addIntercept = addIntercept,
+                prior_variance = prior_variance, prior_sample_size = prior_sample_size,
+                reml = reml, assumption = assumption, method = method, optim_interval = optim_interval,
+                permutation_test = permutation_test, nperms = nperms, rndseed = rndseed,
+                profileLL = profileLL, markerID = markerID, h2_grid = h2_grid,
+                decomp_scheme = decomp_scheme, output_pvals = output_pvals)
+
+end 
+
+function scan(y::Array{Float64, 2}, g::Array{Float64, 2}, K::Array{Float64, 2};
+              # weighted environmental variances:
+              weights::Union{Missing, Array{Float64, 1}} = missing,
+              # regularization options:
+              prior_variance::Float64 = 0.0, prior_sample_size::Float64 = 0.0, addIntercept::Bool = true,
+              # vc estimation options:
+              reml::Bool = false, assumption::String = "null", method::String = "qr", optim_interval::Int64 = 1,
+              # permutation testing options:
+              permutation_test::Bool = false, nperms::Int64 = 1024, rndseed::Int64 = 0,
+              # option for inspecting h2 estimation process:
+              profileLL::Bool = false, markerID::Int = 0, h2_grid::Array{Float64, 1} = Array{Float64, 1}(undef, 1),
+              # option for kinship decomposition scheme:
+              decomp_scheme::String = "eigen",
+              # option for returning p-values results:
+              output_pvals::Bool = false
               )
 
     if addIntercept == false
@@ -112,7 +176,7 @@ function scan(y::Array{Float64,2}, g::Array{Float64,2}, K::Array{Float64,2};
                 reml = reml, assumption = assumption, method = method, optim_interval = optim_interval,
                 permutation_test = permutation_test, nperms = nperms, rndseed = rndseed,
                 profileLL = profileLL, markerID = markerID, h2_grid = h2_grid,
-                decomp_scheme = decomp_scheme)
+                decomp_scheme = decomp_scheme, output_pvals = output_pvals)
 end
 
 function scan(y::Array{Float64,2}, g::Array{Float64,2}, covar::Array{Float64, 2}, K::Array{Float64,2};
@@ -127,7 +191,9 @@ function scan(y::Array{Float64,2}, g::Array{Float64,2}, covar::Array{Float64, 2}
               # option for inspecting h2 estimation process:
               profileLL::Bool = false, markerID::Int = 0, h2_grid::Array{Float64, 1} = Array{Float64, 1}(undef, 1),
               # option for kinship decomposition scheme:
-              decomp_scheme::String = "eigen"
+              decomp_scheme::String = "eigen",
+              # option for returning p-values results:
+              output_pvals::Bool = false
               )
 
     n = size(y, 1);
@@ -152,7 +218,7 @@ function scan(y::Array{Float64,2}, g::Array{Float64,2}, covar::Array{Float64, 2}
                     reml = reml, assumption = assumption, method = method, optim_interval = optim_interval,
                     permutation_test = permutation_test, nperms = nperms, rndseed = rndseed,
                     profileLL = profileLL, markerID = markerID, h2_grid = h2_grid,
-                    decomp_scheme = decomp_scheme)
+                    decomp_scheme = decomp_scheme, output_pvals = output_pvals)
     else
         y_st = y;
         g_st = g;
@@ -165,11 +231,11 @@ function scan(y::Array{Float64,2}, g::Array{Float64,2}, covar::Array{Float64, 2}
             results = scan_perms_lite(y_st, g_st, covar_st, K_st; prior_variance = prior_variance, prior_sample_size = prior_sample_size,
                                       addIntercept = addIntercept, reml = reml, method = method, optim_interval = optim_interval,
                                       nperms = nperms, rndseed = rndseed, 
-                                      decomp_scheme = decomp_scheme);
+                                      decomp_scheme = decomp_scheme, output_pvals = output_pvals);
         else
             results = scan_null(y_st, g_st, covar_st, K_st, [prior_variance, prior_sample_size], addIntercept; 
                                 reml = reml, method = method, optim_interval = optim_interval,
-                                decomp_scheme = decomp_scheme);
+                                decomp_scheme = decomp_scheme, output_pvals = output_pvals);
         end 
     elseif assumption == "alt"
         if permutation_test == true
@@ -177,7 +243,7 @@ function scan(y::Array{Float64,2}, g::Array{Float64,2}, covar::Array{Float64, 2}
         else
             results = scan_alt(y_st, g_st, covar_st, K_st, [prior_variance, prior_sample_size], addIntercept; 
                                reml = reml, method = method, optim_interval = optim_interval,
-                               decomp_scheme = decomp_scheme)
+                               decomp_scheme = decomp_scheme, output_pvals = output_pvals)
         end
 
     else
@@ -244,7 +310,9 @@ A list of output values are returned:
 function scan_null(y::Array{Float64, 2}, g::Array{Float64, 2}, covar::Array{Float64, 2}, K::Array{Float64, 2}, 
                    prior::Array{Float64, 1}, addIntercept::Bool;
                    reml::Bool = false, method::String = "qr", optim_interval::Int64 = 1,
-                   decomp_scheme::String = "eigen")
+                   decomp_scheme::String = "eigen", 
+                   # option for returning p-values results:
+                   output_pvals::Bool = false)
 
     # number of markers
     (n, p) = size(g)
@@ -282,7 +350,12 @@ function scan_null(y::Array{Float64, 2}, g::Array{Float64, 2}, covar::Array{Floa
         # lod[i] = lrt/(2*log(10))
     end
 
-    return (sigma2_e = out00.sigma2, h2_null = out00.h2, lod = lod)
+    if output_pvals
+        pvals = lod2p.(lod, 1);
+        return (sigma2_e = out00.sigma2, h2_null = out00.h2, lod = lod, pvals = pvals)
+    else
+        return (sigma2_e = out00.sigma2, h2_null = out00.h2, lod = lod)
+    end
 
 end
 
@@ -324,7 +397,9 @@ A list of output values are returned:
 function scan_alt(y::Array{Float64, 2}, g::Array{Float64, 2}, covar::Array{Float64, 2}, K::Array{Float64, 2}, 
                   prior::Array{Float64, 1}, addIntercept::Bool;
                   reml::Bool = false, method::String = "qr", optim_interval::Int64 = 1,
-                  decomp_scheme::String = "eigen")
+                  decomp_scheme::String = "eigen",
+                  # option for returning p-values results:
+                  output_pvals::Bool = false)
 
     # number of markers
     (n, p) = size(g)
@@ -367,7 +442,12 @@ function scan_alt(y::Array{Float64, 2}, g::Array{Float64, 2}, covar::Array{Float
         pve_list[i] = out11.h2;
     end
 
-    return (sigma2_e = out00.sigma2, h2_null = out00.h2, h2_each_marker = pve_list, lod = lod);
+    if output_pvals
+        pvals = lod2p.(lod, 1);
+        return (sigma2_e = out00.sigma2, h2_null = out00.h2, h2_each_marker = pve_list, lod = lod, pvals = pvals);
+    else
+        return (sigma2_e = out00.sigma2, h2_null = out00.h2, h2_each_marker = pve_list, lod = lod);
+    end
 
 
 end
@@ -407,7 +487,9 @@ function scan_perms_lite(y::Array{Float64,2}, g::Array{Float64,2}, covar::Array{
                          addIntercept::Bool = true, method::String = "qr", optim_interval::Int64 = 1,
                          nperms::Int64 = 1024, rndseed::Int64 = 0, 
                          reml::Bool = false,
-                         decomp_scheme::String = "eigen")
+                         decomp_scheme::String = "eigen",
+                         # option for returning p-values results:
+                         output_pvals::Bool = false)
 
 
     # check the number of traits as this function only works for permutation testing of univariate trait
@@ -463,7 +545,14 @@ function scan_perms_lite(y::Array{Float64,2}, g::Array{Float64,2}, covar::Array{
     lod = L[:, 1]; # lod scores for the original trait;
     L_perms = L[:, 2:end]; # lod scores for the permuted copies of the original, excluding the lod scores for the original trait
 
-    return (sigma2_e = sigma2_e, h2_null = h2_null, lod = lod, L_perms = L_perms)
+    if output_pvals
+        pvals = lod2p.(lod, 1);
+        Pvals_perms = lod2p.(L_perms, 1);
+        return (sigma2_e = sigma2_e, h2_null = h2_null, lod = lod, pvals = pvals,
+                                                        L_perms = L_perms, Pvals_perms = Pvals_perms)
+    else
+        return (sigma2_e = sigma2_e, h2_null = h2_null, lod = lod, L_perms = L_perms)
+    end
 
 end
 
