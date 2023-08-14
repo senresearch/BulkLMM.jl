@@ -10,7 +10,7 @@ Perform genome scan for univariate trait and a set of genome markers
 
 # Required Inputs
 
-- `y::Array{Float64, 2}`: Single univariate quantitative trait of N measurements (dimension: N*1)
+- `y::Array{Float64, 2} or Array{Float64, 1}`: Single univariate quantitative trait of N measurements (dimension: N*1)
 - `G::Array{Float64, 2}`: Matrix of genotype probabilities at p tested markers (dimension: N*p)
 - `K::Array{Float64, 2}`: Genetic relatedness matrix of the N subjects (dimension:N*N)
 
