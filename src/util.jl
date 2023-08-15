@@ -178,32 +178,20 @@ function shuffleVector(rng::AbstractRNG, x::Vector{Float64}, nshuffle::Int64;
     return xx
 end
 
-## Compare two arrays and return the number of elements with the same indices of each array and are match
-function compareValues(x_true::Array{Float64,1}, x::Array{Float64,1}, tolerance::Float64, threshold::Float64)
-    if size(x_true) != size(x)
-        throw(error("Dimention Mismatch! Must compare two arrays of same length!"))
-    end
+function p2lod(pval::Float64, df::Int64)
+    
+    lrs = invlogcdf(Chisq(df), log(1-pval))
+    lod = lrs/(2*log(10))
+    
+    return lod
 
-    passes = falses(size(x_true))
-    t_passes = falses(0)
-    for i in 1:size(x_true)[1]
-        e = abs(x[i]-x_true[i])
-        if e <= tolerance
-            passes[i] = true
-        end
+end
 
-        if x[i] >= threshold
-            if e <= tolerance
-                push!(t_passes, true)
-            else
-                push!(t_passes,false)
-            end
-        end
-
-    end
-    # pass_rate = sum(passes) / size(x_true)[1]
-    # pass_rate = sum(t_passes) / size(t_passes)[1]
-
-    return (sum(passes), size(t_passes)[1], sum(t_passes))
-
+function lod2p(lod::Float64, df::Int64)
+    
+    lrs = lod*2*log(10);
+    pval = ccdf(Chisq(df), lrs)
+    
+    return pval
+    
 end

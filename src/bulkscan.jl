@@ -21,6 +21,7 @@ Perform genome scan for multiple univariate traits and a set of genome markers
 - `method::String`: Keyword argument indicating which multi-trait scan method will be used; currently supported 
     options: "null-grid" (fastest, grid-search approximated Null-LMM), "null-exact" (Null-LMM), and "alt-grid" 
     (grid-search approximated Exact-LMM)
+- `output_pvals::Bool`: Option to additionally report the LRT p-values (default: false)
 
 ## Modeling Additional Covariates:   
 - `Z::AbstractArray{Float64, 2}`: Matrix of additional non-genetic covariates (should be independent to tested 
@@ -72,6 +73,9 @@ The output of the single-trait scan function is an object. Depending on the user
 - `MT_out.L::Array{Float64, 2}`: 2-dimensional array (dimension: p*m) consisting of the LOD scores for all input traits; each column 
     contains the LOD scores for one trait
 
+## If the option for reporting p-values is on, the p-values results will be returned as:
+- `MT_out.Pvals_mat::Array{Float64, 2}`: 2-dimensional array (dimension: p*m) consisting of the p-values corresponding
+    to the LOD scores in MT_out.L
 
 """
 function bulkscan(Y::Array{Float64, 2}, G::Array{Float64, 2}, K::Array{Float64, 2};
@@ -82,7 +86,9 @@ function bulkscan(Y::Array{Float64, 2}, G::Array{Float64, 2}, K::Array{Float64, 
                   prior_variance::Float64 = 1.0, prior_sample_size::Float64 = 0.0,
                   reml::Bool = false, optim_interval::Int64 = 1,
                   # option for kinship decomposition scheme:
-                  decomp_scheme::String = "eigen"
+                  decomp_scheme::String = "eigen",
+                  # option for returning p-values results:
+                  output_pvals::Bool = false, chisq_df::Int64 = 1
                   )
 
     n = size(Y, 1);
@@ -99,7 +105,7 @@ function bulkscan(Y::Array{Float64, 2}, G::Array{Float64, 2}, K::Array{Float64, 
                     weights = weights,
                     prior_variance = prior_variance, prior_sample_size = prior_sample_size,
                     reml = reml, optim_interval = optim_interval,
-                    decomp_scheme = decomp_scheme)
+                    decomp_scheme = decomp_scheme, output_pvals = output_pvals, chisq_df = chisq_df)
 
 
 end
@@ -113,10 +119,12 @@ function bulkscan(Y::Array{Float64, 2}, G::Array{Float64, 2}, Covar::Array{Float
                   prior_variance::Float64 = 1.0, prior_sample_size::Float64 = 0.0,
                   reml::Bool = false, optim_interval::Int64 = 1,
                   # option for kinship decomposition scheme:
-                  decomp_scheme::String = "eigen")
+                  decomp_scheme::String = "eigen",
+                  # option for returning p-values results:
+                  output_pvals::Bool = false, chisq_df::Int64 = 1)
     
     if method == "null-exact"
-        return bulkscan_null(Y, G, Covar, K; 
+        bulkscan_results =  bulkscan_null(Y, G, Covar, K; 
                              nb = nb, nt_blas = nt_blas,
                              addIntercept = addIntercept, 
                              weights = weights,
@@ -126,7 +134,7 @@ function bulkscan(Y::Array{Float64, 2}, G::Array{Float64, 2}, Covar::Array{Float
     end
 
     if method == "null-grid"
-        return bulkscan_null_grid(Y, G, Covar, K, h2_grid; 
+        bulkscan_results = bulkscan_null_grid(Y, G, Covar, K, h2_grid; 
                                   weights = weights,
                                   addIntercept = addIntercept,
                                   prior_variance = prior_variance, prior_sample_size = prior_sample_size,
@@ -135,12 +143,20 @@ function bulkscan(Y::Array{Float64, 2}, G::Array{Float64, 2}, Covar::Array{Float
     end
 
     if method == "alt-grid"
-        return bulkscan_alt_grid(Y, G, Covar, K, h2_grid; 
+        bulkscan_results = bulkscan_alt_grid(Y, G, Covar, K, h2_grid; 
                                   weights = weights,
                                   addIntercept = addIntercept,
                                   prior_variance = prior_variance, prior_sample_size = prior_sample_size,
                                   reml = reml,
                                   decomp_scheme = decomp_scheme);
+    end
+
+    if output_pvals
+        Pvals_mat = lod2p.(bulkscan_results.L, chisq_df);
+        temp_tuple = (Pvals_mat = Pvals_mat, Chisq_df = chisq_df);
+        return merge(bulkscan_results, temp_tuple)
+    else
+        return bulkscan_results
     end
 
 end

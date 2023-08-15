@@ -36,4 +36,13 @@ println("Scan with covariates functions test (SVD2): ",
 @test mean(abs.(test_scan_covar.lod .- test_grid_covar_svd[:, 2])) <= tol
 )
 
+test_scan_covar_pvals = scan(pheno_y, geno, pseudo_covars, kinship; output_pvals = true);
+println("Scan with covariates functions test (p-vals output): ", 
+@test mean(abs.(lod2p.(test_scan_covar.lod, 1) .- test_scan_covar_pvals.pvals)) <= tol
+)
+
+test_scan_covar_vec = scan(pheno[:, pheno_id], geno, pseudo_covars, kinship);
+println("Scan with covariates functions test (vector trait input): ", 
+@test mean(abs.(test_scan_covar.lod .- test_scan_covar_vec.lod)) <= tol
+)
 
