@@ -316,7 +316,7 @@ detailed description of the function.
 Here, we started a 16-threaded *julia* session in julia version 1.9.2. Specific session info 
 is as follows:
 ```julia
-	versioninfo()
+versioninfo()
 ```
 
 	Julia Version 1.9.2
