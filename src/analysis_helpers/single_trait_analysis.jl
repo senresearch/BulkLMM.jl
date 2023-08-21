@@ -46,7 +46,7 @@ function getLL(y0::Array{Float64, 2}, X0::Array{Float64, 2}, lambda0::Array{Floa
     return (ll_null = wls(y0, X0_covar, w, prior).ell, ll_markerID = wls(y0, X_design, w, prior).ell)
 end
 
-function profileLL(y::Array{Float64, 2}, G::Array{Float64, 2}, covar::Array{Float64, 2}, 
+function profile_LL(y::Array{Float64, 2}, G::Array{Float64, 2}, covar::Array{Float64, 2}, 
                    K::Array{Float64, 2}, 
                    h2_grid::Array{Float64, 1}, markerID::Int64;
                    prior::Array{Float64, 1} = [0.0, 0.0])

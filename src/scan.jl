@@ -260,7 +260,7 @@ function scan(y::Array{Float64,2}, g::Array{Float64,2}, covar::Array{Float64, 2}
         display(p)
         =# 
 
-        results_profileLL = profileLL(y_st, g_st, covar_st, K_st, h2_grid, markerID; 
+        results_profileLL = profile_LL(y_st, g_st, covar_st, K_st, h2_grid, markerID; 
                                       prior = [prior_variance, prior_sample_size]);
 
         return (results, results_profileLL);
