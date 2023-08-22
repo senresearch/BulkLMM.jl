@@ -42,7 +42,9 @@ println("Scan with covariates functions test (p-vals output): ",
 )
 
 test_bulkscan_covar_Pvals = bulkscan(hcat(pheno[:, 2000], pheno_y), geno, pseudo_covars, kinship; 
-                                    h2_grid = vcat(collect(0.0:0.05:0.95), test_scan_covar.h2_null)).log10Pvals_mat;
+                                    h2_grid = vcat(collect(0.0:0.05:0.95), 
+                                                   test_scan_covar.h2_null),
+                                    output_pvals = true).log10Pvals_mat;
 @test mean(abs.(test_bulkscan_covar_Pvals[:, 2] .- test_scan_covar_pvals.log10pvals) <= tol)
 
 test_scan_covar_vec = scan(pheno[:, pheno_id], geno, pseudo_covars, kinship);
