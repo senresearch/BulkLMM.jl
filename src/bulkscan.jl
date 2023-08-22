@@ -74,8 +74,8 @@ The output of the single-trait scan function is an object. Depending on the user
     contains the LOD scores for one trait
 
 ## If the option for reporting p-values is on, the p-values results will be returned as:
-- `MT_out.Pvals_mat::Array{Float64, 2}`: 2-dimensional array (dimension: p*m) consisting of the p-values corresponding
-    to the LOD scores in MT_out.L
+- `MT_out.log10Pvals_mat::Array{Float64, 2}`: 2-dimensional array (dimension: p*m) consisting of the -log10(p-values)
+for each test (of association between each trait and each marker).
 
 """
 function bulkscan(Y::Array{Float64, 2}, G::Array{Float64, 2}, K::Array{Float64, 2};
@@ -152,8 +152,8 @@ function bulkscan(Y::Array{Float64, 2}, G::Array{Float64, 2}, Covar::Array{Float
     end
 
     if output_pvals
-        Pvals_mat = lod2p.(bulkscan_results.L, chisq_df);
-        temp_tuple = (Pvals_mat = Pvals_mat, Chisq_df = chisq_df);
+        log10Pvals_mat = lod2log10p.(bulkscan_results.L, chisq_df);
+        temp_tuple = (log10Pvals_mat = log10Pvals_mat, Chisq_df = chisq_df);
         return merge(bulkscan_results, temp_tuple)
     else
         return bulkscan_results

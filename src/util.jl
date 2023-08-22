@@ -195,3 +195,12 @@ function lod2p(lod::Float64, df::Int64)
     return pval
     
 end
+
+function lod2log10p(lod::Float64, df::Int64)
+    
+    lrs = lod*2*log(10);
+    logpval = logccdf(Chisq(df), lrs)
+    
+    return -logpval/log(10);
+    
+end
