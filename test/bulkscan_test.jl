@@ -175,14 +175,6 @@ test_bulkscan_general = quote
 
     @test sum((test_bulkscan.L .- test_bulkscan_alt_grid.L).^2) <= 1e-7;
 
-    # test P-vals output:
-    test_log10Pvals = BulkLMM.bulkscan(stand_pheno, stand_geno, kinship;
-                                  method = "alt-grid", 
-                                  h2_grid = grid_list, 
-                                  prior_variance = 1.0, prior_sample_size = 0.1,
-                                  output_pvals = true);
-    # @test sum((lod2log10p.(test_bulkscan.L, 1) .- test_log10Pvals.log10Pvals_mat).^2) <= 1e-7;
-
 end;
 
 
