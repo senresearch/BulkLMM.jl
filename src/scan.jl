@@ -82,9 +82,9 @@ The output of the single-trait scan function is an object. Depending on the user
     is a vector of length p of p LOD scores for each permuted copy.
 
 ## If the option for reporting p-values is on, the p-values results will be returned as:
-- `out.pvals::Array{Float64, 1}`: 1-dimensional array consisting of the p-values
-- `out.Pvals_mat_perms::Array{Float64, 2}`: 2-dimensional array consisting of the p-values testing all 
-    permuted copies of the original trait
+- `out.log10pvals::Array{Float64, 1}`: 1-dimensional array consisting of the -log10(p-values)
+- `out.log10Pvals_perms::Array{Float64, 2}`: 2-dimensional array consisting of the -log10(p-values) for each test
+(for testing the association between each marker and each permuted trait).
 
 ## Additionally, if the user wants to examine the profile likelihood values under a given set of h2-values:
 - `out.ll_list_null::Array{Float64, 1}`: gives the values under the null model under each h2-value
@@ -351,8 +351,8 @@ function scan_null(y::Array{Float64, 2}, g::Array{Float64, 2}, covar::Array{Floa
     end
 
     if output_pvals
-        pvals = lod2p.(lod, chisq_df);
-        return (sigma2_e = out00.sigma2, h2_null = out00.h2, lod = lod, pvals = pvals)
+        log10pvals = lod2log10p.(lod, chisq_df);
+        return (sigma2_e = out00.sigma2, h2_null = out00.h2, lod = lod, log10pvals = log10pvals)
     else
         return (sigma2_e = out00.sigma2, h2_null = out00.h2, lod = lod)
     end
@@ -443,8 +443,8 @@ function scan_alt(y::Array{Float64, 2}, g::Array{Float64, 2}, covar::Array{Float
     end
 
     if output_pvals
-        pvals = lod2p.(lod, chisq_df);
-        return (sigma2_e = out00.sigma2, h2_null = out00.h2, h2_each_marker = pve_list, lod = lod, pvals = pvals);
+        log10pvals = lod2log10p.(lod, chisq_df);
+        return (sigma2_e = out00.sigma2, h2_null = out00.h2, h2_each_marker = pve_list, lod = lod, log10pvals = log10pvals);
     else
         return (sigma2_e = out00.sigma2, h2_null = out00.h2, h2_each_marker = pve_list, lod = lod);
     end
@@ -546,10 +546,10 @@ function scan_perms_lite(y::Array{Float64,2}, g::Array{Float64,2}, covar::Array{
     L_perms = L[:, 2:end]; # lod scores for the permuted copies of the original, excluding the lod scores for the original trait
 
     if output_pvals
-        pvals = lod2p.(lod, chisq_df);
-        Pvals_perms = lod2p.(L_perms, chisq_df);
-        return (sigma2_e = sigma2_e, h2_null = h2_null, lod = lod, pvals = pvals,
-                                                        L_perms = L_perms, Pvals_perms = Pvals_perms)
+        log10pvals = lod2log10p.(lod, chisq_df);
+        log10Pvals_perms = lod2log10p.(L_perms, chisq_df);
+        return (sigma2_e = sigma2_e, h2_null = h2_null, lod = lod, log10pvals = pvals,
+                           L_perms = L_perms, log10Pvals_perms = log10Pvals_perms)
     else
         return (sigma2_e = sigma2_e, h2_null = h2_null, lod = lod, L_perms = L_perms)
     end

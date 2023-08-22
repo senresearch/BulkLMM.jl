@@ -6,7 +6,7 @@ module BulkLMM
     using Random, Distributions
     
     include("./util.jl");
-    export p2lod, lod2p
+    export p2lod, lod2p, lod2log10p
     
     include("./kinship.jl");
     export calcKinship

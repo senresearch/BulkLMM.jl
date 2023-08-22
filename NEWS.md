@@ -3,7 +3,7 @@
 - New features:
     - Added the wrapper function `bulkscan()` for the three algorithms of multiple-trait scans previously named as `bulkscan_null()`, `bulkscan_null_grid()`, `bulkscan_alt_grid()`. Now, the user can simply call the common interface `bulkscan(...; method = )` by supplying with the method by the user's specific favor of computational speed or precision. Allowable inputs are string types, named as "null-exact", "null-grid", "alt-grid". The default option is "null-grid" with a loose grid of h2-step of size 0.1 (a grid of 10 values from 0.0, 0.10, ..., 0.90).
     - Added the option for SVD decomposition of the kinship matrix. To use this feature, supply the option `decomp_scheme = svd`.
-    - Added the option for returning the likelihood ratio test p-values: To use this feature, supply the option `output_pvals = true`. The results returned will be data structures consistent to the LOD scores results of the function called (a vector for `scan()` and a matrix for `bulkscan()`).
+    - Added the option in both `scan()` and `bulkscan()` functions for returning the $-log_{10}(p)$ result, where $p$ is the likelihood ratio test p-value: To use this feature, supply the option `output_pvals = true`. For more details, check the help instruction by `?scan()`, `?bulkscan()`.
 - Fixed bugs: 
     - Fixed a bug causing compilation error in `bulkscan()` "null-grid" algorithm with REML due to a typo.
     - Fixed a bug causing output dimension mismatch when using the function `scan()` for permutation testing with adjusted covariates.
