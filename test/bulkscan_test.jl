@@ -136,6 +136,46 @@ test_bulkscan_alt_grid = quote
 
 end;
 
+test_bulkscan_general = quote
+
+    stand_pheno = BulkLMM.colStandardize(pheno[:, 705:1112]);
+    stand_geno = BulkLMM.colStandardize(geno);
+
+    grid_list = vcat(collect(0.0:0.05:0.95));
+
+    # null-grid
+    test_bulkscan = BulkLMM.bulkscan(stand_pheno, stand_geno, kinship;
+                                     method = "null-grid", 
+                                     h2_grid = grid_list, 
+                                     prior_variance = 1.0, prior_sample_size = 0.1);
+
+    test_bulkscan_null_grid = BulkLMM.bulkscan_null_grid(stand_pheno, stand_geno, kinship, grid_list; 
+                                     prior_variance = 1.0, prior_sample_size = 0.1);
+                    
+    @test sum((test_bulkscan.L .- test_bulkscan_null_grid.L).^2) <= 1e-7;
+
+    # null-exact
+    test_bulkscan = BulkLMM.bulkscan(stand_pheno, stand_geno, kinship;
+                                     method = "null-exact", 
+                                     nb = 4, 
+                                     prior_variance = 1.0, prior_sample_size = 0.1);
+
+    @test sum((test_bulkscan.L[:, 1] .- test_bulkscan_null.L[:, 1]).^2) <= 1e-7;
+    @test sum((test_bulkscan.L[:, end] .- test_bulkscan_null.L[:, end]).^2) <= 1e-7;
+
+    BLAS.set_num_threads(4);
+    # alt-grid
+    test_bulkscan = BulkLMM.bulkscan(stand_pheno, stand_geno, kinship;
+                                     method = "alt-grid", 
+                                     h2_grid = grid_list, 
+                                     prior_variance = 1.0, prior_sample_size = 0.1);
+                        
+    test_bulkscan_alt_grid = BulkLMM.bulkscan_alt_grid(stand_pheno, stand_geno, kinship, grid_list; 
+                                     prior_variance = 1.0, prior_sample_size = 0.1);
+
+    @test sum((test_bulkscan.L .- test_bulkscan_alt_grid.L).^2) <= 1e-7;
+
+end;
 
 
 ##########################################################################################################
@@ -149,6 +189,7 @@ println("Bulkscan functions test: ")
     eval(test_computeR_LMM2);
     eval(test_bulkscan_null);
     eval(test_bulkscan_null_grid);
-    eval(test_bulkscan_alt_grid); 
+    eval(test_bulkscan_alt_grid);
+    eval(test_bulkscan_general);  
 
 end

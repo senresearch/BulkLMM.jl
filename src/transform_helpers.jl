@@ -1,4 +1,6 @@
-function transform_rotation(y::Array{Float64, 2}, g::Array{Float64, 2}, K::Array{Float64, 2}; addIntercept::Bool = true)
+function transform_rotation(y::Array{Float64, 2}, g::Array{Float64, 2}, K::Array{Float64, 2}; 
+                            addIntercept::Bool = true,
+                            decomp_scheme::String = "eigen")
         
     # n - the sample sizes
     n = size(y, 1)
@@ -16,20 +18,39 @@ function transform_rotation(y::Array{Float64, 2}, g::Array{Float64, 2}, K::Array
         X = g; # Safe; will not make in-place changes to X.
     end
 
-    ## Eigen-decomposition:
-    EF = eigen(K);
-    Ut = EF.vectors';
+    if decomp_scheme == "eigen"
+        ## Eigen-decomposition:
+        EF = eigen(K);
+        Ut = EF.vectors';
 
-    # return an error if there are any negative eigenvalues
-    if any(EF.values .< -1e-7)
-        # throw(error("Negative eigenvalues exist. The kinship matrix supplied may not be SPD."));
-        @warn "Negative eigenvalues exist. The kinship matrix supplied may not be SPD."
+        # return an error if there are any negative eigenvalues
+        if any(EF.values .< -1e-7)
+            # throw(error("Negative eigenvalues exist. The kinship matrix supplied may not be SPD."));
+            @warn "Negative eigenvalues exist. The kinship matrix supplied may not be SPD."
+        end
+
+        # rotate data so errors are uncorrelated
+
+        return Ut*y, Ut*X, EF.values
+
+    elseif decomp_scheme == "svd"
+        ## SV-decomposition:
+        SF = svd(K);
+        Ut = SF.Vt;
+
+        # return an error if there are any negative eigenvalues
+        if any(SF.S .< -1e-7)
+            # throw(error("Negative eigenvalues exist. The kinship matrix supplied may not be SPD."));
+            @warn "Negative eigenvalues exist. The kinship matrix supplied may not be SPD."
+        end
+
+        # rotate data so errors are uncorrelated
+
+        return Ut*y, Ut*X, SF.S
+    else 
+        throw(error("Please choose either `eigen` or `svd` for decomposition of the kinship matrix."))
     end
-
-    # rotate data so errors are uncorrelated
-
-    return Ut*y, Ut*X, EF.values
-
+        
 end
 
 # Takes the rotated data, evaluates the VC estimators (only based on the intercept model) for weights calculation, and finally re-weights the input data.

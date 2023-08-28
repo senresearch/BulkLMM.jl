@@ -28,7 +28,9 @@ end
 ## Outputs: the logliks (null, alt mean model) under the given h2
 function getLL(y0::Array{Float64, 2}, X0::Array{Float64, 2}, lambda0::Array{Float64, 1},
                num_of_covar::Int64, 
-               markerID::Int64, h2::Float64; prior::Array{Float64, 1} = [0.0, 0.0])
+               markerID::Int64, h2::Float64; 
+               prior::Array{Float64, 1} = [0.0, 0.0],
+               reml::Bool = false)
     
     n = size(y0, 1);
     w = makeweights(h2, lambda0);
@@ -43,13 +45,14 @@ function getLL(y0::Array{Float64, 2}, X0::Array{Float64, 2}, lambda0::Array{Floa
     X_design[:, 1:num_of_covar] = X0_covar;
     X_design[:, num_of_covar+1] = X0[:, markerID+num_of_covar];
     
-    return (ll_null = wls(y0, X0_covar, w, prior).ell, ll_markerID = wls(y0, X_design, w, prior).ell)
+    return (ll_null = wls(y0, X0_covar, w, prior; reml = reml).ell, 
+            ll_markerID = wls(y0, X_design, w, prior; reml = reml).ell)
 end
 
-function profileLL(y::Array{Float64, 2}, G::Array{Float64, 2}, covar::Array{Float64, 2}, 
+function profile_LL(y::Array{Float64, 2}, G::Array{Float64, 2}, covar::Array{Float64, 2}, 
                    K::Array{Float64, 2}, 
                    h2_grid::Array{Float64, 1}, markerID::Int64;
-                   prior::Array{Float64, 1} = [0.0, 0.0])
+                   prior::Array{Float64, 1} = [0.0, 0.0], reml::Bool = false)
 
     ## Initiate the vector to store the profile likelihood values evaluated under each given parameter value
     ell_null = zeros(length(h2_grid)); # loglikelihood under null
@@ -62,7 +65,7 @@ function profileLL(y::Array{Float64, 2}, G::Array{Float64, 2}, covar::Array{Floa
     ## Loop through the supplied h2 values, evaluate the profile loglik under each h2
     for k in 1:length(h2_grid)
         curr_h2 = h2_grid[k];
-        output = getLL(y0, X0, lambda0, num_of_covar, markerID, curr_h2; prior = prior);
+        output = getLL(y0, X0, lambda0, num_of_covar, markerID, curr_h2; prior = prior, reml = reml);
         ell_null[k] = output.ll_null;
         ell_alt[k] = output.ll_markerID;
     end

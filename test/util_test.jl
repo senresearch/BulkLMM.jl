@@ -297,40 +297,6 @@ tests_shuffleVector = quote
     testHelper(test3_shuffleVector);
 end;
 
-##########################################################################################################
-## TEST: compareValues()
-##########################################################################################################
-
-### Test1: check if dimensions match
-
-test1_compareValues = quote 
-    b_true = convert(Array{Float64, 1}, zeros(rand(collect(1:5))));
-    b_test = convert(Array{Float64, 1}, zeros(length(b_true)+1));
-
-    try 
-        BulkLMM.compareValues(b_true, b_test, 1e-3, 1e5)
-    catch e
-        @test typeof(e) == ErrorException
-    end
-end;
-
-### Test2: check if the results are as desired
-
-test2_compareValues = quote
-    b_true = convert(Array{Float64, 1}, zeros(rand(collect(2:5))));
-    b_test = copy(b_true);
-
-    b_test[length(b_true)] = 1.0
-    b_test[length(b_true)-1] = 2.0
-
-    @test BulkLMM.compareValues(b_test, b_true, 0.0, 1e5)[1] == length(b_true) - 2
-end;
-
-tests_compareValues = quote
-    testHelper(test1_compareValues);
-    testHelper(test2_compareValues);
-end;
-
 println("Utility functions test: ")
 @testset "Utility Functions Tests" begin
 
@@ -341,7 +307,6 @@ println("Utility functions test: ")
     eval(tests_rowDivide);
     eval(tests_rowMultiply);
     eval(tests_shuffleVector);
-    eval(tests_compareValues);
 
 end
 

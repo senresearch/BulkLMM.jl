@@ -6,6 +6,8 @@ module BulkLMM
     using Random, Distributions
     
     include("./util.jl");
+    export p2lod, lod2p, lod2log10p
+    
     include("./kinship.jl");
     export calcKinship
 
@@ -36,10 +38,10 @@ module BulkLMM
     include("./bulkscan_helpers.jl");
 
     include("./bulkscan.jl");
-    export bulkscan_null, bulkscan_null_grid, bulkscan_alt_grid
+    export bulkscan, bulkscan_null, bulkscan_null_grid, bulkscan_alt_grid
 
     include("./transform_helpers.jl");
-    # export transform_rotation
+    export transform_rotation
 
     include("./analysis_helpers/single_trait_analysis.jl");
     export LODthresholds, get_thresholds, getLL, plotLL
