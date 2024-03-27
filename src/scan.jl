@@ -555,6 +555,7 @@ function scan_perms_lite(y::Array{Float64,2}, g::Array{Float64,2}, covar::Array{
     else
         if nperms == 0 # if no permutation is required, return results only for the input trait
             return (sigma2_e = sigma2_e, h2_null = h2_null, lod = lod)
+        end
         return (sigma2_e = sigma2_e, h2_null = h2_null, lod = lod, L_perms = L_perms)
     end
 
