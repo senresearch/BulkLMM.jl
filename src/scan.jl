@@ -547,10 +547,10 @@ function scan_perms_lite(y::Array{Float64,2}, g::Array{Float64,2}, covar::Array{
     if output_pvals
         log10pvals = lod2log10p.(lod, chisq_df);
         if nperms == 0 # if no permutation is required, return results only for the input trait
-            return (sigma2_e = sigma2_e, h2_null = h2_null, lod = lod, log10pvals = pvals)
+            return (sigma2_e = sigma2_e, h2_null = h2_null, lod = lod, log10pvals = log10pvals)
         end
         log10Pvals_perms = lod2log10p.(L_perms, chisq_df);
-        return (sigma2_e = sigma2_e, h2_null = h2_null, lod = lod, log10pvals = pvals,
+        return (sigma2_e = sigma2_e, h2_null = h2_null, lod = lod, log10pvals = log10pvals,
                            L_perms = L_perms, log10Pvals_perms = log10Pvals_perms)
     else
         if nperms == 0 # if no permutation is required, return results only for the input trait
