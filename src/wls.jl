@@ -1,4 +1,3 @@
-
 ##################################################################
 # wls: weighted least squares
 ##################################################################
@@ -81,7 +80,7 @@ function wls(y::Array{Float64, 2}, X::Array{Float64, 2}, w::Array{Float64, 1}, p
     # see formulas (2) and (3) of Kang (2008)
     if(loglik)
 
-        ll = -0.5 * ((n+prior[2])*log(sigma2_e) - sum(log,w) + (rss0+prior[1]*prior[2])/sigma2_e)
+        ll = -0.5 * ((n+prior_df)*log(sigma2_e) - sum(log,w) + (rss0+prior[1]*prior[2])/sigma2_e)
         
         if(reml)
             # ell = ell + 0.5 * (p*log(2pi*sigma2) + logdetXtX - logdetXXtXX) # full log-likelihood including the constant terms;
@@ -159,10 +158,10 @@ function wls_multivar(Y::Array{Float64, 2}, X::Array{Float64, 2}, w::Array{Float
     # see formulas (2) and (3) of Kang (2008)
     if(loglik)
 
-        ll = -0.5 * ((n+prior[2])*log.(sigma2_e) .- sum(log,w) .+ (rss0.+prior[1]*prior[2])./sigma2_e)
+        ll = -0.5 * ((n+prior_df)*log.(sigma2_e) .- sum(log,w) .+ (rss0.+prior[1]*prior[2])./sigma2_e)
         
         if(reml)
-            # ell = ell + 0.5 * (p*log(2pi*sigma2) + logdetXtX - logdetXXtXX) # full log-likelihood including the constant terms;
+            # ll = ll + 0.5 * (p*log(2pi*sigma2) + logdetXtX - logdetXXtXX) # full log-likelihood including the constant terms;
             ll = ll .+ 0.5 * (p*log.(sigma2_e) .- logdetXXtXX)
         end
         
@@ -188,7 +187,9 @@ the function returns the residual sum of squares of each column. The
 return values is a (row) vector of length equal to the number of columns of y.
 
 """
-function rss(y::Array{Float64, 2}, X::Array{Float64, 2}; method = "qr")
+function rss(y::Array{Float64, 2}, 
+             X::Union{Array{Float64, 1}, Array{Float64, 2}}; 
+             method = "qr")
 
     r = resid(y, X; method = method)
     rss = reduce(+, r.^2, dims = 1)
@@ -196,16 +197,6 @@ function rss(y::Array{Float64, 2}, X::Array{Float64, 2}; method = "qr")
     return rss
 
 end
-
-function rss(y::Array{Float64, 2}, X::AbstractArray{Float64, 1}; method = "qr")
-
-    r = resid(y, X; method = method)
-    rss = reduce(+, r.^2, dims = 1)
-
-    return rss
-
-end
-
 
 """
 resid: calculate residuals
@@ -218,29 +209,9 @@ outcome matrix can be multivariate in which case the function returns
 the residual matrix of the same size as the outcome matrix.
 
 """
-function resid(y::Array{Float64, 2}, X::Array{Float64, 2}; method = "qr")
-
-    # least squares solution
-    # faster but numerically less stable
-    if(method=="cholesky")
-        b = (X'X)\(X'y)
-    end
-
-    # slower but numerically more stable
-    if(method=="qr")
-    fct = qr(X)
-    b = fct\y
-    end
-
-    # estimate yy and calculate rss
-    yhat = X*b
-    resid = y-yhat
-
-    return resid
-
-end
-
-function resid(y::Array{Float64, 2}, X::AbstractArray{Float64, 1}; method = "qr")
+function resid(y::Array{Float64, 2}, 
+               X::Union{Array{Float64, 1}, Array{Float64, 2}}; 
+               method::String = "qr")
 
     # least squares solution
     # faster but numerically less stable

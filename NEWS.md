@@ -1,3 +1,19 @@
+## Version 1.2.2 (Feb 20, 2026)
+### Extended features:
+- Effect size reporting: 
+    - Added estimates of effect sizes and the associated standard errors in the outputs.
+    - The outputs of BulkLMM now contain the LOD scores, estimated effect sizes and standard errors, estimated variance components (in terms of heritabilities $h^2$), and p-values (optional if `output_pvals = true`).
+    - Example: Given the `out` as the structure of BulkLMM executions, effect sizes reflecting strengths of associations between trait-marker pairs are available as `out.B`, and the standard errors are as `out.SE`.
+    - By default, effect sizes and standard errors will always be returned.
+- More reliable estimation of variance component $h^2$ under grid-search based methods:
+    - For grid-search based BulkLMM methods(i.e., variance component estimation is discretized and done through grid-search for algorithmic efficiency), `bulkscan(..., method = "null-grid")` and `bulkscan(..., method = "alt-grid")`, instead of relying on a grid of arbitrary values or the user's choice, the package now supports the functionality to propose a grid based on exact values estimated from a smaller subset of traits, by specifying the proportion of the subset size in `subset_size_for_h2_scale`.
+    - This will add slight computational overhead but with more reliable estimates.
+    - By default, `subset_size_for_h2_scale = 0.0`—no dataset-specific grid will be proposed, but package estimates using a default grid of (0.0, 0.1, 0.2, ..., 0.9) or a grid defined by the user.
+
+
+### Bugs fixed:
+- There was a mistake in the formula for posterior calculation when using the single-trait scan function (`scan`). In this release that has been fixed and matches the correct version in multiple-trait scan function `bulkscan()`.
+
 ## Version 1.2.0 (Aug 17, 2023)
 - Help documentation added: to view the help documentation for functions `scan()`, and `bulkscan()`, type `?` in front of the functions.
 - New features:

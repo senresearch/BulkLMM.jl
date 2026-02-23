@@ -204,3 +204,23 @@ function lod2log10p(lod::Float64, df::Int64)
     return -logpval/log(10);
     
 end
+
+function calc_std_err(lod::Float64, 
+                      beta_1::Float64)
+
+    # Convert LOD score to LRT statistic:
+    lrt = 2*log(10)*lod
+
+    # Compute standard error from LRT and effect size:
+    # (Based on the fact that LRT = squared t-statistic under simple linear regression)
+    std_err = abs(beta_1)/sqrt(lrt)
+
+    return std_err
+    
+end
+
+function calc_p_wald(beta_1::Float64, se_beta_1::Float64)
+    t_stats = (beta_1/se_beta_1)^2
+    p_wald = ccdf(Chisq(1), t_stats)
+    return p_wald
+end

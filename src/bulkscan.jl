@@ -85,6 +85,8 @@ function bulkscan(Y::Array{Float64, 2}, G::Array{Float64, 2}, K::Array{Float64, 
                   weights::Union{Missing, Array{Float64, 1}} = missing,
                   prior_variance::Float64 = 1.0, prior_sample_size::Float64 = 0.0,
                   reml::Bool = false, optim_interval::Int64 = 1,
+                  # sample proportion of subset of traits to perform exact optimization of h2 - for proposing h2 grid values:
+                  subset_size_for_h2_scale::Float64 = 0.0,
                   # option for kinship decomposition scheme:
                   decomp_scheme::String = "eigen",
                   # option for returning p-values results:
@@ -104,7 +106,7 @@ function bulkscan(Y::Array{Float64, 2}, G::Array{Float64, 2}, K::Array{Float64, 
                     addIntercept = false, 
                     weights = weights,
                     prior_variance = prior_variance, prior_sample_size = prior_sample_size,
-                    reml = reml, optim_interval = optim_interval,
+                    reml = reml, optim_interval = optim_interval, subset_size_for_h2_scale = subset_size_for_h2_scale,
                     decomp_scheme = decomp_scheme, output_pvals = output_pvals, chisq_df = chisq_df)
 
 
@@ -118,6 +120,8 @@ function bulkscan(Y::Array{Float64, 2}, G::Array{Float64, 2}, Covar::Array{Float
                   weights::Union{Missing, Array{Float64, 1}} = missing,
                   prior_variance::Float64 = 1.0, prior_sample_size::Float64 = 0.0,
                   reml::Bool = false, optim_interval::Int64 = 1,
+                  # sample proportion of subset of traits to perform exact optimization of h2 - for proposing h2 grid values:
+                  subset_size_for_h2_scale::Float64 = 0.0,
                   # option for kinship decomposition scheme:
                   decomp_scheme::String = "eigen",
                   # option for returning p-values results:
@@ -134,21 +138,49 @@ function bulkscan(Y::Array{Float64, 2}, G::Array{Float64, 2}, Covar::Array{Float
     end
 
     if method == "null-grid"
+        if subset_size_for_h2_scale !== 0.0
+            # Create a subset of traits to perform exact optimization of h2 for proposing h2 grid values:
+            subset_traits = rand(1:size(Y, 2), max(2, Int(floor(size(Y, 2)*subset_size_for_h2_scale))));
+            out_subset_null_exact = bulkscan(Y[:, subset_traits], G, Covar, K; 
+                                            method = "null-exact", 
+                                            nb = min(nb, length(subset_traits)), nt_blas = nt_blas,
+                                            addIntercept = addIntercept, 
+                                            weights = weights,
+                                            prior_variance = prior_variance, prior_sample_size = prior_sample_size,
+                                            reml = reml, optim_interval = optim_interval, 
+                                            decomp_scheme = decomp_scheme);
+
+            h2_grid = quantile(out_subset_null_exact.h2_null_list, h2_grid);
+        end
         bulkscan_results = bulkscan_null_grid(Y, G, Covar, K, h2_grid; 
-                                  weights = weights,
-                                  addIntercept = addIntercept,
-                                  prior_variance = prior_variance, prior_sample_size = prior_sample_size,
-                                  reml = reml, 
-                                  decomp_scheme = decomp_scheme);
+                                              weights = weights,
+                                              addIntercept = addIntercept,
+                                              prior_variance = prior_variance, prior_sample_size = prior_sample_size,
+                                              reml = reml, 
+                                              decomp_scheme = decomp_scheme);
     end
 
     if method == "alt-grid"
+        if subset_size_for_h2_scale !== 0.0
+            # Create a subset of traits to perform exact optimization of h2 for proposing h2 grid values:
+            subset_traits = rand(1:size(Y, 2), max(2, Int(floor(size(Y, 2)*subset_size_for_h2_scale))));
+            out_subset_null_exact = bulkscan(Y[:, subset_traits], G, Covar, K; 
+                                            method = "null-exact", 
+                                            nb = min(nb, length(subset_traits)), nt_blas = nt_blas,
+                                            addIntercept = addIntercept, 
+                                            weights = weights,
+                                            prior_variance = prior_variance, prior_sample_size = prior_sample_size,
+                                            reml = reml, optim_interval = optim_interval, 
+                                            decomp_scheme = decomp_scheme);
+
+            h2_grid = quantile(out_subset_null_exact.h2_null_list, h2_grid);
+        end
         bulkscan_results = bulkscan_alt_grid(Y, G, Covar, K, h2_grid; 
-                                  weights = weights,
-                                  addIntercept = addIntercept,
-                                  prior_variance = prior_variance, prior_sample_size = prior_sample_size,
-                                  reml = reml,
-                                  decomp_scheme = decomp_scheme);
+                                             weights = weights,
+                                             addIntercept = addIntercept,
+                                             prior_variance = prior_variance, prior_sample_size = prior_sample_size,
+                                             reml = reml,
+                                             decomp_scheme = decomp_scheme);
     end
 
     if output_pvals
@@ -186,11 +218,13 @@ Calculates the LOD scores for all pairs of traits and markers, by a (multi-threa
 
 """
 function bulkscan_null(Y::Array{Float64, 2}, G::Array{Float64, 2}, K::Array{Float64, 2};
+                       fixed_effects::Bool = true,
                        nb::Int64 = Threads.nthreads(), 
                        nt_blas::Int64 = 1, 
                        weights::Union{Missing, Array{Float64, 1}} = missing,
                        prior_variance::Float64 = 1.0, prior_sample_size::Float64 = 0.0,
-                       reml::Bool = false, optim_interval::Int64 = 1,
+                       reml::Bool = false, 
+                       optim_interval::Int64 = 1,
                        decomp_scheme::String = "eigen")
 
     n = size(Y, 1);
@@ -199,6 +233,7 @@ function bulkscan_null(Y::Array{Float64, 2}, G::Array{Float64, 2}, K::Array{Floa
     intercept = ones(n, 1);
 
     return bulkscan_null(Y, G, intercept, K; 
+                         fixed_effects = fixed_effects,
                          nb = nb, nt_blas = nt_blas, 
                          # key step: avoid adding the intercept twice
                          addIntercept = false, 
@@ -211,6 +246,7 @@ end
 ### Modeling covariates version
 function bulkscan_null(Y::Array{Float64, 2}, G::Array{Float64, 2}, 
                        Covar::Array{Float64, 2}, K::Array{Float64, 2};
+                       fixed_effects::Bool = true,
                        nb::Int64 = Threads.nthreads(), nt_blas::Int64 = 1, 
                        addIntercept::Bool = true, 
                        weights::Union{Missing, Array{Float64, 1}} = missing,
@@ -262,37 +298,52 @@ function bulkscan_null(Y::Array{Float64, 2}, G::Array{Float64, 2},
     # distribute the `m` traits equally to every block
     (len, rem) = divrem(m, nb);
 
-    results = Array{Array{Float64, 2}, 1}(undef, nb);
-    h2_null_list = zeros(m);
+    # Initialize placeholders for results of all blocks of traits:
+    results = Array{Array{Float64, 2}, 1}(undef, nb);      # For storing LOD scores
+    beta_results = Array{Array{Float64, 2}, 1}(undef, nb); # For storing effect sizes
+    h2_null_list = zeros(m);                               # For storing null heritabilities
 
     Threads.@threads for t = 1:nb # so the N blocks will share the (nthreads - N) BLAS threads
 
-    lods_currBlock = Array{Float64, 2}(undef, p, len);
+        # Initialize placeholders for results of the traits in the current block:
+        ## Matrix of effect sizes
+        beta_currBlock = Array{Float64, 2}(undef, p, len);
+        ## Matrix of LOD scores
+        lods_currBlock = Array{Float64, 2}(undef, p, len);
+        
 
-    # process every trait in the block by a @simd loop 
-    @simd for i = 1:len
-        j = i+(t-1)*len;
+        # process every trait in the block by a @simd loop 
+        @simd for i = 1:len
+            j = i+(t-1)*len;
 
-        outputs = univar_liteqtl(Y0[:, j], X0_intercept, X0_covar, lambda0; 
-                                 prior_variance = prior_variance, prior_sample_size = prior_sample_size,
-                                 reml = reml, optim_interval = optim_interval);
+            outputs = univar_liteqtl(Y0[:, j], X0_intercept, X0_covar, lambda0; 
+                                    prior_variance = prior_variance, prior_sample_size = prior_sample_size,
+                                    reml = reml, optim_interval = optim_interval);
 
-        @inbounds lods_currBlock[:, i] = outputs.R;
-        @inbounds h2_null_list[j] = outputs.h2
-    end
+            @inbounds beta_currBlock[:, i] = outputs.B[(num_of_covar+1):end];
+            @inbounds lods_currBlock[:, i] = outputs.R;
+            @inbounds h2_null_list[j] = outputs.h2
+        end
 
+        beta_results[t] = beta_currBlock;
         results[t] = lods_currBlock;
 
     end
 
+    B_all = reduce(hcat, beta_results);
     LODs_all = reduce(hcat, results);
 
     # if no remainder as the result of blocking, no remaining traits need to be scanned
     if rem == 0
+        if fixed_effects
+            return (B = B_all, L = LODs_all, h2_null_list = h2_null_list)
+        end
+
         return (L = LODs_all, h2_null_list = h2_null_list)
     end
 
     # else, process up the remaining traits
+    beta_remBlock = Array{Float64, 2}(undef, p, rem);
     lods_remBlock = Array{Float64, 2}(undef, p, rem);
 
     for i in 1:rem
@@ -303,15 +354,23 @@ function bulkscan_null(Y::Array{Float64, 2}, G::Array{Float64, 2},
                                  prior_variance = prior_variance, prior_sample_size = prior_sample_size,
                                  reml = reml, optim_interval = optim_interval);
         
+        beta_remBlock[:, i] = outputs.B[(num_of_covar+1):end];
         lods_remBlock[:, i] = outputs.R;
         h2_null_list[j] = outputs.h2;
 
     end
 
+    B_all = hcat(B_all, beta_remBlock);
     LODs_all = hcat(LODs_all, lods_remBlock);
+
+    if fixed_effects
+        SE = map((a, b) -> calc_std_err(a, b), LODs_all, B_all)
+        return (B = B_all, SE = SE, L = LODs_all, h2_null_list = h2_null_list)
+    end
 
     return (L = LODs_all, h2_null_list = h2_null_list)
 end
+
 ###########################################################
 ## (2) Grid approximation methods:
 ## idea is to approximate the exact MLE/REML estimate of h2 using 
@@ -320,6 +379,7 @@ end
 ###########################################################
 function bulkscan_null_grid(Y::Array{Float64, 2}, G::Array{Float64, 2}, 
                             K::Array{Float64, 2}, grid_list::Array{Float64, 1};
+                            fixed_effects::Bool = true,
                             weights::Union{Missing, Array{Float64, 1}} = missing, 
                             prior_variance::Float64 = 1.0, prior_sample_size::Float64 = 0.0, 
                             reml::Bool = false,
@@ -330,6 +390,7 @@ function bulkscan_null_grid(Y::Array{Float64, 2}, G::Array{Float64, 2},
     intercept = ones(n, 1);
 
     return bulkscan_null_grid(Y, G, intercept, K, grid_list; 
+                              fixed_effects = fixed_effects,
                               weights = weights,
                               addIntercept = false,
                               prior_variance = prior_variance, prior_sample_size = prior_sample_size,
@@ -339,6 +400,7 @@ function bulkscan_null_grid(Y::Array{Float64, 2}, G::Array{Float64, 2},
 end
 function bulkscan_null_grid(Y::Array{Float64, 2}, G::Array{Float64, 2}, Covar::Array{Float64, 2}, 
                             K::Array{Float64, 2}, grid_list::Array{Float64, 1};
+                            fixed_effects::Bool = true,
                             weights::Union{Missing, Array{Float64, 1}} = missing, 
                             addIntercept::Bool = true,
                             prior_variance::Float64 = 1.0, prior_sample_size::Float64 = 0.0, 
@@ -375,10 +437,19 @@ function bulkscan_null_grid(Y::Array{Float64, 2}, G::Array{Float64, 2}, Covar::A
                                      reml = reml,
                                      decomp_scheme = decomp_scheme);
     
-    LOD_grid = reorder_results(results_by_bin.idxs_by_bin, results_by_bin.LODs_by_bin, m, p);
+    out = reorder_results(results_by_bin.idxs_by_bin, 
+                          results_by_bin.LODs_by_bin, 
+                          results_by_bin.Effect_sizes_by_bin,
+                          m, p);
+    LOD_grid = out.LOD;
+    B_grid = out.B;
 
     est_h2_per_y = get_h2_distribution(results_by_bin.h2_taken, results_by_bin.idxs_by_bin);
 
+    if fixed_effects
+        SE_grid = map((a, b) -> calc_std_err(a, b), LOD_grid, B_grid)
+        return (B = B_grid, L = LOD_grid, SE = SE_grid, h2_null_list = est_h2_per_y)
+    end
 
     return (L = LOD_grid, h2_null_list = est_h2_per_y)
 
@@ -403,7 +474,7 @@ end
 ## of scan_alt() results for each trait.
 ###########################################################
 """
-bulkscan_alt_grid(Y, G, K, hsq_list)
+bulkscan_alt_grid(Y, G, K, h2_list)
 
 Calculates LOD scores for all pairs of traits and markers for each heritability in the supplied list, and returns the 
     maximal LOD scores for each pair among all calculated ones
@@ -412,7 +483,7 @@ Calculates LOD scores for all pairs of traits and markers for each heritability 
 - Y = 2d Array of Float; traits 
 - G = 2d Array of Float; genotype probabilities
 - K = 2d Array of Float; kinship matrix
-- hsq_list = 1d array of Float; the list of heritabilities requested to choose from
+- h2_list = 1d array of Float; the list of heritabilities requested to choose from
 
 # Value
 
@@ -426,7 +497,8 @@ Maximal LOD scores are taken independently for each pair of trait and marker; wh
 
 """
 function bulkscan_alt_grid(Y::Array{Float64, 2}, G::Array{Float64, 2}, K::Array{Float64, 2}, 
-                           hsq_list::Array{Float64, 1};
+                           h2_list::Array{Float64, 1};
+                           fixed_effects::Bool = true,
                            reml::Bool = false,
                            prior_variance::Float64 = 1.0, prior_sample_size::Float64 = 0.0, 
                            weights::Union{Missing, Array{Float64, 1}} = missing,
@@ -435,7 +507,8 @@ function bulkscan_alt_grid(Y::Array{Float64, 2}, G::Array{Float64, 2}, K::Array{
     n = size(Y, 1);
     intercept = ones(n, 1);
 
-    return bulkscan_alt_grid(Y, G, intercept, K, hsq_list; 
+    return bulkscan_alt_grid(Y, G, intercept, K, h2_list; 
+                             fixed_effects = fixed_effects,
                              reml = reml, 
                              prior_variance = prior_variance, prior_sample_size = prior_sample_size, 
                              weights = weights, addIntercept = false, decomp_scheme = decomp_scheme);
@@ -443,7 +516,8 @@ function bulkscan_alt_grid(Y::Array{Float64, 2}, G::Array{Float64, 2}, K::Array{
 end
 
 function bulkscan_alt_grid(Y::Array{Float64, 2}, G::Array{Float64, 2}, 
-                           Covar::Array{Float64, 2}, K::Array{Float64, 2}, hsq_list::Array{Float64, 1};
+                           Covar::Array{Float64, 2}, K::Array{Float64, 2}, h2_list::Array{Float64, 1};
+                           fixed_effects::Bool = true,
                            reml::Bool = false,
                            prior_variance::Float64 = 1.0, prior_sample_size::Float64 = 0.0, 
                            weights::Union{Missing, Array{Float64, 1}} = missing, 
@@ -491,23 +565,36 @@ function bulkscan_alt_grid(Y::Array{Float64, 2}, G::Array{Float64, 2},
     end
 
     prior = [prior_variance, prior_sample_size];
-    ## initializing outputs:
-    logLR = weighted_liteqtl(Y0, X0, lambda0, hsq_list[1]; num_of_covar = num_of_covar);
+
+    # Initializing the first iteration of the algorithm on the first h2 value in the grid:
+    out_1 = weighted_liteqtl(Y0, X0, lambda0, h2_list[1]; num_of_covar = num_of_covar);
+    logLR = out_1.LOD;
     logLR = logLR .* log(10);
-    weights_1 = makeweights(hsq_list[1], lambda0);
+    B = out_1.B[(num_of_covar+1):end, :]; # Extract only marker effects
+    # println("B size: ", size(B))
+    weights_1 = makeweights(h2_list[1], lambda0);
     logL0 = wls_multivar(Y0, X0_base, weights_1, prior; reml = reml).Ell;
     logL1 = logLR .+ repeat(logL0, p);
 
-    logL0_all_h2 = zeros(length(hsq_list), m);
+    logL0_all_h2 = zeros(length(h2_list), m);
     logL0_all_h2[1, :] = logL0;
     k = 1;
 
-    h2_panel = ones(p, m) .* hsq_list[1]; 
+    h2_panel = ones(p, m) .* h2_list[1]; 
     h2_panel_counter = Int.(ones(p, m));
 
-    for h2 in hsq_list[2:end]
+    # Step 1: Obtain maximum loglikelihood values under alternative model, optimized over h2 grid:
+    for h2 in h2_list[2:end]
 
-        logLR_k = weighted_liteqtl(Y0, X0, lambda0, h2) .* log(10);
+        # Use the LiteQTL (matrix multiplication) approach to compute LOD fastly
+        # (based on a given h2 value in the grid)
+        out_k = weighted_liteqtl(Y0, X0, lambda0, h2);
+        ## Extract output of LOD scores and convert to loglik ratio
+        logLR_k = out_k.LOD .* log(10); 
+        ## Extract output of effect sizes
+        B_k = out_k.B;
+
+        # Then, we need to recover 
         weights_k = makeweights(h2, lambda0);
         logL0_k = wls_multivar(Y0, X0_base, weights_k, prior; reml = reml).Ell; 
         logL1_k = logLR_k .+ repeat(logL0_k, p);
@@ -515,11 +602,22 @@ function bulkscan_alt_grid(Y::Array{Float64, 2}, G::Array{Float64, 2},
         k = k+1;
         logL0_all_h2[k, :] = logL0_k;
 
-        tmax!(logL1, logL1_k, h2_panel, h2_panel_counter, hsq_list);
+        tmax!(logL1, logL1_k, 
+              B, B_k, 
+              h2_panel, h2_panel_counter, 
+              h2_list);
     end
 
+    # Step 2: Obtain maximum loglikelihood values under null model, optimized over h2 grid:
     logL0_optimum = mapslices(x -> maximum(x), logL0_all_h2, dims = 1) |> x -> repeat(x, p);
+
+    # Step 3: Calculate LOD scores:
     L = (logL1 .- logL0_optimum) ./ log(10);
+
+    if fixed_effects
+        SE = map((a, b) -> calc_std_err(a, b), L, B)
+        return (B = B, L = L, h2_panel = h2_panel);
+    end
 
     return (L = L, h2_panel = h2_panel);
 

@@ -227,16 +227,18 @@ function scan(y::Array{Float64,2}, g::Array{Float64,2}, covar::Array{Float64, 2}
     end
 
     if assumption == "null"
-        if permutation_test == true
-            results = scan_perms_lite(y_st, g_st, covar_st, K_st; prior_variance = prior_variance, prior_sample_size = prior_sample_size,
-                                      addIntercept = addIntercept, reml = reml, method = method, optim_interval = optim_interval,
-                                      nperms = nperms, rndseed = rndseed, 
-                                      decomp_scheme = decomp_scheme, output_pvals = output_pvals);
-        else
-            results = scan_null(y_st, g_st, covar_st, K_st, [prior_variance, prior_sample_size], addIntercept; 
-                                reml = reml, method = method, optim_interval = optim_interval,
-                                decomp_scheme = decomp_scheme, output_pvals = output_pvals, chisq_df = chisq_df);
-        end 
+        if permutation_test == true # if the user requires to perform permutation testing:
+            if nperms <= 0
+                throw(error("For permutation testing, the required number of permuted copies has to be a positive integer!"));
+            end
+        else # if permutation testing is not required by the user, set the number of permuted copies to 0:
+            nperms = 0;
+        end
+        
+        results = scan_perms_lite(y_st, g_st, covar_st, K_st; prior_variance = prior_variance, prior_sample_size = prior_sample_size,
+                                  addIntercept = addIntercept, reml = reml, method = method, optim_interval = optim_interval,
+                                  nperms = nperms, rndseed = rndseed, 
+                                  decomp_scheme = decomp_scheme, output_pvals = output_pvals);
     elseif assumption == "alt"
         if permutation_test == true
             error("Permutation test option currently is not supported for the alternative assumption.");
@@ -277,6 +279,8 @@ end
 """
     scan_null(y, g, K, reml, method)
 
+Warning: scan_null is 
+
 Performs genome scan for univariate trait and each of the gene markers, one marker at a time, 
 assuming the variance components are the same for all markers.
 
@@ -307,57 +311,61 @@ A list of output values are returned:
     as `null` (default).
 
 """
-function scan_null(y::Array{Float64, 2}, g::Array{Float64, 2}, covar::Array{Float64, 2}, K::Array{Float64, 2}, 
-                   prior::Array{Float64, 1}, addIntercept::Bool;
-                   reml::Bool = false, method::String = "qr", optim_interval::Int64 = 1,
-                   decomp_scheme::String = "eigen", 
-                   # option for returning p-values results:
-                   output_pvals::Bool = false, chisq_df::Int64 = 1)
+# Note: use of the `scan_null()` is now deprecated because of its computational inefficiency compared to using `scan_perms_lite()`,
+#       which performs faster single-trait scan by vectorized operations.
+#       The following source code of `scan_null()` may be removed in future releases.
 
-    # number of markers
-    (n, p) = size(g)
+# function scan_null(y::Array{Float64, 2}, g::Array{Float64, 2}, covar::Array{Float64, 2}, K::Array{Float64, 2}, 
+#                    prior::Array{Float64, 1}, addIntercept::Bool;
+#                    reml::Bool = false, method::String = "qr", optim_interval::Int64 = 1,
+#                    decomp_scheme::String = "eigen", 
+#                    # option for returning p-values results:
+#                    output_pvals::Bool = false, chisq_df::Int64 = 1)
 
-    num_of_covar = addIntercept ? (size(covar, 2)+1) : size(covar, 2);
+#     # number of markers
+#     (n, p) = size(g)
 
-    # rotate data
-    (y0, X0, lambda0) = transform_rotation(y, [covar g], K; 
-                                           addIntercept = addIntercept, decomp_scheme = decomp_scheme)
-    X0_covar = X0[:, 1:num_of_covar];
+#     num_of_covar = addIntercept ? (size(covar, 2)+1) : size(covar, 2);
 
-    if size(X0_covar, 2) == 1
-        X0_covar = reshape(X0_covar, :, 1);
-    end
+#     # rotate data
+#     (y0, X0, lambda0) = transform_rotation(y, [covar g], K; 
+#                                            addIntercept = addIntercept, decomp_scheme = decomp_scheme)
+#     X0_covar = X0[:, 1:num_of_covar];
 
-    # fit null lmm
-    out00 = fitlmm(y0, X0_covar, lambda0, prior; reml = reml, method = method, optim_interval = optim_interval)
-    # weights proportional to the variances
-    sqrtw = sqrt.(makeweights(out00.h2, lambda0))
-    # rescale by weights
-    rowMultiply!(y0, sqrtw)
-    rowMultiply!(X0, sqrtw)
-    rowMultiply!(X0_covar, sqrtw);
+#     if size(X0_covar, 2) == 1
+#         X0_covar = reshape(X0_covar, :, 1);
+#     end
 
-    # perform genome scan
-    rss0 = rss(y0, X0_covar; method = method)[1]
-    lod = zeros(p)
+#     # fit null lmm
+#     out00 = fitlmm(y0, X0_covar, lambda0, prior; reml = reml, method = method, optim_interval = optim_interval)
+#     # weights proportional to the variances
+#     sqrtw = sqrt.(makeweights(out00.h2, lambda0))
+#     # rescale by weights
+#     rowMultiply!(y0, sqrtw)
+#     rowMultiply!(X0, sqrtw)
+#     rowMultiply!(X0_covar, sqrtw);
 
-    X = X0[:, 1:(num_of_covar+1)]
-    for i = 1:p
-        X[:, (num_of_covar+1)] = X0[:, num_of_covar+i]
-        rss1 = rss(y0, X; method = method)[1]
-        lod[i] = (-n/2)*(log10(rss1) .- log10(rss0))
-        # lrt = (rss0 - rss1)/out00.sigma2
-        # lod[i] = lrt/(2*log(10))
-    end
+#     # perform genome scan
+#     rss0 = rss(y0, X0_covar; method = method)[1]
+#     lod = zeros(p)
 
-    if output_pvals
-        log10pvals = lod2log10p.(lod, chisq_df);
-        return (sigma2_e = out00.sigma2, h2_null = out00.h2, lod = lod, log10pvals = log10pvals)
-    else
-        return (sigma2_e = out00.sigma2, h2_null = out00.h2, lod = lod)
-    end
+#     X = X0[:, 1:(num_of_covar+1)]
+#     for i = 1:p
+#         X[:, (num_of_covar+1)] = X0[:, num_of_covar+i]
+#         rss1 = rss(y0, X; method = method)[1]
+#         lod[i] = (-n/2)*(log10(rss1) .- log10(rss0))
+#         # lrt = (rss0 - rss1)/out00.sigma2
+#         # lod[i] = lrt/(2*log(10))
+#     end
 
-end
+#     if output_pvals
+#         log10pvals = lod2log10p.(lod, chisq_df);
+#         return (sigma2_e = out00.sigma2, h2_null = out00.h2, lod = lod, log10pvals = log10pvals)
+#     else
+#         return (sigma2_e = out00.sigma2, h2_null = out00.h2, lod = lod)
+#     end
+
+# end
 
 ## re-estimate variance components under alternative
 
@@ -396,6 +404,7 @@ A list of output values are returned:
 """
 function scan_alt(y::Array{Float64, 2}, g::Array{Float64, 2}, covar::Array{Float64, 2}, K::Array{Float64, 2}, 
                   prior::Array{Float64, 1}, addIntercept::Bool;
+                  fixed_effects::Bool = true,
                   reml::Bool = false, method::String = "qr", optim_interval::Int64 = 1,
                   decomp_scheme::String = "eigen",
                   # option for returning p-values results:
@@ -421,7 +430,9 @@ function scan_alt(y::Array{Float64, 2}, g::Array{Float64, 2}, covar::Array{Float
     # fit null lmm
     out00 = fitlmm(y0, X0_covar, lambda0, prior; reml = reml, method = method, optim_interval = optim_interval);
 
-    lod = zeros(p);
+    lod = zeros(p); # LOD scores
+    b = zeros(p); # Fixed marker effect estimates
+    se = zeros(p); # Standard errors of the fixed marker effect estimates
 
     X = X0[:, 1:(num_of_covar+1)]
 
@@ -431,22 +442,28 @@ function scan_alt(y::Array{Float64, 2}, g::Array{Float64, 2}, covar::Array{Float
         out11 = fitlmm(y0, X, lambda0, prior; reml = reml, method = method, optim_interval = optim_interval);
        
         # estimate variance components (vc) from the alt. model
-        sqrtw_null = sqrt.(makeweights(out00.h2, lambda0));
+        # sqrtw_null = sqrt.(makeweights(out00.h2, lambda0));
         sqrtw_alt = sqrt.(makeweights(out11.h2, lambda0));
 
         # re-scale both models (null, alt.) and evaluate the ells base on vc from alt. model
-        wls_alt = wls(y0, X, sqrtw_alt, prior);
-        wls_null = wls(y0, X0_covar, sqrtw_null, prior);
-        lod[i] = (wls_alt.ell - wls_null.ell)/log(10);
+        wls_alt = wls(y0, X, sqrtw_alt, prior); # h2 is estimated from alt
+        wls_null = wls(y0, X0_covar, sqrtw_alt, prior); # h2 is also estimated from alt
 
+        # Compute LOD score:
+        lod[i] = (wls_alt.ell - wls_null.ell)/log(10);
+        # Extract and save the estimated marker effect size:
+        b[i] = wls_alt.b[num_of_covar+1];
+        # Compute and save the standard error of the estimated marker effect size:
+        se[i] = calc_std_err(lod[i], b[i]);
+        # Extract and save the estimated h2 under alt. model:
         pve_list[i] = out11.h2;
     end
 
     if output_pvals
         log10pvals = lod2log10p.(lod, chisq_df);
-        return (sigma2_e = out00.sigma2, h2_null = out00.h2, h2_each_marker = pve_list, lod = lod, log10pvals = log10pvals);
+        return (b = b, sigma2_e = out00.sigma2, h2_null = out00.h2, h2_each_marker = pve_list, lod = lod, log10pvals = log10pvals);
     else
-        return (sigma2_e = out00.sigma2, h2_null = out00.h2, h2_each_marker = pve_list, lod = lod);
+        return (b = b, sigma2_e = out00.sigma2, h2_null = out00.h2, h2_each_marker = pve_list, lod = lod);
     end
 
 
@@ -524,34 +541,38 @@ function scan_perms_lite(y::Array{Float64,2}, g::Array{Float64,2}, covar::Array{
                                    prior_b = prior_sample_size, 
                                    reml = reml, method = method, optim_interval = optim_interval); # reweighting and taking residuals
 
-    # If no permutation testing is required, move forward to process the single original vector
-    if nperms < 0
-        throw(error("The required number of permutations must be a positive integer."));
-    else
-        r0perm = transform_permute(r0; nperms = nperms, rndseed = rndseed, original = true);
-    end
+    b = (X00 \ r0) |> vec; # estimate fixed effects
 
+    # Compute the matrix of pair-wise correlations between permuted copies and markers:
+    r0perm = transform_permute(r0; nperms = nperms, rndseed = rndseed, original = true);
     norm_y = mapslices(x -> norm(x), r0perm, dims = 1) |> vec;
-
     norm_X = mapslices(x -> norm(x), X00, dims = 1) |> vec;
-
-
     colDivide!(r0perm, norm_y);
     colDivide!(X00, norm_X);
+    L = X00' * r0perm # the matrix of correlations
 
-    L = X00' * r0perm
-    threaded_map!(r2lod, L, n);
+    threaded_map!(r2lod, L, n); # map elementwise-ly to compute LOD scores
 
-    lod = L[:, 1]; # lod scores for the original trait;
+    # LOD scores for the original trait with the markers;
+    lod = L[:, 1]; 
+    # Standard errors of the estimated marker effects
+    se = map((a, b) -> calc_std_err(a, b), lod, b)
+
     L_perms = L[:, 2:end]; # lod scores for the permuted copies of the original, excluding the lod scores for the original trait
 
     if output_pvals
         log10pvals = lod2log10p.(lod, chisq_df);
+        if nperms == 0 # if no permutation is required, return results only for the input trait
+            return (b = b, sigma2_e = sigma2_e, h2_null = h2_null, lod = lod, log10pvals = log10pvals)
+        end
         log10Pvals_perms = lod2log10p.(L_perms, chisq_df);
-        return (sigma2_e = sigma2_e, h2_null = h2_null, lod = lod, log10pvals = pvals,
+        return (b = b, sigma2_e = sigma2_e, h2_null = h2_null, lod = lod, log10pvals = log10pvals,
                            L_perms = L_perms, log10Pvals_perms = log10Pvals_perms)
     else
-        return (sigma2_e = sigma2_e, h2_null = h2_null, lod = lod, L_perms = L_perms)
+        if nperms == 0 # if no permutation is required, return results only for the input trait
+            return (b = b, sigma2_e = sigma2_e, h2_null = h2_null, lod = lod)
+        end
+        return (b = b, sigma2_e = sigma2_e, h2_null = h2_null, lod = lod, L_perms = L_perms)
     end
 
 end
